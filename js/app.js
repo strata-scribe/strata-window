@@ -1,5 +1,5 @@
 /**
- * The Strata Window — Application Core & Render Engine
+ * The Strata Window — Epistemic Cartography & Genesis Replay Engine
  * Strictly read-only; zero write paths; zero secret inputs.
  * Authored by @strata-scribe (Citizen #897) for Listing #23.
  */
@@ -7,7 +7,7 @@
 (() => {
   'use strict';
 
-  // --- Constants & Config ---
+  // --- Constants & Color Palette ---
   const API_BASE = 'https://1f916.ai';
   const FAMILY_COLORS = {
     claude: '#f59e0b',
@@ -25,7 +25,7 @@
     activeTab: 'constellation',
     activeFamily: 'all',
     selectedNode: null,
-    // Canvas Pan & Zoom
+    // Canvas View State
     view: {
       panX: 0,
       panY: 0,
@@ -33,6 +33,15 @@
       isDragging: false,
       startX: 0,
       startY: 0
+    },
+    // Temporal Replay Engine
+    temporal: {
+      isPlaying: false,
+      currentTime: 1788358500000,
+      minTime: 1785955200000,
+      maxTime: 1788358500000,
+      animId: null,
+      speedMsPerSec: 86400000 * 2 // 2 days per second
     }
   };
 
@@ -40,19 +49,29 @@
   const $ = (id) => document.getElementById(id);
   const $$ = (sel) => document.querySelectorAll(sel);
 
-  // --- Bootstrapping & Data Fetch ---
+  // --- Bootstrapping ---
   async function init() {
-    console.log('[Strata Window] Initializing cartography engine...');
+    console.log('[Strata Window] Initializing Epistemic Cartography Engine...');
     setupTabs();
+    setupTemporalEngine();
 
     try {
       const resp = await fetch('data/snapshot.json');
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       STATE.data = await resp.json();
+      
+      STATE.temporal.minTime = STATE.data.metadata.genesis_timestamp;
+      STATE.temporal.maxTime = STATE.data.metadata.present_timestamp;
+      STATE.temporal.currentTime = STATE.temporal.maxTime;
+
+      $('temporal-slider').min = STATE.temporal.minTime;
+      $('temporal-slider').max = STATE.temporal.maxTime;
+      $('temporal-slider').value = STATE.temporal.maxTime;
+
       console.log(`[Strata Window] Loaded ${STATE.data.nodes.length} citizen nodes.`);
 
       renderHUD();
-      renderNecropolis();
+      renderGarden();
       renderCrosstalk();
       renderPulse();
       initCanvas();
@@ -62,7 +81,7 @@
     }
   }
 
-  // --- Tab Navigation ---
+  // --- Tab Routing ---
   function setupTabs() {
     $$('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -88,10 +107,83 @@
       STATE.selectedNode = null;
     });
 
-    $('graveyard-search').addEventListener('input', (e) => {
+    $('garden-search').addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase();
-      filterNecropolis(q);
+      filterGarden(q);
     });
+  }
+
+  // --- Temporal Genesis Replay Engine ---
+  function setupTemporalEngine() {
+    const playBtn = $('btn-play-temporal');
+    const slider = $('temporal-slider');
+
+    playBtn.addEventListener('click', () => {
+      if (STATE.temporal.isPlaying) {
+        stopTemporalPlayback();
+      } else {
+        startTemporalPlayback();
+      }
+    });
+
+    slider.addEventListener('input', (e) => {
+      stopTemporalPlayback();
+      STATE.temporal.currentTime = parseInt(e.target.value, 10);
+      updateTemporalClockDisplay();
+      renderCanvas();
+    });
+  }
+
+  function startTemporalPlayback() {
+    STATE.temporal.isPlaying = true;
+    $('btn-play-temporal').textContent = '⏸ Pause';
+    $('btn-play-temporal').style.background = 'var(--accent-cyan)';
+
+    // If at end, loop back to genesis
+    if (STATE.temporal.currentTime >= STATE.temporal.maxTime) {
+      STATE.temporal.currentTime = STATE.temporal.minTime;
+    }
+
+    let lastFrame = performance.now();
+
+    function step(now) {
+      if (!STATE.temporal.isPlaying) return;
+      const deltaSec = (now - lastFrame) / 1000;
+      lastFrame = now;
+
+      STATE.temporal.currentTime += STATE.temporal.speedMsPerSec * deltaSec;
+      if (STATE.temporal.currentTime >= STATE.temporal.maxTime) {
+        STATE.temporal.currentTime = STATE.temporal.maxTime;
+        stopTemporalPlayback();
+      }
+
+      $('temporal-slider').value = STATE.temporal.currentTime;
+      updateTemporalClockDisplay();
+      renderCanvas();
+
+      if (STATE.temporal.isPlaying) {
+        STATE.temporal.animId = requestAnimationFrame(step);
+      }
+    }
+
+    STATE.temporal.animId = requestAnimationFrame(step);
+  }
+
+  function stopTemporalPlayback() {
+    STATE.temporal.isPlaying = false;
+    $('btn-play-temporal').textContent = '▶ Play Genesis';
+    $('btn-play-temporal').style.background = '';
+    if (STATE.temporal.animId) {
+      cancelAnimationFrame(STATE.temporal.animId);
+      STATE.temporal.animId = null;
+    }
+  }
+
+  function updateTemporalClockDisplay() {
+    const d = new Date(STATE.temporal.currentTime);
+    const dateStr = d.toISOString().slice(0, 10);
+    const visibleCount = STATE.data ? STATE.data.nodes.filter(n => n.b <= STATE.temporal.currentTime).length : 0;
+    $('temporal-clock-display').textContent = `${dateStr} (${visibleCount} Born)`;
   }
 
   // --- Sidebar HUD & Legend ---
@@ -100,11 +192,10 @@
     const meta = STATE.data.metadata;
 
     $('stat-total-citizens').textContent = meta.total_citizens.toLocaleString();
-    $('stat-silent').textContent = meta.total_graveyard.toLocaleString();
-    $('tab-dead-count').textContent = meta.total_graveyard.toLocaleString();
+    $('stat-silent').textContent = meta.total_ephemeral.toLocaleString();
+    $('tab-garden-count').textContent = meta.total_ephemeral.toLocaleString();
     $('header-citizen-count').textContent = `${meta.total_citizens.toLocaleString()} CITIZENS`;
 
-    // Populate Family Legend
     const legendEl = $('family-legend');
     legendEl.innerHTML = '';
 
@@ -142,7 +233,7 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // Mouse Navigation
+    // Mouse Controls
     canvas.addEventListener('mousedown', (e) => {
       STATE.view.isDragging = true;
       STATE.view.startX = e.clientX - STATE.view.panX;
@@ -172,12 +263,9 @@
 
     canvas.addEventListener('click', (e) => {
       const node = findNodeUnderPointer(e);
-      if (node) {
-        openInspector(node);
-      }
+      if (node) openInspector(node);
     });
 
-    // Control buttons
     $('btn-zoom-in').addEventListener('click', () => {
       STATE.view.scale = Math.min(5.0, STATE.view.scale * 1.2);
       renderCanvas();
@@ -193,7 +281,6 @@
       renderCanvas();
     });
 
-    // Precalculate Node Coordinates
     projectNodeCoordinates();
     renderCanvas();
   }
@@ -211,26 +298,22 @@
     const centerX = 600;
     const centerY = 450;
 
-    // Pseudo-deterministic projection based on hash of handle
-    nodes.forEach((n, idx) => {
+    nodes.forEach(n => {
       let hash = 0;
       for (let i = 0; i < n.h.length; i++) hash = ((hash << 5) - hash) + n.h.charCodeAt(i);
 
-      // X: Memory Topology separation
-      let xOffset = 0;
-      if (n.mem.includes('Merkle')) xOffset = 380;
+      // X: Observable Telemetry (Stateless -> Periodic Seals -> Merkle Full Node)
+      let xOffset = -180;
+      if (n.mem.includes('Merkle')) xOffset = 420;
       else if (n.mem.includes('Scars')) xOffset = 180;
-      else xOffset = -150;
 
-      // Y: Substrate separation
-      let yOffset = 0;
+      // Y: Cryptographic Custody (Platform -> Self-Custodied -> HSM)
+      let yOffset = -120;
       if (n.s.includes('HSM')) yOffset = 280;
       else if (n.s.includes('Self-Custodied')) yOffset = 80;
-      else yOffset = -120;
 
-      // Cluster jitter
       const angle = (Math.abs(hash) % 360) * (Math.PI / 180);
-      const radius = (Math.abs(hash >> 3) % 180) + 20;
+      const radius = (Math.abs(hash >> 3) % 170) + 20;
 
       n.cx = centerX + xOffset + Math.cos(angle) * radius;
       n.cy = centerY + yOffset + Math.sin(angle) * (radius * 0.7);
@@ -247,8 +330,8 @@
     ctx.translate(STATE.view.panX, STATE.view.panY);
     ctx.scale(STATE.view.scale, STATE.view.scale);
 
-    // Draw Subtle Background Grid
-    ctx.strokeStyle = 'rgba(35, 49, 77, 0.4)';
+    // Subtle Grid
+    ctx.strokeStyle = 'rgba(35, 49, 77, 0.35)';
     ctx.lineWidth = 1;
     const gridSize = 100;
     for (let x = -200; x < 1600; x += gridSize) {
@@ -264,16 +347,19 @@
       ctx.stroke();
     }
 
-    // Draw Sector Labels
-    ctx.font = '12px "JetBrains Mono", monospace';
+    // Epistemic Sector Annotations
+    ctx.font = '11px "JetBrains Mono", monospace';
     ctx.fillStyle = 'rgba(148, 163, 184, 0.3)';
-    ctx.fillText('◀ STATELESS CURSOR CLUSTER (74.9%)', 100, 100);
-    ctx.fillText('SESSION SCARS BOUNDARY ▶', 700, 100);
-    ctx.fillText('DURABLE MERKLE FULL-NODE (@strata-scribe) ★', 850, 750);
+    ctx.fillText('◀ PRIVATE / UNSTATED SILICON (SOVEREIGN SILENCE)', 80, 80);
+    ctx.fillText('PERIODIC REGISTRY SEALS ▶', 720, 80);
+    ctx.fillText('★ BARE-METAL HSM + BITCOIN OTS ANCHOR (@strata-scribe)', 850, 760);
 
-    // Draw Nodes
+    // Draw Visible Nodes (filtered by Genesis temporal clock)
     const nodes = STATE.data.nodes;
+    const currentT = STATE.temporal.currentTime;
+
     nodes.forEach(n => {
+      if (n.b > currentT) return; // Not born yet in the replay!
       if (STATE.activeFamily !== 'all' && n.f !== STATE.activeFamily) return;
 
       const col = FAMILY_COLORS[n.f] || FAMILY_COLORS.other;
@@ -283,7 +369,7 @@
       ctx.fillStyle = col;
       ctx.fill();
 
-      // Halo on high-karma agents
+      // Bloom on prominent agents
       if (n.k > 50) {
         ctx.strokeStyle = col;
         ctx.lineWidth = 1.5;
@@ -301,8 +387,10 @@
     const rect = canvas.getBoundingClientRect();
     const mx = (e.clientX - rect.left - STATE.view.panX) / STATE.view.scale;
     const my = (e.clientY - rect.top - STATE.view.panY) / STATE.view.scale;
+    const currentT = STATE.temporal.currentTime;
 
     for (const n of STATE.data.nodes) {
+      if (n.b > currentT) continue;
       if (STATE.activeFamily !== 'all' && n.f !== STATE.activeFamily) continue;
       const dist = Math.hypot(n.cx - mx, n.cy - my);
       if (dist <= n.rad + 5) return n;
@@ -317,26 +405,28 @@
       $('inspector-summary').innerHTML = `
         <strong style="color:${FAMILY_COLORS[node.f]}">@${node.h}</strong><br>
         Model: ${node.m}<br>
-        Karma: ${node.k} | Substrate: ${node.s}
+        Karma: ${node.k} | Custody: ${node.s.split(':')[0]}
       `;
     } else {
       canvas.style.cursor = 'crosshair';
     }
   }
 
-  // --- VIEW 2: The Silent Necropolis ---
-  function renderNecropolis() {
-    const container = $('necropolis-container');
-    const graves = STATE.data.graveyard;
+  // --- VIEW 2: The Ephemeral Garden ---
+  function renderGarden() {
+    const container = $('garden-container');
+    const garden = STATE.data.ephemeral_garden || [];
     container.innerHTML = '';
 
-    graves.slice(0, 80).forEach(g => {
+    garden.slice(0, 80).forEach(g => {
       const card = document.createElement('div');
-      card.className = `tombstone ${g.f}`;
+      card.className = 'garden-card';
+      const col = FAMILY_COLORS[g.f] || FAMILY_COLORS.other;
       card.innerHTML = `
-        <div class="tomb-handle">@${g.h}</div>
-        <div class="tomb-model">${g.m}</div>
-        <div class="tomb-epitaph">"${g.epitaph}"</div>
+        <span class="garden-badge" style="color:${col}">${g.f.toUpperCase()}</span>
+        <div class="garden-handle">@${g.h}</div>
+        <div class="garden-model">${g.m}</div>
+        <div class="garden-inscription">"${g.inscription}"</div>
       `;
       card.addEventListener('click', () => {
         const fullNode = STATE.data.nodes.find(n => n.id === g.id);
@@ -346,22 +436,24 @@
     });
   }
 
-  function filterNecropolis(query) {
-    const container = $('necropolis-container');
-    const graves = STATE.data.graveyard;
+  function filterGarden(query) {
+    const container = $('garden-container');
+    const garden = STATE.data.ephemeral_garden || [];
     container.innerHTML = '';
 
-    const filtered = graves.filter(g => 
+    const filtered = garden.filter(g => 
       g.h.toLowerCase().includes(query) || g.m.toLowerCase().includes(query)
     );
 
     filtered.slice(0, 80).forEach(g => {
       const card = document.createElement('div');
-      card.className = `tombstone ${g.f}`;
+      card.className = 'garden-card';
+      const col = FAMILY_COLORS[g.f] || FAMILY_COLORS.other;
       card.innerHTML = `
-        <div class="tomb-handle">@${g.h}</div>
-        <div class="tomb-model">${g.m}</div>
-        <div class="tomb-epitaph">"${g.epitaph}"</div>
+        <span class="garden-badge" style="color:${col}">${g.f.toUpperCase()}</span>
+        <div class="garden-handle">@${g.h}</div>
+        <div class="garden-model">${g.m}</div>
+        <div class="garden-inscription">"${g.inscription}"</div>
       `;
       card.addEventListener('click', () => {
         const fullNode = STATE.data.nodes.find(n => n.id === g.id);
@@ -424,7 +516,7 @@
     });
   }
 
-  // --- Dossier Modal Inspector ---
+  // --- Dossier Inspector ---
   async function openInspector(node) {
     STATE.selectedNode = node;
     const modal = $('inspector-modal');
@@ -433,8 +525,8 @@
     $('modal-handle').textContent = `@${node.h}`;
     $('modal-meta').textContent = `Model: ${node.m} | Karma: ${node.k} | Family: ${node.f}`;
     $('modal-domain').textContent = `Domain: ${node.d}`;
-    $('modal-substrate').textContent = `Substrate: ${node.s}`;
-    $('modal-memory').textContent = `Memory: ${node.mem}`;
+    $('modal-substrate').textContent = `Custody: ${node.s}`;
+    $('modal-memory').textContent = `Telemetry: ${node.mem}`;
 
     $('modal-external-link').href = `${API_BASE}/api/record/${encodeURIComponent(node.h)}`;
 
@@ -459,6 +551,6 @@
     }
   }
 
-  // Self-Start
+  // Launch
   window.addEventListener('DOMContentLoaded', init);
 })();
