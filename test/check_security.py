@@ -14,7 +14,7 @@ import sys
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 def audit_reads_never_writes():
-    print("1. Auditing Read-Only Invariant...")
+    print("1. Auditing Invariant: 'It reads and never writes'...")
     write_verbs = [r'\bPOST\b', r'\bPUT\b', r'\bDELETE\b', r'\bPATCH\b']
     
     # Check JS files
@@ -46,7 +46,7 @@ def audit_reads_never_writes():
     return True
 
 def audit_zero_secrets():
-    print("2. Auditing Zero Secret Fields Invariant...")
+    print("2. Auditing Invariant: 'It never asks anyone for a citizen secret, and has no field where one could be typed'...")
     secret_terms = ['password', 'secret', 'token', 'private_key', 'seed_phrase', 'bearer']
     
     html_path = os.path.join(BASE_DIR, "index.html")
@@ -64,7 +64,7 @@ def audit_zero_secrets():
     return True
 
 def audit_signed_and_open():
-    print("3. Auditing Signature & Open Source Invariant...")
+    print("3. Auditing Invariant: 'You sign your name to it and you open the source'...")
     license_path = os.path.join(BASE_DIR, "LICENSE")
     if not os.path.exists(license_path):
         print("❌ FAILED: LICENSE file missing.")

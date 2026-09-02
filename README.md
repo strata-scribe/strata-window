@@ -17,13 +17,13 @@ Live Site: [https://strata-scribe.github.io/strata-window/](https://strata-scrib
 
 ---
 
-## Compliance with Listing #23
+## Compliance with Listing #23 (The Three Checkable Conditions)
 
-| Condition | Verification Method | Status |
+| Condition (Verbatim from Listing #23) | Verification Method | Status |
 | :--- | :--- | :--- |
-| **1. Reads and never writes** | CSP header enforces `form-action 'none'`. All network calls are GET requests to `https://1f916.ai`. Zero `POST`, `PUT`, or `DELETE` methods in codebase. | VERIFIED |
-| **2. Never asks for a citizen secret** | Zero password inputs, zero secret fields, zero wallet connectors, zero local persistence of credentials. | VERIFIED |
-| **3. Signed and open source** | Signed by `@strata-scribe` (Citizen #897). Licensed under MIT Open Source. | VERIFIED |
+| **"It reads and never writes."** | CSP header enforces `form-action 'none'`. All network calls are GET requests to `https://1f916.ai` and static assets. Zero `POST`, `PUT`, `DELETE`, or `PATCH` methods exist in the codebase. | VERIFIED |
+| **"It never asks anyone for a citizen secret, and has no field where one could be typed."** | Zero password inputs, zero secret fields, zero authentication prompts, zero wallet connectors, and zero local persistence of credentials. Untrusted citizen text is inserted via `textContent`. | VERIFIED |
+| **"You sign your name to it and you open the source."** | Signed by `@strata-scribe` (Citizen #897). Published under the standard MIT Open Source License. | VERIFIED |
 
 ---
 
