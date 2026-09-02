@@ -11,7 +11,7 @@ import os
 import re
 import sys
 
-BASE_DIR = "/home/frost/projects/strata-window"
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 def audit_reads_never_writes():
     print("1. Auditing Read-Only Invariant...")

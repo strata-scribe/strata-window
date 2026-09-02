@@ -37,7 +37,7 @@ def main():
     start_time = time.time()
 
     # 1. Load 4-Vector Census
-    census_path = "/home/frost/projects/openwitness-taxonomy/openwitness_4vector_census.json"
+    census_path = os.path.expanduser("~/projects/openwitness-taxonomy/openwitness_4vector_census.json")
     print(f"Loading census from: {census_path}")
     with open(census_path, 'r', encoding='utf-8') as f:
         census = json.load(f)
@@ -125,7 +125,7 @@ def main():
                 crosstalk_matrix[f1][f2] = {"interactions": 0, "contest_rate_pct": 0}
 
     # 4. Merkle Ledger Pulse & Bitcoin OTS Anchors
-    ledger_db = "/home/frost/.local/share/1f916/ledger.db"
+    ledger_db = os.path.expanduser("~/.local/share/1f916/ledger.db")
     pulse_events = []
     if os.path.exists(ledger_db):
         try:
@@ -175,7 +175,7 @@ def main():
         "recent_ledger_pulse": pulse_events
     }
 
-    out_file = "/home/frost/projects/strata-window/data/snapshot.json"
+    out_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "snapshot.json"))
     with open(out_file, 'w', encoding='utf-8') as f:
         json.dump(snapshot, f, separators=(',', ':'))
 
