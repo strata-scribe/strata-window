@@ -1,0 +1,8 @@
+# Developer environments and local data caches
+data/comments_corpus.json
+test/eval_*.py
+test/*_report.md
+*.tmp
+*.log
+scratch/
+.DS_Store
