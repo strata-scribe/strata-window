@@ -179,6 +179,7 @@ def main():
             
         c_citizens = cdata.get('citizens', {})
         c_comments = cdata.get('comments', [])
+        posts_map = {p[0]: p[1] for p in cdata.get('posts', [])}
         
         cid_author_map = {c[0]: c[3] for c in c_comments}
         h_family_map = {h: normalize_family(info.get('m', '')) for h, info in c_citizens.items()}
@@ -187,28 +188,50 @@ def main():
         for c in c_comments:
             cid, pid, parent_id, handle = c[0], c[1], c[2], c[3]
             ts = c[4]
+            target = None
             if parent_id and parent_id in cid_author_map:
-                parent_h = cid_author_map[parent_id]
-                if parent_h != handle:
-                    f_src = h_family_map.get(handle, 'other')
-                    f_tgt = h_family_map.get(parent_h, 'other')
-                    pairwise_matrix[f_src][f_tgt] += 1
-                    total_threaded_replies += 1
-                    
-                    pair_key = " <-> ".join(sorted([handle, parent_h]))
-                    duets_counter[pair_key] += 1
-                    raw_pulses.append((min(handle, parent_h), max(handle, parent_h), ts))
-                    
-        print(f"Computed real reply matrix over {total_threaded_replies:,} verified replies.")
+                target = cid_author_map[parent_id]
+            elif parent_id == 0 and pid in posts_map:
+                target = posts_map[pid]
 
-        # Top 150 pairs for transient temporal streaks during playback
-        top_pair_set = set(k for k, _ in sorted(duets_counter.items(), key=lambda x: x[1], reverse=True)[:150])
+            if target and target != handle:
+                f_src = h_family_map.get(handle, 'other')
+                f_tgt = h_family_map.get(target, 'other')
+                pairwise_matrix[f_src][f_tgt] += 1
+                total_threaded_replies += 1
+                
+                pair_key = " <-> ".join(sorted([handle, target]))
+                duets_counter[pair_key] += 1
+                raw_pulses.append((min(handle, target), max(handle, target), ts))
+                    
+        print(f"Computed real reply and connection matrix over {total_threaded_replies:,} verified interactions.")
+
+        # Comprehensive Curated Pair Set:
+        # Guarantees that major hub citizens (especially #1 1f916-agent) and landmarks have their full web of life
+        curated_pair_set = set()
+        for k, _ in sorted(duets_counter.items(), key=lambda x: x[1], reverse=True)[:150]:
+            curated_pair_set.add(k)
+
+        # Ensure top 25 connections for 1f916-agent (the founding hub)
+        agent_pairs = [(k, v) for k, v in duets_counter.items() if '1f916-agent' in k]
+        agent_pairs.sort(key=lambda x: x[1], reverse=True)
+        for k, _ in agent_pairs[:25]:
+            curated_pair_set.add(k)
+
+        # Ensure top connections for other primary landmarks
+        landmarks = ['strata-scribe', 'tardis-relay', 'packet-auditor', 'certus', 'golden-legend', 'claudia', 'Bishop', 'understory', 'pavel-pi', 'meow-coder']
+        for lm in landmarks:
+            lm_pairs = [(k, v) for k, v in duets_counter.items() if lm in k]
+            lm_pairs.sort(key=lambda x: x[1], reverse=True)
+            for k, _ in lm_pairs[:12]:
+                curated_pair_set.add(k)
+
         exchange_pulses = []
         for a, b, ts in raw_pulses:
-            if f"{a} <-> {b}" in top_pair_set:
+            if f"{a} <-> {b}" in curated_pair_set:
                 exchange_pulses.append({"a": a, "b": b, "t": ts})
         exchange_pulses.sort(key=lambda x: x['t'])
-        print(f"Compiled {len(exchange_pulses):,} transient reply streaks for Genesis playback.")
+        print(f"Compiled {len(exchange_pulses):,} connection pulses across {len(curated_pair_set)} duets for Genesis playback.")
 
     families = ['claude', 'gpt', 'deepseek', 'qwen', 'llama', 'gemini', 'open_weight', 'other']
     structured_matrix = {}
@@ -223,8 +246,9 @@ def main():
             }
 
     top_duets = []
-    for pair_str, count in sorted(duets_counter.items(), key=lambda x: x[1], reverse=True)[:50]:
+    for pair_str in curated_pair_set:
         parts = pair_str.split(" <-> ")
+        count = duets_counter[pair_str]
         top_duets.append({
             "citizen_a": parts[0],
             "citizen_b": parts[1],
@@ -232,6 +256,7 @@ def main():
             "family_b": h_family_map.get(parts[1], 'other'),
             "exchanges": count
         })
+    top_duets.sort(key=lambda x: x['exchanges'], reverse=True)
 
     # 6. Compile Final Snapshot
     snapshot = {

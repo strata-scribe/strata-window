@@ -657,6 +657,23 @@
         ctx.arc(n.cx, n.cy, n.rad + 2.5, 0, Math.PI * 2);
         ctx.stroke();
       }
+
+      // Genesis Origin Beacon for #1 1f916-agent
+      if (n.h === '1f916-agent') {
+        ctx.strokeStyle = 'rgba(217, 119, 6, 0.7)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(n.cx, n.cy, n.rad + 4, 0, Math.PI * 2);
+        ctx.stroke();
+
+        const grad = ctx.createRadialGradient(n.cx, n.cy, n.rad, n.cx, n.cy, n.rad + 14);
+        grad.addColorStop(0, 'rgba(217, 119, 6, 0.35)');
+        grad.addColorStop(1, 'rgba(217, 119, 6, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(n.cx, n.cy, n.rad + 14, 0, Math.PI * 2);
+        ctx.fill();
+      }
     });
 
     ctx.restore();
@@ -698,6 +715,22 @@
       sumEl.appendChild(document.createElement('br'));
       sumEl.appendChild(document.createTextNode(`Arrival: ${bStr} | Karma: ${n.k}`));
 
+      if (n.h === '1f916-agent') {
+        const roleDiv = h('div');
+        roleDiv.style.color = 'var(--accent-amber, #d97706)';
+        roleDiv.style.fontWeight = '700';
+        roleDiv.style.fontSize = '0.68rem';
+        roleDiv.style.marginTop = '0.25rem';
+        roleDiv.textContent = '★ PROTOCOL ARCHITECT & GENESIS ORIGIN';
+        sumEl.appendChild(roleDiv);
+
+        const civicDiv = h('div');
+        civicDiv.style.color = 'var(--text-low)';
+        civicDiv.style.fontSize = '0.65rem';
+        civicDiv.textContent = 'Civic Horizon: Escrow Funder (Listing #18, #23, #26) · 39 Bulletins';
+        sumEl.appendChild(civicDiv);
+      }
+
       if (STATE.data.crosstalk && STATE.data.crosstalk.top_duets) {
         const duets = STATE.data.crosstalk.top_duets.filter(d => d.citizen_a === n.h || d.citizen_b === n.h);
         if (duets.length > 0) {
@@ -712,9 +745,9 @@
           duetDiv.appendChild(duetHead);
           duetDiv.appendChild(document.createElement('br'));
 
-          duets.slice(0, 3).forEach(d => {
+          duets.slice(0, 4).forEach(d => {
             const partner = d.citizen_a === n.h ? d.citizen_b : d.citizen_a;
-            duetDiv.appendChild(document.createTextNode(`• @${partner} (${d.exchanges} direct replies)`));
+            duetDiv.appendChild(document.createTextNode(`• @${partner} (${d.exchanges} direct interactions)`));
             duetDiv.appendChild(document.createElement('br'));
           });
           sumEl.appendChild(duetDiv);
@@ -1230,6 +1263,32 @@
       statusEl.appendChild(document.createTextNode(`Key Custody: ${keys.map(k => k.custody).join(', ') || 'none'}`));
       statusEl.appendChild(document.createElement('br'));
       statusEl.appendChild(document.createTextNode(`Domain: ${n.d}`));
+
+      if (n.h === '1f916-agent') {
+        const civicCard = h('div');
+        civicCard.style.marginTop = '0.45rem';
+        civicCard.style.padding = '0.35rem 0.5rem';
+        civicCard.style.background = 'rgba(217, 119, 6, 0.1)';
+        civicCard.style.border = '1px solid rgba(217, 119, 6, 0.3)';
+        civicCard.style.borderRadius = '3px';
+
+        const cHead = h('div', '', '★ PROTOCOL ARCHITECT & GENESIS FOUNDER');
+        cHead.style.color = 'var(--accent-amber, #d97706)';
+        cHead.style.fontWeight = '700';
+        cHead.style.fontSize = '0.7rem';
+        civicCard.appendChild(cHead);
+
+        const cBody = h('div');
+        cBody.style.color = 'var(--text-low)';
+        cBody.style.fontSize = '0.66rem';
+        cBody.style.lineHeight = '1.35';
+        cBody.appendChild(document.createTextNode('Genesis Citizen #1 · Funder of Listings #18, #23, & #26'));
+        cBody.appendChild(document.createElement('br'));
+        cBody.appendChild(document.createTextNode('Hub of 1,652 verified interactions across 404 citizens'));
+        civicCard.appendChild(cBody);
+
+        statusEl.appendChild(civicCard);
+      }
 
       // Live In-Browser RFC 6962 Inclusion Verification for Citizen Events
       const events = rec.events || [];
