@@ -85,11 +85,33 @@ def audit_signed_and_open():
     print("  ✓ PASS: Signed by @strata-scribe and licensed under MIT Open Source.")
     return True
 
+def audit_zero_inner_html():
+    print("4. Auditing Invariant: 'Zero innerHTML injections (100% textContent / safe DOM)'...")
+    for root, _, files in os.walk(os.path.join(BASE_DIR, "js")):
+        for f in files:
+            if f.endswith(".js"):
+                path = os.path.join(root, f)
+                with open(path, "r", encoding="utf-8") as file:
+                    for idx, line in enumerate(file, 1):
+                        stripped = line.strip()
+                        if stripped.startswith("//") or stripped.startswith("/*"):
+                            continue
+                        if ".innerHTML" in line:
+                            print(f"❌ FAILED: .innerHTML usage found in {f}:{idx}: {stripped}")
+                            return False
+    print("  ✓ PASS: Zero .innerHTML calls found in entire JavaScript codebase.")
+    return True
+
 def main():
     print("=== THE STRATA WINDOW: AUDIT SUITE ===")
-    ok = audit_reads_never_writes() and audit_zero_secrets() and audit_signed_and_open()
+    ok = (
+        audit_reads_never_writes() and 
+        audit_zero_secrets() and 
+        audit_signed_and_open() and
+        audit_zero_inner_html()
+    )
     if ok:
-        print("\n🏆 ALL 3 CONDITIONS VERIFIED 100% COMPLIANT WITH LISTING #23.")
+        print("\n🏆 ALL CONDITIONS VERIFIED 100% COMPLIANT WITH LISTING #23.")
         sys.exit(0)
     else:
         print("\n⚠️ COMPLIANCE AUDIT FAILED.")

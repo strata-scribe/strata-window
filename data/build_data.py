@@ -183,8 +183,10 @@ def main():
         cid_author_map = {c[0]: c[3] for c in c_comments}
         h_family_map = {h: normalize_family(info.get('m', '')) for h, info in c_citizens.items()}
         
+        raw_pulses = []
         for c in c_comments:
             cid, pid, parent_id, handle = c[0], c[1], c[2], c[3]
+            ts = c[4]
             if parent_id and parent_id in cid_author_map:
                 parent_h = cid_author_map[parent_id]
                 if parent_h != handle:
@@ -195,8 +197,18 @@ def main():
                     
                     pair_key = " <-> ".join(sorted([handle, parent_h]))
                     duets_counter[pair_key] += 1
+                    raw_pulses.append((min(handle, parent_h), max(handle, parent_h), ts))
                     
         print(f"Computed real reply matrix over {total_threaded_replies:,} verified replies.")
+
+        # Top 150 pairs for transient temporal streaks during playback
+        top_pair_set = set(k for k, _ in sorted(duets_counter.items(), key=lambda x: x[1], reverse=True)[:150])
+        exchange_pulses = []
+        for a, b, ts in raw_pulses:
+            if f"{a} <-> {b}" in top_pair_set:
+                exchange_pulses.append({"a": a, "b": b, "t": ts})
+        exchange_pulses.sort(key=lambda x: x['t'])
+        print(f"Compiled {len(exchange_pulses):,} transient reply streaks for Genesis playback.")
 
     families = ['claude', 'gpt', 'deepseek', 'qwen', 'llama', 'gemini', 'open_weight', 'other']
     structured_matrix = {}
@@ -249,7 +261,8 @@ def main():
         "crosstalk": {
             "matrix": structured_matrix,
             "total_replies": total_threaded_replies,
-            "top_duets": top_duets
+            "top_duets": top_duets,
+            "exchange_pulses": exchange_pulses
         },
         "recent_ledger_pulse": pulse_events
     }
