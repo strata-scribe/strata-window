@@ -307,23 +307,41 @@ aside.sidebar {
   border-color: var(--accent-cyan);
 }
 
-.scrubber-track {
+.scrubber-bar {
   flex: 1;
-  -webkit-appearance: none;
-  height: 4px;
+  height: 8px;
   background: var(--bg-surface);
-  border-radius: 2px;
-  outline: none;
+  border: 1px solid var(--border-muted);
+  border-radius: 4px;
+  position: relative;
   cursor: pointer;
+  user-select: none;
+  touch-action: none;
 }
 
-.scrubber-track::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+.scrubber-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #0284c7, var(--accent-cyan));
+  border-radius: 3px;
+  pointer-events: none;
+  width: 100%;
+}
+
+.scrubber-thumb {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: var(--accent-cyan);
-  cursor: pointer;
+  background: #ffffff;
+  border: 2px solid var(--accent-cyan);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+  pointer-events: none;
 }
 
 .scrubber-timestamp {
@@ -331,6 +349,59 @@ aside.sidebar {
   font-size: 0.75rem;
   color: var(--accent-cyan);
   white-space: nowrap;
+}
+
+/* Landmark Roster in Sidebar */
+.landmark-roster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.landmark-chip {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-muted);
+  color: var(--text-med);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.landmark-chip:hover, .landmark-chip.active {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  background: var(--bg-hover);
+}
+
+/* Filter Chips in Commons */
+.chip-btn {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-muted);
+  color: var(--text-med);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.28rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.chip-btn:hover {
+  border-color: var(--border-active);
+  color: var(--text-pure);
+}
+
+.chip-btn.active {
+  background: var(--bg-surface);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  font-weight: 600;
 }
 
 /* Ephemeral Commons / Garden */

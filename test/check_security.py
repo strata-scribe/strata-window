@@ -47,20 +47,21 @@ def audit_reads_never_writes():
 
 def audit_zero_secrets():
     print("2. Auditing Invariant: 'It never asks anyone for a citizen secret, and has no field where one could be typed'...")
-    secret_terms = ['password', 'secret', 'token', 'private_key', 'seed_phrase', 'bearer']
-    
     html_path = os.path.join(BASE_DIR, "index.html")
     with open(html_path, "r", encoding="utf-8") as file:
         html = file.read()
-        for term in secret_terms:
-            if re.search(rf'type\s*=\s*[\'"]{term}[\'"]', html, re.IGNORECASE):
-                print(f"❌ FAILED: Secret input type found in index.html for {term}")
-                return False
-            if re.search(rf'name\s*=\s*[\'"]{term}[\'"]', html, re.IGNORECASE):
-                print(f"❌ FAILED: Secret input name found in index.html for {term}")
-                return False
+        
+    # Strict Literal Invariant: Zero input, textarea, select, or form tags in document
+    interactive_matches = re.findall(r'<(input|textarea|select|form)\b', html, re.IGNORECASE)
+    if interactive_matches:
+        print(f"❌ FAILED: Found interactive field tags in index.html: {interactive_matches}")
+        return False
 
-    print("  ✓ PASS: Zero secret, token, or password fields present across all interfaces.")
+    if "contenteditable" in html.lower():
+        print("❌ FAILED: contenteditable attribute found in index.html")
+        return False
+
+    print("  ✓ PASS: Zero <input>, <textarea>, <select>, or <form> elements in index.html (Zero places to type).")
     return True
 
 def audit_signed_and_open():
