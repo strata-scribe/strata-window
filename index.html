@@ -29,6 +29,11 @@
     </nav>
 
     <div class="header-meta">
+      <button id="btn-sync-delta" class="sync-badge" title="Live Delta Engine: Ingests real-time changes since snapshot directly from GET /api/changes">
+        <span class="sync-dot"></span>
+        <span id="header-sync-text">LIVE SYNCED</span>
+      </button>
+      <span style="color: var(--text-dim);">|</span>
       <div class="pulse-indicator">
         <div class="pulse-pip"></div>
         <span id="header-pulse-text">HEAD #6,001</span>

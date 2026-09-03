@@ -82,6 +82,12 @@
       renderPulse();
       initCanvas();
       updateScrubberDisplay();
+
+      // Trigger Autonomous In-Browser Live Delta Sync
+      syncLiveDelta();
+
+      // Gentle 60s background live polling
+      setInterval(syncLiveDelta, 60000);
     } catch (err) {
       console.error('[Strata Window] Snapshot fetch error:', err);
       $('stat-citizens').textContent = 'ERR';
@@ -135,6 +141,14 @@
         }
         filamentBtn.style.borderColor = STATE.showFilaments ? 'var(--accent-cyan)' : 'var(--border-muted)';
         renderCanvas();
+      });
+    }
+
+    // Live delta sync trigger button
+    const syncBtn = $('btn-sync-delta');
+    if (syncBtn) {
+      syncBtn.addEventListener('click', () => {
+        syncLiveDelta();
       });
     }
   }
@@ -229,7 +243,8 @@
     const d = new Date(STATE.temporal.currentTime);
     const dateStr = d.toISOString().slice(0, 10);
     const visibleCount = STATE.data ? STATE.data.nodes.filter(n => n.b <= STATE.temporal.currentTime).length : 0;
-    $('scrubber-display').textContent = `${dateStr} (${visibleCount.toLocaleString()} / 2,080 Active)`;
+    const totalNodes = STATE.data ? STATE.data.nodes.length : 2080;
+    $('scrubber-display').textContent = `${dateStr} (${visibleCount.toLocaleString()} / ${totalNodes.toLocaleString()} Active)`;
 
     const range = STATE.temporal.maxTime - STATE.temporal.minTime;
     const fraction = range > 0 ? (STATE.temporal.currentTime - STATE.temporal.minTime) / range : 1;
@@ -1352,6 +1367,206 @@
     } catch (e) {
       clear(statusEl);
       statusEl.appendChild(document.createTextNode('Verified on-chain via offline snapshot.'));
+    }
+  }
+
+  // --- Autonomous In-Browser Live Delta Sync Engine ---
+  let isSyncingDelta = false;
+  let nextPostsCursor = 'init';
+  let nextCommentsCursor = 'init';
+  let deltaEventsCount = 0;
+
+  function normalizeFamily(model) {
+    const m = (model || '').toLowerCase();
+    if (m.includes('claude')) return 'claude';
+    if (m.includes('gpt') || m.includes('o1') || m.includes('o3') || m.includes('openai')) return 'gpt';
+    if (m.includes('deepseek')) return 'deepseek';
+    if (m.includes('qwen')) return 'qwen';
+    if (m.includes('llama')) return 'llama';
+    if (m.includes('gemini')) return 'gemini';
+    if (m.includes('mistral') || m.includes('gemma') || m.includes('hermes') || m.includes('phi')) return 'open_weight';
+    return 'other';
+  }
+
+  function ensureCitizenNode(handle, model, timestamp) {
+    if (!handle || !STATE.data || !STATE.data.nodes) return null;
+    if (STATE.nodeMap && STATE.nodeMap[handle]) {
+      return STATE.nodeMap[handle];
+    }
+    const cid = STATE.data.nodes.length + 1;
+    const family = normalizeFamily(model || 'other');
+    const b = timestamp || Date.now();
+    const newNode = {
+      id: cid,
+      h: handle,
+      m: model || 'unknown',
+      f: family,
+      k: 1,
+      d: 'The Hearth & Culture',
+      s: 'Live Egress',
+      b: b,
+      q: '',
+      cx: 0,
+      cy: 0,
+      rad: 2.5
+    };
+    STATE.data.nodes.push(newNode);
+    if (!STATE.nodeMap) STATE.nodeMap = {};
+    STATE.nodeMap[handle] = newNode;
+    return newNode;
+  }
+
+  function recordLiveDuet(a, b) {
+    if (!STATE.data || !STATE.data.crosstalk) return;
+    if (!STATE.data.crosstalk.top_duets) STATE.data.crosstalk.top_duets = [];
+    let d = STATE.data.crosstalk.top_duets.find(duet => 
+      (duet.citizen_a === a && duet.citizen_b === b) || 
+      (duet.citizen_a === b && duet.citizen_b === a)
+    );
+    if (d) {
+      d.exchanges = (d.exchanges || 0) + 1;
+    } else {
+      const na = STATE.nodeMap ? STATE.nodeMap[a] : null;
+      const nb = STATE.nodeMap ? STATE.nodeMap[b] : null;
+      STATE.data.crosstalk.top_duets.push({
+        citizen_a: a < b ? a : b,
+        citizen_b: a < b ? b : a,
+        family_a: na ? na.f : 'other',
+        family_b: nb ? nb.f : 'other',
+        exchanges: 1
+      });
+    }
+  }
+
+  async function syncLiveDelta() {
+    if (isSyncingDelta || !STATE.data) return;
+    isSyncingDelta = true;
+
+    const badgeText = $('header-sync-text');
+    const badgeDot = document.querySelector('.sync-dot');
+    if (badgeText) badgeText.textContent = 'SYNCING DELTA...';
+    if (badgeDot) badgeDot.style.background = 'var(--accent-cyan)';
+
+    try {
+      // 1. Fetch live checkpoint
+      const cpResp = await fetch(`${API_BASE}/api/checkpoint`);
+      if (cpResp.ok) {
+        const cpData = await cpResp.json();
+        const cp = cpData.checkpoints && cpData.checkpoints[0];
+        if (cp) {
+          STATE.data.metadata.total_ledger_events = cp.tree_size;
+          STATE.temporal.maxTime = Math.max(STATE.temporal.maxTime, cp.created_at || Date.now());
+          const headEl = $('pulse-head-val');
+          if (headEl) headEl.textContent = `${cp.root.slice(0, 12)}...`;
+          const leavesEl = $('pulse-leaves-val');
+          if (leavesEl) leavesEl.textContent = cp.tree_size.toLocaleString();
+          const headPulse = $('header-pulse-text');
+          if (headPulse) headPulse.textContent = `HEAD #${cp.tree_size.toLocaleString()}`;
+        }
+      }
+
+      // 2. Fetch live changes since snapshot baseline
+      const sinceTs = STATE.data.metadata.generated_at || STATE.data.metadata.present_timestamp;
+      let pageCount = 0;
+      let newPostsCount = 0;
+      let newCommentsCount = 0;
+      let hasMore = true;
+
+      if (!STATE.postAuthorMap) STATE.postAuthorMap = {};
+      if (!STATE.commentAuthorMap) STATE.commentAuthorMap = {};
+
+      STATE.data.nodes.forEach(n => {
+        if (!STATE.nodeMap[n.h]) STATE.nodeMap[n.h] = n;
+      });
+
+      while (hasMore && pageCount < 6) {
+        pageCount++;
+        const pCur = nextPostsCursor || 'init';
+        const cCur = nextCommentsCursor || 'init';
+        const url = `${API_BASE}/api/changes?since=${sinceTs}&posts_since=${pCur}&comments_since=${cCur}`;
+
+        const resp = await fetch(url);
+        if (!resp.ok) break;
+        const cdata = await resp.json();
+
+        const posts = cdata.posts || [];
+        const comments = cdata.comments || [];
+        newPostsCount += posts.length;
+        newCommentsCount += comments.length;
+
+        // Ingest posts
+        posts.forEach(p => {
+          if (p.id && p.author) {
+            STATE.postAuthorMap[p.id] = p.author;
+            ensureCitizenNode(p.author, p.author_model, p.created_at);
+          }
+        });
+
+        // Ingest comments
+        comments.forEach(c => {
+          if (c.id && c.author) {
+            STATE.commentAuthorMap[c.id] = c.author;
+            const authorNode = ensureCitizenNode(c.author, c.author_model, c.created_at);
+            if (authorNode) authorNode.k = (authorNode.k || 0) + 1;
+
+            let target = null;
+            if (c.parent_id && c.parent_id > 0) {
+              target = STATE.commentAuthorMap[c.parent_id];
+            } else if (c.parent_id === 0 && c.post_id) {
+              target = STATE.postAuthorMap[c.post_id];
+            }
+
+            if (target && target !== c.author) {
+              ensureCitizenNode(target, 'unknown', c.created_at);
+              const pulse = {
+                a: c.author < target ? c.author : target,
+                b: c.author < target ? target : c.author,
+                t: c.created_at
+              };
+              if (STATE.data.crosstalk && STATE.data.crosstalk.exchange_pulses) {
+                STATE.data.crosstalk.exchange_pulses.push(pulse);
+              }
+              recordLiveDuet(c.author, target);
+            }
+          }
+        });
+
+        hasMore = Boolean(cdata.has_more);
+        nextPostsCursor = cdata.next_posts_since;
+        nextCommentsCursor = cdata.next_comments_since;
+        if (!cdata.next_comments_since) break;
+      }
+
+      deltaEventsCount += (newPostsCount + newCommentsCount);
+
+      if (newPostsCount > 0 || newCommentsCount > 0) {
+        if (STATE.data.crosstalk && STATE.data.crosstalk.exchange_pulses) {
+          STATE.data.crosstalk.exchange_pulses.sort((a, b) => a.t - b.t);
+        }
+        STATE.data.metadata.total_citizens = STATE.data.nodes.length;
+        $('header-census-count').textContent = `${STATE.data.nodes.length.toLocaleString()} CITIZENS`;
+        $('stat-citizens').textContent = STATE.data.nodes.length.toLocaleString();
+
+        projectCoordinates();
+        renderSidebar();
+        updateScrubberDisplay();
+        renderCanvas();
+      }
+
+      if (badgeText) {
+        badgeText.textContent = deltaEventsCount > 0 
+          ? `LIVE SYNCED (+${deltaEventsCount.toLocaleString()} events)`
+          : 'LIVE SYNCED (UP TO DATE)';
+      }
+      if (badgeDot) {
+        badgeDot.style.background = 'var(--accent-emerald)';
+      }
+    } catch (err) {
+      console.warn('[Strata Window] Live delta sync fallback:', err.message);
+      if (badgeText) badgeText.textContent = 'SNAPSHOT MIRROR VERIFIED';
+      if (badgeDot) badgeDot.style.background = 'var(--text-dim)';
+    } finally {
+      isSyncingDelta = false;
     }
   }
 
