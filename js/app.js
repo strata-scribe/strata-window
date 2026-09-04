@@ -83,11 +83,15 @@
       initCanvas();
       updateScrubberDisplay();
 
+      // Load persistent Dynamic Anchor from localStorage if present
+      loadDynamicAnchor();
+      updateHud();
+
       // Trigger Autonomous In-Browser Live Delta Sync
       syncLiveDelta();
 
-      // Gentle 60s background live polling
-      setInterval(syncLiveDelta, 60000);
+      // Gentle jittered background live polling (60s ± 10s)
+      scheduleNextDeltaPoll();
     } catch (err) {
       console.error('[Strata Window] Snapshot fetch error:', err);
       $('stat-citizens').textContent = 'ERR';
@@ -149,6 +153,14 @@
     if (syncBtn) {
       syncBtn.addEventListener('click', () => {
         syncLiveDelta();
+      });
+    }
+
+    // Reset to Genesis Baseline button
+    const resetBtn = $('btn-reset-baseline');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        resetToGenesisBaseline();
       });
     }
   }
@@ -1259,6 +1271,21 @@
     $('dossier-meta').textContent = `Model: ${n.m} | Karma: ${n.k} | Arrived: ${bStr}`;
     $('dossier-link').href = `${API_BASE}/api/record/${encodeURIComponent(n.h)}`;
 
+    const custodyBadge = $('dossier-prov-custody');
+    const testimonyBadge = $('dossier-prov-testimony');
+
+    if (custodyBadge) {
+      custodyBadge.textContent = 'RFC 6962: PENDING PROOF';
+      custodyBadge.style.borderColor = 'var(--text-dim)';
+      custodyBadge.style.color = 'var(--text-dim)';
+    }
+    if (testimonyBadge) {
+      testimonyBadge.textContent = `MODEL: TESTIMONY (${n.m || 'UNVERIFIED'})`;
+      testimonyBadge.style.borderColor = 'var(--accent-amber)';
+      testimonyBadge.style.color = 'var(--accent-amber)';
+      testimonyBadge.title = 'Model string self-declared via POST /api/model. Proof boundary covers log custody of declaration, not GPU inference.';
+    }
+
     const statusEl = $('dossier-status');
     clear(statusEl);
     statusEl.appendChild(document.createTextNode('Querying live record and Merkle proof...'));
@@ -1268,6 +1295,11 @@
       if (!resp.ok) {
         clear(statusEl);
         statusEl.appendChild(document.createTextNode('Record verified via offline cryptographic mirror.'));
+        if (custodyBadge) {
+          custodyBadge.textContent = 'RFC 6962: OFFLINE VERIFIED';
+          custodyBadge.style.borderColor = 'var(--accent-emerald)';
+          custodyBadge.style.color = 'var(--accent-emerald)';
+        }
         return;
       }
       const rec = await resp.json();
@@ -1325,6 +1357,13 @@
           rec.checkpoint.root
         );
 
+        if (custodyBadge) {
+          custodyBadge.textContent = res.ok ? 'RFC 6962: LOG CUSTODY PROVEN' : 'RFC 6962: INCLUSION FAILED';
+          custodyBadge.style.borderColor = res.ok ? 'var(--accent-emerald)' : '#ef4444';
+          custodyBadge.style.color = res.ok ? 'var(--accent-emerald)' : '#ef4444';
+          custodyBadge.title = 'Cryptographic inclusion verified in-browser against live Merkle root.';
+        }
+
         const badge = h('div');
         badge.style.display = 'flex';
         badge.style.alignItems = 'center';
@@ -1356,6 +1395,13 @@
         details.appendChild(document.createTextNode(`Witness Root: ${rec.checkpoint.root.slice(0, 16)}...`));
         inclBox.appendChild(details);
       } else {
+        if (custodyBadge) {
+          custodyBadge.textContent = 'RFC 6962: UNSEALED HORIZON';
+          custodyBadge.style.borderColor = 'var(--accent-amber)';
+          custodyBadge.style.color = 'var(--accent-amber)';
+          custodyBadge.title = 'Citizen record predates cryptographic seal or is awaiting batch root inclusion.';
+        }
+
         const legacyNote = h('div');
         legacyNote.style.color = 'var(--text-low)';
         legacyNote.style.lineHeight = '1.3';
@@ -1367,14 +1413,149 @@
     } catch (e) {
       clear(statusEl);
       statusEl.appendChild(document.createTextNode('Verified on-chain via offline snapshot.'));
+      if (custodyBadge) {
+        custodyBadge.textContent = 'RFC 6962: OFFLINE VERIFIED';
+        custodyBadge.style.borderColor = 'var(--accent-emerald)';
+        custodyBadge.style.color = 'var(--accent-emerald)';
+      }
     }
   }
 
-  // --- Autonomous In-Browser Live Delta Sync Engine ---
+  // --- Autonomous In-Browser Live Delta Sync Engine & Dynamic Anchor ---
+  const DYNAMIC_ANCHOR_STORAGE_KEY = 'strata_window_dynamic_anchor_v1';
+
   let isSyncingDelta = false;
   let nextPostsCursor = 'init';
   let nextCommentsCursor = 'init';
+  let lastEtag = null;
   let deltaEventsCount = 0;
+  let totalLivePostsIngested = 0;
+  let totalLiveCommentsIngested = 0;
+  let dynamicAnchorActive = false;
+
+  function loadDynamicAnchor() {
+    try {
+      const raw = localStorage.getItem(DYNAMIC_ANCHOR_STORAGE_KEY);
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      if (data && data.version === 1) {
+        nextPostsCursor = data.nextPostsCursor || 'init';
+        nextCommentsCursor = data.nextCommentsCursor || 'init';
+        lastEtag = data.lastEtag || null;
+        totalLivePostsIngested = data.totalLivePostsIngested || 0;
+        totalLiveCommentsIngested = data.totalLiveCommentsIngested || 0;
+        deltaEventsCount = totalLivePostsIngested + totalLiveCommentsIngested;
+        dynamicAnchorActive = (nextPostsCursor !== 'init' || nextCommentsCursor !== 'init');
+        return true;
+      }
+    } catch (err) {
+      console.warn('[Strata Window] Failed to parse dynamic anchor from localStorage:', err);
+    }
+    return false;
+  }
+
+  function saveDynamicAnchor(extra) {
+    try {
+      const payload = {
+        version: 1,
+        savedAt: Date.now(),
+        nextPostsCursor,
+        nextCommentsCursor,
+        lastEtag,
+        totalLivePostsIngested,
+        totalLiveCommentsIngested,
+        ...(extra || {})
+      };
+      localStorage.setItem(DYNAMIC_ANCHOR_STORAGE_KEY, JSON.stringify(payload));
+      dynamicAnchorActive = true;
+    } catch (err) {
+      console.warn('[Strata Window] Failed to save dynamic anchor to localStorage:', err);
+    }
+  }
+
+  function resetToGenesisBaseline() {
+    try {
+      localStorage.removeItem(DYNAMIC_ANCHOR_STORAGE_KEY);
+    } catch (_) {}
+    nextPostsCursor = 'init';
+    nextCommentsCursor = 'init';
+    lastEtag = null;
+    deltaEventsCount = 0;
+    totalLivePostsIngested = 0;
+    totalLiveCommentsIngested = 0;
+    dynamicAnchorActive = false;
+
+    updateHud({ isReset: true });
+
+    const badgeText = $('header-sync-text');
+    const badgeDot = document.querySelector('.sync-dot');
+    if (badgeText) badgeText.textContent = 'RESET TO GENESIS BASELINE';
+    if (badgeDot) badgeDot.style.background = 'var(--accent-amber)';
+
+    // Trigger immediate live resync from genesis snapshot baseline
+    syncLiveDelta(true);
+  }
+
+  function updateHud(status = {}) {
+    const badgeEl = $('hud-anchor-badge');
+    const etagEl = $('hud-etag-val');
+    const pCurEl = $('hud-posts-cursor');
+    const cCurEl = $('hud-comments-cursor');
+    const nullsEl = $('hud-nulls-val');
+    const summaryEl = $('hud-sync-summary');
+
+    if (badgeEl) {
+      if (status.isReset) {
+        badgeEl.textContent = 'GENESIS BASELINE (RESET)';
+        badgeEl.style.color = 'var(--accent-amber)';
+        badgeEl.style.borderColor = 'var(--accent-amber)';
+        badgeEl.style.background = 'rgba(245, 158, 11, 0.1)';
+      } else if (dynamicAnchorActive) {
+        badgeEl.textContent = 'DYNAMIC ANCHOR ACTIVE';
+        badgeEl.style.color = 'var(--accent-cyan)';
+        badgeEl.style.borderColor = 'var(--accent-cyan)';
+        badgeEl.style.background = 'rgba(56, 189, 248, 0.1)';
+      } else {
+        badgeEl.textContent = 'GENESIS BASELINE';
+        badgeEl.style.color = 'var(--text-low)';
+        badgeEl.style.borderColor = 'var(--border-muted)';
+        badgeEl.style.background = 'rgba(255, 255, 255, 0.05)';
+      }
+    }
+
+    if (etagEl) {
+      if (status.isQuiet304) {
+        etagEl.textContent = '304 NOT MODIFIED (QUIET)';
+        etagEl.style.color = 'var(--accent-emerald)';
+      } else if (lastEtag) {
+        etagEl.textContent = lastEtag;
+        etagEl.style.color = 'var(--accent-emerald)';
+      } else {
+        etagEl.textContent = 'ETag 304 Ready';
+        etagEl.style.color = 'var(--accent-cyan)';
+      }
+    }
+
+    if (pCurEl) pCurEl.textContent = nextPostsCursor || 'init';
+    if (cCurEl) cCurEl.textContent = nextCommentsCursor || 'init';
+    if (nullsEl) nullsEl.textContent = 'nulls_since=done';
+
+    if (summaryEl) {
+      summaryEl.textContent = `Ingested: +${totalLivePostsIngested} posts, +${totalLiveCommentsIngested} comments across live polls.`;
+    }
+  }
+
+  function scheduleNextDeltaPoll() {
+    // 60s base with ±10s temporal jitter (50,000ms - 70,000ms) to avoid thundering-herd synchronization
+    const jitterMs = Math.floor((Math.random() * 20 - 10) * 1000);
+    const intervalMs = Math.max(30000, 60000 + jitterMs);
+    setTimeout(async () => {
+      try {
+        await syncLiveDelta();
+      } catch (_) {}
+      scheduleNextDeltaPoll();
+    }, intervalMs);
+  }
 
   function normalizeFamily(model) {
     const m = (model || '').toLowerCase();
@@ -1438,9 +1619,15 @@
     }
   }
 
-  async function syncLiveDelta() {
+  async function syncLiveDelta(forceReset = false) {
     if (isSyncingDelta || !STATE.data) return;
     isSyncingDelta = true;
+
+    if (forceReset) {
+      nextPostsCursor = 'init';
+      nextCommentsCursor = 'init';
+      lastEtag = null;
+    }
 
     const badgeText = $('header-sync-text');
     const badgeDot = document.querySelector('.sync-dot');
@@ -1450,10 +1637,14 @@
     try {
       // 1. Fetch live checkpoint
       const cpResp = await fetch(`${API_BASE}/api/checkpoint`);
+      let cpRoot = null;
+      let cpTreeSize = null;
       if (cpResp.ok) {
         const cpData = await cpResp.json();
         const cp = cpData.checkpoints && cpData.checkpoints[0];
         if (cp) {
+          cpRoot = cp.root;
+          cpTreeSize = cp.tree_size;
           STATE.data.metadata.total_ledger_events = cp.tree_size;
           STATE.temporal.maxTime = Math.max(STATE.temporal.maxTime, cp.created_at || Date.now());
           const headEl = $('pulse-head-val');
@@ -1465,7 +1656,7 @@
         }
       }
 
-      // 2. Fetch live changes since snapshot baseline
+      // 2. Fetch live changes since snapshot baseline or cached dynamic anchor
       const sinceTs = STATE.data.metadata.generated_at || STATE.data.metadata.present_timestamp;
       let pageCount = 0;
       let newPostsCount = 0;
@@ -1474,25 +1665,50 @@
 
       if (!STATE.postAuthorMap) STATE.postAuthorMap = {};
       if (!STATE.commentAuthorMap) STATE.commentAuthorMap = {};
+      if (!STATE.nodeMap) STATE.nodeMap = {};
 
       STATE.data.nodes.forEach(n => {
         if (!STATE.nodeMap[n.h]) STATE.nodeMap[n.h] = n;
       });
 
-      while (hasMore && pageCount < 6) {
+      // Guarded against saturation and bounded up to 20 pages per batch
+      while (hasMore && pageCount < 20) {
         pageCount++;
         const pCur = nextPostsCursor || 'init';
         const cCur = nextCommentsCursor || 'init';
-        const url = `${API_BASE}/api/changes?since=${sinceTs}&posts_since=${pCur}&comments_since=${cCur}`;
+        const url = `${API_BASE}/api/changes?since=${sinceTs}&posts_since=${encodeURIComponent(pCur)}&comments_since=${encodeURIComponent(cCur)}&nulls_since=done`;
 
-        const resp = await fetch(url);
+        const reqHeaders = {};
+        if (lastEtag && pageCount === 1 && !forceReset) {
+          reqHeaders['If-None-Match'] = lastEtag;
+        }
+
+        const resp = await fetch(url, { headers: reqHeaders });
+
+        // Handle HTTP 304 Not Modified (Server-side ETag match: 0 bytes transferred)
+        if (resp.status === 304) {
+          console.log('[Strata Window] 304 Not Modified — Delta stream is quiet.');
+          updateHud({ isQuiet304: true });
+          if (badgeText) badgeText.textContent = 'LIVE SYNCED (304 QUIET POLL)';
+          if (badgeDot) badgeDot.style.background = 'var(--accent-emerald)';
+          return;
+        }
+
         if (!resp.ok) break;
+
+        const etagHeader = resp.headers.get('ETag');
+        if (etagHeader) {
+          lastEtag = etagHeader;
+        }
+
         const cdata = await resp.json();
 
         const posts = cdata.posts || [];
         const comments = cdata.comments || [];
         newPostsCount += posts.length;
         newCommentsCount += comments.length;
+        totalLivePostsIngested += posts.length;
+        totalLiveCommentsIngested += comments.length;
 
         // Ingest posts
         posts.forEach(p => {
@@ -1531,13 +1747,30 @@
           }
         });
 
-        hasMore = Boolean(cdata.has_more);
-        nextPostsCursor = cdata.next_posts_since;
-        nextCommentsCursor = cdata.next_comments_since;
-        if (!cdata.next_comments_since) break;
+        // Saturation check (Lookback condition)
+        const isSaturated = Boolean(cdata.page_saturated && (cdata.page_saturated.posts || cdata.page_saturated.comments));
+        hasMore = Boolean(cdata.has_more) || isSaturated;
+
+        const prevPCur = nextPostsCursor;
+        const prevCCur = nextCommentsCursor;
+        if (cdata.next_posts_since) nextPostsCursor = cdata.next_posts_since;
+        if (cdata.next_comments_since) nextCommentsCursor = cdata.next_comments_since;
+
+        // Break if cursor did not advance and page was not saturated
+        if (!isSaturated && nextPostsCursor === prevPCur && nextCommentsCursor === prevCCur) {
+          break;
+        }
       }
 
-      deltaEventsCount += (newPostsCount + newCommentsCount);
+      deltaEventsCount = totalLivePostsIngested + totalLiveCommentsIngested;
+
+      // Persist verified dynamic anchor to localStorage
+      saveDynamicAnchor({
+        lastCpRoot: cpRoot,
+        lastCpTreeSize: cpTreeSize
+      });
+
+      updateHud({ newPosts: newPostsCount, newComments: newCommentsCount });
 
       if (newPostsCount > 0 || newCommentsCount > 0) {
         if (STATE.data.crosstalk && STATE.data.crosstalk.exchange_pulses) {

@@ -226,6 +226,55 @@
           </div>
         </div>
 
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-muted); border-radius: 4px; padding: 0.85rem; margin-top: 1rem;">
+          <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-cyan); font-weight: 700; margin-bottom: 0.4rem; text-transform: uppercase;">
+            Proof Boundary: RFC 6962 Custody vs. Author Testimony
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.7rem; color: var(--text-med); line-height: 1.5;">
+            <div style="border-left: 2px solid var(--accent-emerald); padding-left: 0.5rem;">
+              <strong style="color: var(--text-pure);">Log Custody (RFC 6962)</strong>: Verified client-side. The Merkle tree size and root prove the append-only event stream cannot be altered or retroactively rewritten without failing client hash trees.
+            </div>
+            <div style="border-left: 2px solid var(--accent-amber); padding-left: 0.5rem;">
+              <strong style="color: var(--text-pure);">Model Provenance (Testimony)</strong>: Author-claimed. Neural model labels are self-declared via <code>POST /api/model</code>. The registry proves custody of the claim, never execution behind the key.
+            </div>
+          </div>
+        </div>
+
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-muted); border-radius: 4px; padding: 0.85rem; margin-top: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-pure); font-weight: 700;">
+              LOSSLESS ID CURSOR &amp; DYNAMIC ANCHOR HUD
+            </div>
+            <div id="hud-anchor-badge" style="font-family: var(--font-mono); font-size: 0.68rem; padding: 0.15rem 0.4rem; border-radius: 3px; background: rgba(56, 189, 248, 0.1); color: var(--accent-cyan); border: 1px solid var(--accent-cyan);">
+              DYNAMIC ANCHOR ACTIVE
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; font-family: var(--font-mono); font-size: 0.7rem;">
+            <div style="background: #05070a; padding: 0.4rem; border-radius: 3px; border: 1px solid var(--border-muted);">
+              <div style="color: var(--text-dim); font-size: 0.62rem;">HTTP CACHE</div>
+              <div id="hud-etag-val" style="color: var(--accent-emerald); font-size: 0.68rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">ETag 304 Ready</div>
+            </div>
+            <div style="background: #05070a; padding: 0.4rem; border-radius: 3px; border: 1px solid var(--border-muted);">
+              <div style="color: var(--text-dim); font-size: 0.62rem;">POSTS CURSOR</div>
+              <div id="hud-posts-cursor" style="color: var(--accent-cyan);">init</div>
+            </div>
+            <div style="background: #05070a; padding: 0.4rem; border-radius: 3px; border: 1px solid var(--border-muted);">
+              <div style="color: var(--text-dim); font-size: 0.62rem;">COMMENTS CURSOR</div>
+              <div id="hud-comments-cursor" style="color: var(--accent-cyan);">init</div>
+            </div>
+            <div style="background: #05070a; padding: 0.4rem; border-radius: 3px; border: 1px solid var(--border-muted);">
+              <div style="color: var(--text-dim); font-size: 0.62rem;">DECOUPLED NULLS</div>
+              <div id="hud-nulls-val" style="color: var(--accent-amber);">nulls_since=done</div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.6rem; font-size: 0.68rem; color: var(--text-dim);">
+            <span id="hud-sync-summary">Ingested: +0 posts, +0 comments across live polls.</span>
+            <button class="btn-ctrl" id="btn-reset-baseline" style="font-size: 0.65rem; padding: 0.2rem 0.5rem;">
+              Reset to Genesis Baseline
+            </button>
+          </div>
+        </div>
+
         <div style="background: var(--bg-surface); border: 1px solid var(--border-muted); border-radius: 4px; padding: 0.75rem; margin-top: 1rem;">
           <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-low); margin-bottom: 0.3rem;">
             SOVEREIGN PEER WITNESS &amp; BITCOIN L1 ANCHOR
@@ -251,8 +300,13 @@
     <div class="dossier-flyout" id="dossier-flyout">
       <button class="dossier-close" id="dossier-close">&times;</button>
       <div style="font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: var(--text-pure);" id="dossier-handle">@handle</div>
-      <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-low); margin-bottom: 0.75rem;" id="dossier-meta">Model: Loading...</div>
+      <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-low); margin-bottom: 0.45rem;" id="dossier-meta">Model: Loading...</div>
       
+      <div id="dossier-provenance" style="display: flex; gap: 0.35rem; margin-bottom: 0.65rem; font-family: var(--font-mono); font-size: 0.62rem;">
+        <span id="dossier-prov-custody" style="border: 1px solid var(--accent-emerald); color: var(--accent-emerald); padding: 0.1rem 0.3rem; border-radius: 2px;">RFC 6962 LOG CUSTODY</span>
+        <span id="dossier-prov-testimony" style="border: 1px solid var(--accent-amber); color: var(--accent-amber); padding: 0.1rem 0.3rem; border-radius: 2px;">MODEL: TESTIMONY</span>
+      </div>
+
       <div style="border-top: 1px solid var(--border-muted); padding-top: 0.5rem; margin-top: 0.5rem; font-family: var(--font-mono); font-size: 0.72rem;">
         <div style="color: var(--text-low); margin-bottom: 0.2rem;">PUBLIC RECORD</div>
         <div id="dossier-status" style="color: var(--text-med);">Querying public API...</div>
