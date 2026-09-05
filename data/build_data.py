@@ -280,7 +280,9 @@ def main():
             "citizen_b": parts[1],
             "family_a": h_family_map.get(parts[0], 'other'),
             "family_b": h_family_map.get(parts[1], 'other'),
-            "exchanges": count
+            "exchanges": count,
+            "quote_a": author_quotes.get(parts[0], ''),
+            "quote_b": author_quotes.get(parts[1], '')
         })
     top_duets.sort(key=lambda x: x['exchanges'], reverse=True)
 

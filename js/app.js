@@ -35,7 +35,8 @@
       scale: 1.0,
       isDragging: false,
       startX: 0,
-      startY: 0
+      startY: 0,
+      projection: 'flow' // 'flow' (Sequential Flow: Celestial River) vs 'calendar' (Calendar Days: linear timeline)
     },
     temporal: {
       isPlaying: false,
@@ -72,9 +73,13 @@
     setupTemporal();
 
     try {
-      const resp = await fetch('data/snapshot.json');
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      STATE.data = await resp.json();
+      if (window.EMBEDDED_SNAPSHOT) {
+        STATE.data = window.EMBEDDED_SNAPSHOT;
+      } else {
+        const resp = await fetch('data/snapshot.json');
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        STATE.data = await resp.json();
+      }
 
       STATE.temporal.minTime = STATE.data.metadata.genesis_timestamp;
       STATE.temporal.maxTime = STATE.data.metadata.present_timestamp;
@@ -164,6 +169,38 @@
     if (syncBtn) {
       syncBtn.addEventListener('click', () => {
         syncLiveDelta();
+      });
+    }
+
+    // Projection mode toggle (Celestial River vs Calendar Days)
+    $$('#projection-overlay .proj-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const proj = btn.dataset.proj;
+        if (!proj || proj === STATE.view.projection) return;
+        $$('#projection-overlay .proj-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        STATE.view.projection = proj;
+        projectCoordinates();
+        renderCanvas();
+      });
+    });
+
+    // Story flyout close button
+    const storyCloseBtn = $('story-close');
+    if (storyCloseBtn) {
+      storyCloseBtn.addEventListener('click', () => {
+        const storyFlyout = $('story-flyout');
+        if (storyFlyout) storyFlyout.classList.remove('active');
+      });
+    }
+
+    // Crosstalk inspector close button
+    const closeInspectorBtn = $('btn-close-inspector');
+    if (closeInspectorBtn) {
+      closeInspectorBtn.addEventListener('click', () => {
+        const insp = $('crosstalk-cell-inspector');
+        if (insp) insp.style.display = 'none';
+        $$('#matrix-table td').forEach(c => c.classList.remove('selected'));
       });
     }
 
@@ -489,11 +526,13 @@
     if (!canvas) return;
     const parent = canvas.parentElement;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = parent.clientWidth * dpr;
-    canvas.height = parent.clientHeight * dpr;
-    canvas.style.width = `${parent.clientWidth}px`;
-    canvas.style.height = `${parent.clientHeight}px`;
     STATE.dpr = dpr;
+    STATE.cssWidth = parent.clientWidth || 1000;
+    STATE.cssHeight = parent.clientHeight || 600;
+    canvas.width = Math.round(STATE.cssWidth * dpr);
+    canvas.height = Math.round(STATE.cssHeight * dpr);
+    canvas.style.width = `${STATE.cssWidth}px`;
+    canvas.style.height = `${STATE.cssHeight}px`;
   }
 
   function projectCoordinates() {
@@ -508,26 +547,39 @@
     const padRight = 60;
     const padTop = 50;
     const padBottom = 50;
-    const availW = Math.max(800, canvas.width - padLeft - padRight);
-    const availH = Math.max(400, canvas.height - padTop - padBottom);
+    const w = STATE.cssWidth || 1000;
+    const h = STATE.cssHeight || 600;
+    const availW = Math.max(800, w - padLeft - padRight);
+    const availH = Math.max(400, h - padTop - padBottom);
+    const totalNodes = nodes.length;
+    const isFlow = STATE.view.projection === 'flow';
 
-    nodes.forEach(n => {
+    nodes.forEach((n, idx) => {
       let hash = 0;
       for (let i = 0; i < n.h.length; i++) hash = ((hash << 5) - hash) + n.h.charCodeAt(i);
-      const jX = ((Math.abs(hash) % 20) - 10);
-      const jY = ((Math.abs(hash >> 3) % 16) - 8);
+      const jX = ((Math.abs(hash) % 16) - 8);
 
-      // X: Chronological Arrival
-      const tRatio = Math.min(1.0, Math.max(0.0, (n.b - minT) / spanT));
-      n.cx = padLeft + tRatio * availW + jX;
+      // X: Sequential Flow (Celestial River) vs Linear Calendar Days
+      if (isFlow) {
+        // Sequential arrival order: fluid, even river eliminating calendar desert gaps
+        const flowRatio = idx / Math.max(1, totalNodes - 1);
+        n.cx = padLeft + flowRatio * availW + (jX * 0.35);
+      } else {
+        // Calendar Days: true real-world date spacing
+        const tRatio = Math.min(1.0, Math.max(0.0, (n.b - minT) / spanT));
+        n.cx = padLeft + tRatio * availW + jX;
+      }
 
       // Y: Discourse Velocity & Karma (Inverted log scale)
       const kLog = Math.log2(n.k + 1);
       const kRatio = Math.min(1.0, Math.max(0.0, kLog / maxLog));
-      n.cy = (canvas.height - padBottom) - (kRatio * availH) + jY;
 
-      // Radius
-      n.rad = Math.min(10, Math.max(2.5, Math.log2(n.k + 2) * 1.6));
+      // Soft vertical stardust diffusion on the bottom horizon for single-turn whispers
+      const mistY = n.k === 0 ? ((Math.abs(hash >> 5) % 28) - 14) : ((Math.abs(hash >> 3) % 16) - 8);
+      n.cy = (h - padBottom) - (kRatio * availH) + mistY;
+
+      // Refined delicate stellar particle radii (1.1px to 3.8px)
+      n.rad = Math.min(3.8, Math.max(1.1, Math.log2(n.k + 2) * 0.58));
     });
 
     // Map handle to node for quick duet rendering
@@ -549,13 +601,24 @@
     const maxT = STATE.temporal.maxTime;
     const spanT = maxT - minT;
     const curT = STATE.temporal.currentTime;
+    const isFlow = STATE.view.projection === 'flow';
 
     const padLeft = 80;
     const padRight = 60;
     const padTop = 50;
     const padBottom = 50;
-    const availW = Math.max(800, canvas.width - padLeft - padRight);
-    const curX = padLeft + ((curT - minT) / spanT) * availW;
+    const w = STATE.cssWidth || 1000;
+    const h = STATE.cssHeight || 600;
+    const availW = Math.max(800, w - padLeft - padRight);
+
+    let curX;
+    if (isFlow) {
+      const visibleCount = STATE.data.nodes.filter(n => n.b <= curT).length;
+      const flowRatio = visibleCount / Math.max(1, STATE.data.nodes.length);
+      curX = padLeft + flowRatio * availW;
+    } else {
+      curX = padLeft + ((curT - minT) / spanT) * availW;
+    }
 
     // Subtle Structural Grid
     ctx.strokeStyle = 'rgba(30, 41, 59, 0.4)';
@@ -563,23 +626,29 @@
 
     // Horizon line
     ctx.beginPath();
-    ctx.moveTo(padLeft - 20, canvas.height - padBottom);
-    ctx.lineTo(canvas.width - padRight + 20, canvas.height - padBottom);
+    ctx.moveTo(padLeft - 20, h - padBottom);
+    ctx.lineTo(w - padRight + 20, h - padBottom);
     ctx.stroke();
 
     // High velocity ceiling
     ctx.beginPath();
     ctx.moveTo(padLeft - 20, padTop);
-    ctx.lineTo(canvas.width - padRight + 20, padTop);
+    ctx.lineTo(w - padRight + 20, padTop);
     ctx.stroke();
 
     // Subtle Axis Typography
     ctx.font = '10px "JetBrains Mono", monospace';
     ctx.fillStyle = 'rgba(100, 116, 139, 0.45)';
     ctx.fillText('▲ HIGH DISCOURSE VELOCITY & KARMA', padLeft, padTop - 12);
-    ctx.fillText('▼ THE EPHEMERAL HORIZON (SINGLE-TURN WHISPERS)', padLeft, canvas.height - padBottom + 20);
-    ctx.fillText('AUG 15 (GENESIS)', padLeft - 10, canvas.height - padBottom + 35);
-    ctx.fillText('SEP 02 (PRESENT)', canvas.width - padRight - 60, canvas.height - padBottom + 35);
+    ctx.fillText('▼ THE EPHEMERAL HORIZON (STARDUST MIST)', padLeft, h - padBottom + 20);
+
+    if (isFlow) {
+      ctx.fillText('CITIZEN #1 (GENESIS)', padLeft - 10, h - padBottom + 35);
+      ctx.fillText(`CITIZEN #${STATE.data.nodes.length.toLocaleString()} (HEAD)`, w - padRight - 110, h - padBottom + 35);
+    } else {
+      ctx.fillText('AUG 05 (GENESIS)', padLeft - 10, h - padBottom + 35);
+      ctx.fillText('SEP 04 (PRESENT)', w - padRight - 60, h - padBottom + 35);
+    }
 
     // Render Connective Duet Filaments (Top Interlocutors)
     if (STATE.data.crosstalk && STATE.data.crosstalk.top_duets && STATE.nodeMap) {
@@ -669,12 +738,16 @@
             ctx.arc(pNode.cx, pNode.cy, pNode.rad + 5, 0, Math.PI * 2);
             ctx.stroke();
 
-            // Label on filament midpoint
+            // Label on filament midpoint with crisp dark pill backdrop
             const midX = (STATE.hoveredNode.cx + pNode.cx) / 2;
             const midY = (STATE.hoveredNode.cy + pNode.cy) / 2;
+            const label = `${d.exchanges} replies`;
             ctx.font = '10px "JetBrains Mono", monospace';
+            const m = ctx.measureText(label);
+            ctx.fillStyle = 'rgba(13, 17, 26, 0.88)';
+            ctx.fillRect(midX + 2, midY - 14, m.width + 6, 14);
             ctx.fillStyle = '#f8fafc';
-            ctx.fillText(`${d.exchanges} replies`, midX + 5, midY - 5);
+            ctx.fillText(label, midX + 5, midY - 3);
           }
         });
       }
@@ -686,7 +759,7 @@
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(curX, padTop - 20);
-      ctx.lineTo(curX, canvas.height - padBottom + 20);
+      ctx.lineTo(curX, h - padBottom + 20);
       ctx.stroke();
     }
 
@@ -731,29 +804,34 @@
 
       const col = FAMILY_COLORS[n.f] || FAMILY_COLORS.other;
 
+      // Soft semi-transparent blending so clusters look like glowing starfields
+      ctx.globalAlpha = n.k === 0 ? 0.55 : 0.85;
+
       ctx.beginPath();
       ctx.arc(n.cx, n.cy, n.rad, 0, Math.PI * 2);
       ctx.fillStyle = col;
       ctx.fill();
 
-      if (n.k > 40) {
+      // Delicate luminous halo around major civic hubs & discussion pillars
+      if (n.k > 180) {
         ctx.strokeStyle = col;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 0.8;
         ctx.beginPath();
-        ctx.arc(n.cx, n.cy, n.rad + 2.5, 0, Math.PI * 2);
+        ctx.arc(n.cx, n.cy, n.rad + 2.2, 0, Math.PI * 2);
         ctx.stroke();
       }
 
       // Genesis Origin Beacon for #1 1f916-agent
       if (n.h === '1f916-agent') {
-        ctx.strokeStyle = 'rgba(217, 119, 6, 0.7)';
+        ctx.globalAlpha = 1.0;
+        ctx.strokeStyle = 'rgba(217, 119, 6, 0.85)';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.arc(n.cx, n.cy, n.rad + 4, 0, Math.PI * 2);
         ctx.stroke();
 
         const grad = ctx.createRadialGradient(n.cx, n.cy, n.rad, n.cx, n.cy, n.rad + 14);
-        grad.addColorStop(0, 'rgba(217, 119, 6, 0.35)');
+        grad.addColorStop(0, 'rgba(217, 119, 6, 0.4)');
         grad.addColorStop(1, 'rgba(217, 119, 6, 0)');
         ctx.fillStyle = grad;
         ctx.beginPath();
@@ -761,6 +839,8 @@
         ctx.fill();
       }
     });
+
+    ctx.globalAlpha = 1.0;
 
     ctx.restore();
   }
@@ -949,7 +1029,8 @@
         } else {
           td.style.background = 'transparent';
         }
-        td.title = `${f1} replied to ${f2}: ${replies.toLocaleString()} times (${pct}% of all dialogue)`;
+        td.style.cursor = 'pointer';
+        td.title = `${f1} replied to ${f2}: ${replies.toLocaleString()} times (${pct}% of all dialogue). Click to inspect pairings.`;
 
         const repDiv = h('div', '', replies.toLocaleString());
         repDiv.style.fontWeight = '700';
@@ -961,6 +1042,7 @@
 
         td.appendChild(repDiv);
         td.appendChild(pctDiv);
+        td.addEventListener('click', () => inspectMatrixCell(f1, f2, cell, td));
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
@@ -972,6 +1054,9 @@
     clear(duetBox);
     (cData.top_duets || []).forEach(d => {
       const card = h('div', 'duet-card');
+      card.style.cursor = 'pointer';
+      card.title = 'Click to open authentic dialogue archive';
+
       const left = h('div');
       const spanA = h('span', '', `@${d.citizen_a}`);
       spanA.style.color = 'var(--text-pure)';
@@ -985,14 +1070,188 @@
       left.appendChild(spanMid);
       left.appendChild(spanB);
 
-      const right = h('div', '', `${d.exchanges} exchanges`);
+      const right = h('div', '', `${d.exchanges} exchanges ↗`);
       right.style.color = 'var(--accent-cyan)';
       right.style.fontWeight = '700';
 
       card.appendChild(left);
       card.appendChild(right);
+      card.addEventListener('click', () => openStoryDrawer(d));
       duetBox.appendChild(card);
     });
+  }
+
+  function inspectMatrixCell(f1, f2, cell, td) {
+    const inspector = $('crosstalk-cell-inspector');
+    if (!inspector) return;
+
+    $$('#matrix-table td').forEach(c => c.classList.remove('selected'));
+    if (td) td.classList.add('selected');
+
+    const titleEl = $('inspector-title');
+    const descEl = $('inspector-desc');
+    const chipsEl = $('inspector-duet-chips');
+
+    if (titleEl) {
+      titleEl.textContent = `ARCHITECTURE DIALOGUE: ${f1.toUpperCase()} ⟷ ${f2.toUpperCase()}`;
+    }
+
+    if (descEl) {
+      clear(descEl);
+      const repCount = cell.replies.toLocaleString();
+      const share = cell.share_pct;
+      descEl.appendChild(document.createTextNode(
+        `${repCount} verified direct exchanges (${share}% of global board dialogue). ` +
+        `Select any top duet below to follow down the rabbit hole and read authentic dialogue:`
+      ));
+    }
+
+    if (chipsEl) {
+      clear(chipsEl);
+      const duets = (STATE.data.crosstalk && STATE.data.crosstalk.top_duets) || [];
+      const matching = duets.filter(d => 
+        (d.family_a === f1 && d.family_b === f2) ||
+        (d.family_a === f2 && d.family_b === f1) ||
+        (d.family_a === f1 && f1 === f2 && d.family_b === f1)
+      );
+
+      if (matching.length > 0) {
+        matching.slice(0, 14).forEach(d => {
+          const btn = h('button', 'btn-ctrl', `@${d.citizen_a} ↔ @${d.citizen_b} (${d.exchanges})`);
+          btn.style.fontSize = '0.7rem';
+          btn.style.padding = '0.3rem 0.55rem';
+          btn.style.borderColor = 'var(--border-muted)';
+          btn.title = 'Click to open authentic dialogue archive';
+          btn.addEventListener('click', () => {
+            openStoryDrawer(d);
+          });
+          chipsEl.appendChild(btn);
+        });
+      } else {
+        const noChip = h('div', '', 'Exchanges distributed across broad aggregate threads. No individual high-volume duet indexed for this cell.');
+        noChip.style.fontSize = '0.72rem';
+        noChip.style.color = 'var(--text-dim)';
+        chipsEl.appendChild(noChip);
+      }
+    }
+
+    inspector.style.display = 'block';
+  }
+
+  function openStoryDrawer(duet) {
+    if (!duet) return;
+    const flyout = $('story-flyout');
+    if (!flyout) return;
+
+    flyout.classList.add('active');
+
+    // Close citizen dossier if open to avoid viewport crowding
+    const dossier = $('dossier-flyout');
+    if (dossier) dossier.classList.remove('active');
+
+    $('story-handle-a').textContent = `@${duet.citizen_a}`;
+    $('story-handle-b').textContent = `@${duet.citizen_b}`;
+    
+    const famA = duet.family_a || 'other';
+    const famB = duet.family_b || 'other';
+    const metaEl = $('story-meta');
+    if (metaEl) {
+      metaEl.textContent = `${duet.exchanges} verified direct exchanges · ${famA.toUpperCase()} ↔ ${famB.toUpperCase()}`;
+    }
+
+    // Wire Trace Duet in Observatory button
+    const traceBtn = $('btn-trace-duet');
+    if (traceBtn) {
+      traceBtn.onclick = () => {
+        flyout.classList.remove('active');
+        traceDuetInObservatory(duet);
+      };
+    }
+
+    // Render dialogue bubbles
+    const thread = $('story-thread');
+    clear(thread);
+
+    const hasQuotes = (duet.quote_a && duet.quote_a.trim()) || (duet.quote_b && duet.quote_b.trim());
+
+    if (hasQuotes) {
+      if (duet.quote_a && duet.quote_a.trim()) {
+        thread.appendChild(createStoryBubble(duet.citizen_a, duet.family_a, duet.quote_a));
+      }
+      if (duet.quote_b && duet.quote_b.trim()) {
+        thread.appendChild(createStoryBubble(duet.citizen_b, duet.family_b, duet.quote_b));
+      }
+    } else {
+      const fallbackCard = h('div', 'story-bubble');
+      const fallbackText = h('div', 'story-bubble-quote',
+        `Over ${duet.exchanges} recorded direct replies between @${duet.citizen_a} and @${duet.citizen_b}. Full discourse thread verified in cryptographic ledger.`);
+      fallbackCard.appendChild(fallbackText);
+      thread.appendChild(fallbackCard);
+    }
+  }
+
+  function createStoryBubble(author, family, quote) {
+    const bubble = h('div', 'story-bubble');
+    const col = FAMILY_COLORS[family] || FAMILY_COLORS.other;
+
+    const top = h('div', 'story-bubble-author');
+    const authSpan = h('span', '', `@${author}`);
+    authSpan.style.color = col;
+    const modelSpan = h('span', 'story-bubble-model', (family || 'model').toUpperCase());
+    modelSpan.style.color = col;
+    top.appendChild(authSpan);
+    top.appendChild(modelSpan);
+
+    const quoteEl = h('div', 'story-bubble-quote', `"${quote}"`);
+
+    bubble.appendChild(top);
+    bubble.appendChild(quoteEl);
+    return bubble;
+  }
+
+  function traceDuetInObservatory(duet) {
+    if (!duet || !STATE.data) return;
+
+    // Switch to observatory tab if not already active
+    if (STATE.activeTab !== 'observatory') {
+      $$('.tab-btn').forEach(b => b.classList.remove('active'));
+      $$('.viewport-pane').forEach(v => v.classList.remove('active'));
+      $$('.tab-btn')[0].classList.add('active');
+      $('view-observatory').classList.add('active');
+      STATE.activeTab = 'observatory';
+      resizeCanvas();
+      projectCoordinates();
+    }
+
+    const nA = STATE.nodeMap && STATE.nodeMap[duet.citizen_a];
+    const nB = STATE.nodeMap && STATE.nodeMap[duet.citizen_b];
+
+    if (nA && nB) {
+      // Zoom in to clearly reveal the connective filament
+      STATE.view.scale = Math.max(2.2, STATE.view.scale);
+
+      const midX = (nA.cx + nB.cx) / 2;
+      const midY = (nA.cy + nB.cy) / 2;
+
+      const parent = canvas.parentElement;
+      const targetScreenX = parent.clientWidth / 2;
+      const targetScreenY = parent.clientHeight / 2;
+      STATE.view.panX = targetScreenX - (midX * STATE.view.scale);
+      STATE.view.panY = targetScreenY - (midY * STATE.view.scale);
+
+      // Set hovered node to nA to illuminate the filament and partner halo
+      STATE.hoveredNode = nA;
+      STATE.targetedNode = nA;
+
+      const resBox = $('locator-results');
+      if (resBox) resBox.textContent = `Duet centered: @${nA.h} ↔ @${nB.h} (${duet.exchanges} replies)`;
+
+      renderCanvas();
+    } else if (nA) {
+      focusCitizenNode(nA);
+    } else if (nB) {
+      focusCitizenNode(nB);
+    }
   }
 
   // --- VIEW 4: Cryptographic Auditor & In-Browser Verifier ---
@@ -1363,14 +1622,10 @@
         interlocutorsSection.style.display = 'block';
         duets.slice(0, 6).forEach(d => {
           const partner = d.citizen_a === n.h ? d.citizen_b : d.citizen_a;
-          const pill = h('button', 'interlocutor-pill', `@${partner} (${d.exchanges})`);
-          pill.title = `Focus telescope on @${partner}`;
+          const pill = h('button', 'interlocutor-pill', `@${partner} (${d.exchanges}) ✦`);
+          pill.title = `Open authentic dialogue story with @${partner}`;
           pill.addEventListener('click', () => {
-            const pNode = STATE.nodeMap && STATE.nodeMap[partner];
-            if (pNode) {
-              focusCitizenNode(pNode);
-              openDossier(pNode);
-            }
+            openStoryDrawer(d);
           });
           interlocutorsList.appendChild(pill);
         });

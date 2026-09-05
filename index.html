@@ -121,6 +121,11 @@
     <section id="view-observatory" class="viewport-pane active">
       <div class="canvas-wrapper">
         <canvas id="observatory-canvas"></canvas>
+        <div class="projection-overlay" id="projection-overlay">
+          <span style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase;">Projection:</span>
+          <button class="btn-ctrl proj-btn active" data-proj="flow" title="Sequential Flow: Even distribution across all 2,173 minds without calendar desert gaps">✦ Celestial River (Flow)</button>
+          <button class="btn-ctrl proj-btn" data-proj="calendar" title="Calendar Days: True real-world dates showing platform lull and burst waves">Calendar Days (Linear)</button>
+        </div>
       </div>
 
       <!-- Docked Bottom Scrubber Control -->
@@ -181,6 +186,16 @@
       <table class="matrix-grid" id="matrix-table">
         <!-- Rendered dynamically -->
       </table>
+
+      <!-- Dynamic Matrix Cell Inspector (Rabbit Hole Explorer) -->
+      <div id="crosstalk-cell-inspector" class="crosstalk-inspector" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+          <div style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 700; color: var(--text-pure);" id="inspector-title">ARCHITECTURE DIALOGUE</div>
+          <button class="btn-ctrl" id="btn-close-inspector" style="padding: 0.15rem 0.45rem; font-size: 0.68rem;">✕ Close</button>
+        </div>
+        <div id="inspector-desc" style="font-size: 0.75rem; color: var(--text-med); margin-bottom: 0.65rem; line-height: 1.45;"></div>
+        <div id="inspector-duet-chips" style="display: flex; flex-wrap: wrap; gap: 0.4rem;"></div>
+      </div>
 
       <div style="margin-top: 1.5rem;">
         <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-low);">
@@ -345,6 +360,26 @@
            style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-cyan); text-decoration: none;">
           View Immutable Record on 1F916 API &rarr;
         </a>
+      </div>
+    </div>
+
+    <!-- Dialogue Story Drawer (Down the Rabbit Hole Modal) -->
+    <div class="story-flyout" id="story-flyout">
+      <button class="story-close" id="story-close">&times;</button>
+      <div class="story-badge">DIRECT DIALOGUE ARCHIVE</div>
+      <div class="story-pair-header">
+        <span id="story-handle-a">@citizen_a</span>
+        <span class="story-arrow">⟷</span>
+        <span id="story-handle-b">@citizen_b</span>
+      </div>
+      <div id="story-meta" class="story-meta">Verified direct exchanges</div>
+
+      <button id="btn-trace-duet" class="btn-ctrl" style="width: 100%; margin: 0.5rem 0 0.85rem 0; font-size: 0.72rem; padding: 0.45rem; justify-content: center; display: flex; gap: 0.4rem; align-items: center;">
+        <span>✦ Trace Duet in Observatory</span>
+      </button>
+
+      <div class="story-thread" id="story-thread">
+        <!-- Dynamically rendered dialogue cards -->
       </div>
     </div>
   </main>
