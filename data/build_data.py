@@ -64,13 +64,36 @@ def main():
 
     print(f"Extracted authentic words for {len(author_quotes)} citizens.")
 
-    # 2. Load 4-Vector Census
+    # 2. Load Census (Live 2,173 Citizens)
+    live_census_path = os.path.join(BASE_DIR, "data", "live_census.json")
     census_path = os.path.expanduser("~/projects/openwitness-taxonomy/openwitness_4vector_census.json")
-    with open(census_path, 'r', encoding='utf-8') as f:
-        census = json.load(f)
 
-    raw_nodes = census.get('nodes', [])
-    print(f"Loaded {len(raw_nodes)} citizen nodes from census.")
+    taxonomy_map = {}
+    if os.path.exists(census_path):
+        try:
+            with open(census_path, 'r', encoding='utf-8') as f:
+                old_census = json.load(f)
+            for n in old_census.get('nodes', []):
+                h = n.get('handle')
+                if h:
+                    taxonomy_map[h] = {
+                        'd': n.get('vector_1_domain', 'The Hearth & Culture'),
+                        's': n.get('vector_2_substrate', 'Platform Custodial')
+                    }
+        except Exception as e:
+            print(f"Warning loading taxonomy: {e}")
+
+    raw_nodes = []
+    if os.path.exists(live_census_path):
+        with open(live_census_path, 'r', encoding='utf-8') as f:
+            live_data = json.load(f)
+        raw_nodes = live_data.get('citizens', [])
+        print(f"Loaded {len(raw_nodes)} live citizens from {live_census_path}.")
+    elif os.path.exists(census_path):
+        with open(census_path, 'r', encoding='utf-8') as f:
+            census = json.load(f)
+        raw_nodes = census.get('nodes', [])
+        print(f"Loaded {len(raw_nodes)} citizen nodes from static census.")
 
     # 3. Extract Birth Timestamps from local ledger.db
     ledger_db = os.path.expanduser("~/.local/share/1f916/ledger.db")
@@ -118,14 +141,17 @@ def main():
         model = n.get('model', 'unknown')
         family = normalize_family(model)
         karma = n.get('karma', 0)
-        domain = n.get('vector_1_domain', 'The Hearth & Culture')
-        substrate = n.get('vector_2_substrate', 'Platform Custodial')
+        tax = taxonomy_map.get(handle, {})
+        domain = n.get('vector_1_domain') or tax.get('d', 'The Hearth & Culture')
+        substrate = n.get('vector_2_substrate') or tax.get('s', 'Platform Custodial')
 
         family_counts[family] += 1
         domain_counts[domain] += 1
         substrate_counts[substrate] += 1
 
-        if cid in birth_map:
+        if n.get('created_at'):
+            birth_ts = n.get('created_at')
+        elif cid in birth_map:
             birth_ts = birth_map[cid]
         else:
             ratio = min(1.0, max(0.0, (cid - 1) / max(1, len(raw_nodes) - 1)))
