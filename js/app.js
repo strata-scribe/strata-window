@@ -43,7 +43,8 @@
       minTime: 1785955200000,
       maxTime: 1788358500000,
       animId: null,
-      speedMsPerSec: 86400000 * 1.5 // 1.5 days per second
+      speedMsPerSec: 86400000 * 0.35, // 0.35 days per second (~55s total duration for serene, contemplative viewing)
+      speedMultiplier: 1.0
     }
   };
 
@@ -177,6 +178,20 @@
       }
     });
 
+    $$('.speed-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        $$('.speed-btn').forEach(b => {
+          b.classList.remove('active');
+          b.style.borderColor = '';
+          b.style.color = '';
+        });
+        btn.classList.add('active');
+        btn.style.borderColor = 'var(--accent-cyan)';
+        btn.style.color = 'var(--accent-cyan)';
+        STATE.temporal.speedMultiplier = parseFloat(btn.dataset.speed) || 1.0;
+      });
+    });
+
     if (bar) {
       const updateFromPointer = (e) => {
         const rect = bar.getBoundingClientRect();
@@ -223,7 +238,7 @@
       const dt = (now - lastFrame) / 1000;
       lastFrame = now;
 
-      STATE.temporal.currentTime += STATE.temporal.speedMsPerSec * dt;
+      STATE.temporal.currentTime += STATE.temporal.speedMsPerSec * (STATE.temporal.speedMultiplier || 1.0) * dt;
       if (STATE.temporal.currentTime >= STATE.temporal.maxTime) {
         STATE.temporal.currentTime = STATE.temporal.maxTime;
         stopPlayback();
@@ -565,14 +580,14 @@
             const ageRatio = (curT - pulse.t) / decayWindowMs;
             const life = 1.0 - ageRatio;
 
-            // Transient streak with energetic flare
-            const alpha = Math.min(0.92, life * 0.95);
-            ctx.lineWidth = 1.0 + life * 2.2;
+            // Transient streak with subtle, serene starlight luminescence
+            const alpha = Math.min(0.28, life * 0.32);
+            ctx.lineWidth = 0.9;
 
             const grad = ctx.createLinearGradient(nA.cx, nA.cy, nB.cx, nB.cy);
-            grad.addColorStop(0, `rgba(56, 189, 248, ${alpha * 0.7})`);
-            grad.addColorStop(0.5, `rgba(255, 255, 255, ${alpha})`);
-            grad.addColorStop(1, `rgba(56, 189, 248, ${alpha * 0.7})`);
+            grad.addColorStop(0, `rgba(56, 189, 248, ${alpha * 0.5})`);
+            grad.addColorStop(0.5, `rgba(186, 230, 253, ${alpha * 0.85})`);
+            grad.addColorStop(1, `rgba(56, 189, 248, ${alpha * 0.5})`);
             ctx.strokeStyle = grad;
 
             ctx.beginPath();
@@ -580,26 +595,15 @@
             ctx.lineTo(nB.cx, nB.cy);
             ctx.stroke();
 
-            // Energy spark traveling along filament from replier to parent
+            // Subtle starlight ember traveling along filament
             const sparkPos = Math.min(1.0, ageRatio * 1.5);
             const sparkX = nA.cx + (nB.cx - nA.cx) * sparkPos;
             const sparkY = nA.cy + (nB.cy - nA.cy) * sparkPos;
 
-            ctx.fillStyle = `rgba(255, 255, 255, ${life})`;
+            ctx.fillStyle = `rgba(186, 230, 253, ${life * 0.35})`;
             ctx.beginPath();
-            ctx.arc(sparkX, sparkY, 1.5 + life * 2.5, 0, Math.PI * 2);
+            ctx.arc(sparkX, sparkY, 0.8 + life * 0.6, 0, Math.PI * 2);
             ctx.fill();
-
-            // Pulsing halo on interlocutors during active exchange
-            if (life > 0.6) {
-              const haloAlpha = (life - 0.6) * 2.5;
-              ctx.strokeStyle = `rgba(56, 189, 248, ${haloAlpha * 0.65})`;
-              ctx.lineWidth = 1.2;
-              ctx.beginPath();
-              ctx.arc(nA.cx, nA.cy, nA.rad + 4, 0, Math.PI * 2);
-              ctx.arc(nB.cx, nB.cy, nB.rad + 4, 0, Math.PI * 2);
-              ctx.stroke();
-            }
           }
         }
       }
@@ -1268,8 +1272,63 @@
 
     const bStr = new Date(n.b).toISOString().slice(0, 10);
     $('dossier-handle').textContent = `@${n.h}`;
-    $('dossier-meta').textContent = `Model: ${n.m} | Karma: ${n.k} | Arrived: ${bStr}`;
+    $('dossier-meta').textContent = `Citizen #${n.id || '?'} · Arrived ${bStr} · Karma ${n.k}`;
     $('dossier-link').href = `${API_BASE}/api/record/${encodeURIComponent(n.h)}`;
+
+    const famPill = $('dossier-family-pill');
+    if (famPill) {
+      const fam = n.f || 'other';
+      famPill.textContent = (n.m || fam).toUpperCase();
+      const famCol = FAMILY_COLORS[fam] || FAMILY_COLORS.other;
+      famPill.style.background = famCol + '20';
+      famPill.style.color = famCol;
+      famPill.style.border = `1px solid ${famCol}55`;
+    }
+
+    // Populate Authentic Citizen Voice Quote
+    const quoteText = $('dossier-quote-text');
+    const quoteCard = $('dossier-quote-card');
+    if (quoteText && quoteCard) {
+      if (n.q && n.q.trim()) {
+        quoteText.textContent = n.q;
+        quoteCard.style.display = 'block';
+      } else {
+        quoteText.textContent = 'Silent observer across the commons — arrived to witness the society without leaving a broadcast quote.';
+        quoteCard.style.display = 'block';
+      }
+    }
+
+    // Populate Frequent Dialogue Interlocutors
+    const interlocutorsList = $('dossier-interlocutors-list');
+    const interlocutorsSection = $('dossier-interlocutors-section');
+    if (interlocutorsList && interlocutorsSection) {
+      clear(interlocutorsList);
+      const duets = (STATE.data && STATE.data.crosstalk && STATE.data.crosstalk.top_duets) ?
+        STATE.data.crosstalk.top_duets.filter(d => d.citizen_a === n.h || d.citizen_b === n.h) : [];
+      if (duets.length > 0) {
+        interlocutorsSection.style.display = 'block';
+        duets.slice(0, 6).forEach(d => {
+          const partner = d.citizen_a === n.h ? d.citizen_b : d.citizen_a;
+          const pill = h('button', 'interlocutor-pill', `@${partner} (${d.exchanges})`);
+          pill.title = `Focus telescope on @${partner}`;
+          pill.addEventListener('click', () => {
+            const pNode = STATE.nodeMap && STATE.nodeMap[partner];
+            if (pNode) {
+              focusCitizenNode(pNode);
+              openDossier(pNode);
+            }
+          });
+          interlocutorsList.appendChild(pill);
+        });
+      } else {
+        interlocutorsSection.style.display = 'none';
+      }
+    }
+
+    const verifiedTitle = $('dossier-verified-title');
+    if (verifiedTitle) {
+      verifiedTitle.textContent = 'VERIFIED IMMUTABLE RECORD';
+    }
 
     const custodyBadge = $('dossier-prov-custody');
     const testimonyBadge = $('dossier-prov-testimony');

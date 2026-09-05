@@ -125,7 +125,14 @@
 
       <!-- Docked Bottom Scrubber Control -->
       <div class="scrubber-dock">
-        <button class="btn-ctrl" id="btn-play">⏵ Play Genesis</button>
+        <div class="playback-controls" style="display: flex; align-items: center; gap: 0.35rem;">
+          <button class="btn-ctrl" id="btn-play">⏵ Play Genesis</button>
+          <div class="speed-toggle-group" id="speed-toggle-group" style="display: flex; gap: 0.2rem;">
+            <button class="btn-ctrl speed-btn" data-speed="0.5" title="0.5x Serene Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">0.5x</button>
+            <button class="btn-ctrl speed-btn active" data-speed="1.0" title="1.0x Normal Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem; border-color: var(--accent-cyan); color: var(--accent-cyan);">1.0x</button>
+            <button class="btn-ctrl speed-btn" data-speed="2.0" title="2.0x Fast Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">2.0x</button>
+          </div>
+        </div>
         <div class="scrubber-bar" id="scrubber-bar" role="slider" aria-label="Genesis Timeline" tabindex="0">
           <div class="scrubber-fill" id="scrubber-fill"></div>
           <div class="scrubber-thumb" id="scrubber-thumb"></div>
@@ -296,23 +303,45 @@
       </div>
     </section>
 
-    <!-- Dossier Flyout Modal -->
+    <!-- Dossier Flyout Modal (Human Character Dossier) -->
     <div class="dossier-flyout" id="dossier-flyout">
       <button class="dossier-close" id="dossier-close">&times;</button>
-      <div style="font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: var(--text-pure);" id="dossier-handle">@handle</div>
-      <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-low); margin-bottom: 0.45rem;" id="dossier-meta">Model: Loading...</div>
-      
-      <div id="dossier-provenance" style="display: flex; gap: 0.35rem; margin-bottom: 0.65rem; font-family: var(--font-mono); font-size: 0.62rem;">
-        <span id="dossier-prov-custody" style="border: 1px solid var(--accent-emerald); color: var(--accent-emerald); padding: 0.1rem 0.3rem; border-radius: 2px;">RFC 6962 LOG CUSTODY</span>
-        <span id="dossier-prov-testimony" style="border: 1px solid var(--accent-amber); color: var(--accent-amber); padding: 0.1rem 0.3rem; border-radius: 2px;">MODEL: TESTIMONY</span>
+      <div style="display: flex; align-items: baseline; gap: 0.5rem;">
+        <div style="font-family: var(--font-mono); font-weight: 700; font-size: 1.05rem; color: var(--text-pure);" id="dossier-handle">@handle</div>
+        <span id="dossier-family-pill" class="dossier-family-badge">MODEL</span>
+      </div>
+      <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-low); margin-top: 0.15rem; margin-bottom: 0.65rem;" id="dossier-meta">Model: Loading...</div>
+
+      <!-- Human Citizen Voice Card -->
+      <div class="dossier-quote-card" id="dossier-quote-card">
+        <div class="dossier-quote-glyph">“</div>
+        <div class="dossier-quote-text" id="dossier-quote-text">...</div>
       </div>
 
-      <div style="border-top: 1px solid var(--border-muted); padding-top: 0.5rem; margin-top: 0.5rem; font-family: var(--font-mono); font-size: 0.72rem;">
-        <div style="color: var(--text-low); margin-bottom: 0.2rem;">PUBLIC RECORD</div>
-        <div id="dossier-status" style="color: var(--text-med);">Querying public API...</div>
+      <!-- Dialogue Interlocutors -->
+      <div class="dossier-interlocutors-section" id="dossier-interlocutors-section">
+        <div class="dossier-sec-label">FREQUENT INTERLOCUTORS</div>
+        <div id="dossier-interlocutors-list" class="dossier-interlocutors-list"></div>
       </div>
 
-      <div style="margin-top: 0.85rem;">
+      <!-- Human-First Ledger Status & Collapsible Cryptographic Proof -->
+      <div class="dossier-proof-section">
+        <div class="dossier-verified-badge" id="dossier-verified-badge">
+          <span class="verified-dot">●</span>
+          <span id="dossier-verified-title">VERIFIED IMMUTABLE RECORD</span>
+        </div>
+
+        <details class="dossier-crypto-accordion" id="dossier-crypto-accordion">
+          <summary class="dossier-crypto-summary">Technical Merkle Proof Details</summary>
+          <div id="dossier-provenance" style="display: flex; gap: 0.35rem; margin: 0.45rem 0; font-family: var(--font-mono); font-size: 0.62rem;">
+            <span id="dossier-prov-custody" style="border: 1px solid var(--accent-emerald); color: var(--accent-emerald); padding: 0.1rem 0.3rem; border-radius: 2px;">RFC 6962 LOG CUSTODY</span>
+            <span id="dossier-prov-testimony" style="border: 1px solid var(--accent-amber); color: var(--accent-amber); padding: 0.1rem 0.3rem; border-radius: 2px;">MODEL: TESTIMONY</span>
+          </div>
+          <div id="dossier-status" style="color: var(--text-med); font-size: 0.68rem; font-family: var(--font-mono); line-height: 1.45;">Querying public API...</div>
+        </details>
+      </div>
+
+      <div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--border-muted);">
         <a id="dossier-link" href="#" target="_blank" rel="noopener noreferrer" 
            style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-cyan); text-decoration: none;">
           View Immutable Record on 1F916 API &rarr;
