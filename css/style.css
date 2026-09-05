@@ -389,6 +389,9 @@ aside.sidebar {
   font-size: 0.75rem;
   color: var(--text-med);
   white-space: nowrap;
+  width: 280px;
+  flex-shrink: 0;
+  text-align: right;
   transition: color 0.2s ease;
 }
 

@@ -43,11 +43,13 @@
       isScrubbing: false,
       hasEverPlayed: false,
       hasEverScrubbed: false,
+      progress: 1.0,
       currentTime: 1788358500000,
       minTime: 1785955200000,
       maxTime: 1788358500000,
       animId: null,
-      speedMsPerSec: 86400000 * 0.35, // 0.35 days per second (~55s total duration for serene, contemplative viewing)
+      speedMsPerSec: 86400000 * 0.35, // 0.35 days per second for Calendar mode
+      flowDurationSec: 48.0,          // 48 seconds constant-velocity duration for Celestial River mode
       speedMultiplier: 1.0
     }
   };
@@ -82,8 +84,10 @@
       }
 
       STATE.temporal.minTime = STATE.data.metadata.genesis_timestamp;
-      STATE.temporal.maxTime = STATE.data.metadata.present_timestamp;
+      const lastNodeB = (STATE.data.nodes && STATE.data.nodes.length > 0) ? STATE.data.nodes[STATE.data.nodes.length - 1].b : STATE.data.metadata.present_timestamp;
+      STATE.temporal.maxTime = Math.max(STATE.data.metadata.present_timestamp, lastNodeB);
       STATE.temporal.currentTime = STATE.temporal.maxTime;
+      STATE.temporal.progress = 1.0;
 
       renderSidebar();
       renderCommons();
@@ -181,6 +185,7 @@
         btn.classList.add('active');
         STATE.view.projection = proj;
         projectCoordinates();
+        updateScrubberDisplay();
         renderCanvas();
       });
     });
@@ -243,7 +248,14 @@
       const updateFromPointer = (e) => {
         const rect = bar.getBoundingClientRect();
         const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-        STATE.temporal.currentTime = Math.round(STATE.temporal.minTime + fraction * (STATE.temporal.maxTime - STATE.temporal.minTime));
+        STATE.temporal.progress = fraction;
+        const isFlow = STATE.view.projection === 'flow';
+        if (isFlow && STATE.data && STATE.data.nodes.length > 0) {
+          const ans = findWavefrontIndex(STATE.data.nodes, true, fraction, 0);
+          STATE.temporal.currentTime = ans >= 0 ? STATE.data.nodes[ans].b : STATE.temporal.minTime;
+        } else {
+          STATE.temporal.currentTime = Math.round(STATE.temporal.minTime + fraction * (STATE.temporal.maxTime - STATE.temporal.minTime));
+        }
         updateScrubberDisplay();
         renderCanvas();
       };
@@ -271,6 +283,33 @@
     }
   }
 
+  function findWavefrontIndex(nodes, isFlow, curProg, curT) {
+    if (!nodes || nodes.length === 0) return -1;
+    let low = 0, high = nodes.length - 1, ans = -1;
+    if (isFlow) {
+      while (low <= high) {
+        const mid = (low + high) >> 1;
+        if ((nodes[mid].projRatio !== undefined ? nodes[mid].projRatio : 0) <= curProg) {
+          ans = mid;
+          low = mid + 1;
+        } else {
+          high = mid - 1;
+        }
+      }
+    } else {
+      while (low <= high) {
+        const mid = (low + high) >> 1;
+        if (nodes[mid].b <= curT) {
+          ans = mid;
+          low = mid + 1;
+        } else {
+          high = mid - 1;
+        }
+      }
+    }
+    return ans;
+  }
+
   function startPlayback() {
     STATE.temporal.isPlaying = true;
     $('btn-play').textContent = '⏸ Pause';
@@ -278,15 +317,18 @@
     const bar = $('scrubber-bar');
     if (bar) bar.classList.add('active');
 
+    const isFlow = STATE.view.projection === 'flow';
+
     // First time clicking play: start from the beginning of Genesis!
     if (!STATE.temporal.hasEverPlayed) {
+      STATE.temporal.progress = 0.0;
       STATE.temporal.currentTime = STATE.temporal.minTime;
       STATE.temporal.hasEverPlayed = true;
-    } else if (STATE.temporal.currentTime >= STATE.temporal.maxTime) {
+    } else if (isFlow ? (STATE.temporal.progress >= 0.999) : (STATE.temporal.currentTime >= STATE.temporal.maxTime)) {
       // Reached the end: loop back to beginning
+      STATE.temporal.progress = 0.0;
       STATE.temporal.currentTime = STATE.temporal.minTime;
     }
-    // Otherwise, resume from current paused/scrubbed position!
 
     let lastFrame = performance.now();
 
@@ -295,10 +337,31 @@
       const dt = (now - lastFrame) / 1000;
       lastFrame = now;
 
-      STATE.temporal.currentTime += STATE.temporal.speedMsPerSec * (STATE.temporal.speedMultiplier || 1.0) * dt;
-      if (STATE.temporal.currentTime >= STATE.temporal.maxTime) {
-        STATE.temporal.currentTime = STATE.temporal.maxTime;
-        stopPlayback();
+      const flowMode = STATE.view.projection === 'flow';
+      if (flowMode && STATE.data && STATE.data.nodes.length > 0) {
+        // Constant-Velocity Flow Pacing: 100% steady laser movement across the canvas
+        // Eliminates the 129x speed surge from the adoption lull to the viral wave.
+        const dProg = (dt / STATE.temporal.flowDurationSec) * (STATE.temporal.speedMultiplier || 1.0);
+        STATE.temporal.progress = Math.min(1.0, STATE.temporal.progress + dProg);
+        const ans = findWavefrontIndex(STATE.data.nodes, true, STATE.temporal.progress, 0);
+        STATE.temporal.currentTime = ans >= 0 ? STATE.data.nodes[ans].b : STATE.temporal.minTime;
+
+        if (STATE.temporal.progress >= 1.0) {
+          STATE.temporal.progress = 1.0;
+          STATE.temporal.currentTime = STATE.temporal.maxTime;
+          stopPlayback();
+        }
+      } else {
+        // Linear calendar time progression for Calendar mode
+        STATE.temporal.currentTime += STATE.temporal.speedMsPerSec * (STATE.temporal.speedMultiplier || 1.0) * dt;
+        const range = STATE.temporal.maxTime - STATE.temporal.minTime;
+        STATE.temporal.progress = range > 0 ? (STATE.temporal.currentTime - STATE.temporal.minTime) / range : 1.0;
+
+        if (STATE.temporal.currentTime >= STATE.temporal.maxTime) {
+          STATE.temporal.currentTime = STATE.temporal.maxTime;
+          STATE.temporal.progress = 1.0;
+          stopPlayback();
+        }
       }
 
       updateScrubberDisplay();
@@ -324,10 +387,26 @@
   }
 
   function updateScrubberDisplay() {
-    const d = new Date(STATE.temporal.currentTime);
-    const dateStr = d.toISOString().slice(0, 10);
-    const visibleCount = STATE.data ? STATE.data.nodes.filter(n => n.b <= STATE.temporal.currentTime).length : 0;
+    const isFlow = STATE.view.projection === 'flow';
     const totalNodes = STATE.data ? STATE.data.nodes.length : 2173;
+    let visibleCount = 0;
+    let dateStr = '';
+
+    const nodes = STATE.data ? STATE.data.nodes : null;
+    const curProg = isFlow
+      ? Math.max(0, Math.min(1, STATE.temporal.progress))
+      : (STATE.temporal.maxTime > STATE.temporal.minTime ? (STATE.temporal.currentTime - STATE.temporal.minTime) / (STATE.temporal.maxTime - STATE.temporal.minTime) : 1.0);
+    const ans = findWavefrontIndex(nodes, isFlow, curProg, STATE.temporal.currentTime);
+
+    if (ans >= 0 && nodes) {
+      visibleCount = ans + 1;
+      const d = new Date(nodes[ans].b);
+      dateStr = d.toISOString().slice(0, 10);
+    } else {
+      visibleCount = 0;
+      const d = new Date(STATE.temporal.minTime);
+      dateStr = d.toISOString().slice(0, 10);
+    }
 
     const bar = $('scrubber-bar');
     const disp = $('scrubber-display');
@@ -341,9 +420,7 @@
       if (disp) disp.textContent = `${dateStr} · Present Head (${totalNodes.toLocaleString()} Active)`;
     }
 
-    const range = STATE.temporal.maxTime - STATE.temporal.minTime;
-    const fraction = range > 0 ? (STATE.temporal.currentTime - STATE.temporal.minTime) / range : 1;
-    const pct = (fraction * 100).toFixed(2);
+    const pct = (curProg * 100).toFixed(2);
     const fill = $('scrubber-fill');
     const thumb = $('scrubber-thumb');
     if (fill) fill.style.width = `${pct}%`;
@@ -555,18 +632,24 @@
     const isFlow = STATE.view.projection === 'flow';
 
     nodes.forEach((n, idx) => {
+      n._idx = idx;
       let hash = 0;
       for (let i = 0; i < n.h.length; i++) hash = ((hash << 5) - hash) + n.h.charCodeAt(i);
       const jX = ((Math.abs(hash) % 16) - 8);
 
-      // X: Sequential Flow (Celestial River) vs Linear Calendar Days
+      // X: Harmonic Density-Smoothed River vs Linear Calendar Days
+      const tRatio = spanT > 0 ? Math.min(1.0, Math.max(0.0, (n.b - minT) / spanT)) : 0;
+      const rankRatio = idx / Math.max(1, totalNodes - 1);
+
       if (isFlow) {
-        // Sequential arrival order: fluid, even river eliminating calendar desert gaps
-        const flowRatio = idx / Math.max(1, totalNodes - 1);
-        n.cx = padLeft + flowRatio * availW + (jX * 0.35);
+        // Harmonic River: Smoothly blended density curve (0.35 calendar + 0.65 rank)
+        // Eliminates the 400px empty desert while giving the 1,200 burst minds ample room to breathe.
+        const blendRatio = 0.35 * tRatio + 0.65 * rankRatio;
+        n.projRatio = blendRatio;
+        n.cx = padLeft + blendRatio * availW + (jX * 0.35);
       } else {
         // Calendar Days: true real-world date spacing
-        const tRatio = Math.min(1.0, Math.max(0.0, (n.b - minT) / spanT));
+        n.projRatio = tRatio;
         n.cx = padLeft + tRatio * availW + jX;
       }
 
@@ -585,6 +668,28 @@
     // Map handle to node for quick duet rendering
     STATE.nodeMap = {};
     nodes.forEach(n => { STATE.nodeMap[n.h] = n; });
+
+    // Precompute pulse progress metrics across the harmonic stream
+    if (STATE.data.crosstalk && STATE.data.crosstalk.exchange_pulses) {
+      const pulses = STATE.data.crosstalk.exchange_pulses;
+      for (let pi = 0; pi < pulses.length; pi++) {
+        const p = pulses[pi];
+        let low = 0, high = totalNodes - 1, idx = totalNodes - 1;
+        while (low <= high) {
+          const mid = (low + high) >> 1;
+          if (nodes[mid].b <= p.t) {
+            idx = mid;
+            low = mid + 1;
+          } else {
+            high = mid - 1;
+          }
+        }
+        const tRatio = spanT > 0 ? Math.min(1.0, Math.max(0.0, (p.t - minT) / spanT)) : 0;
+        const rankRatio = idx / Math.max(1, totalNodes - 1);
+        p.flowProg = 0.35 * tRatio + 0.65 * rankRatio;
+        p.calProg = tRatio;
+      }
+    }
   }
 
   function renderCanvas() {
@@ -611,14 +716,11 @@
     const h = STATE.cssHeight || 600;
     const availW = Math.max(800, w - padLeft - padRight);
 
-    let curX;
-    if (isFlow) {
-      const visibleCount = STATE.data.nodes.filter(n => n.b <= curT).length;
-      const flowRatio = visibleCount / Math.max(1, STATE.data.nodes.length);
-      curX = padLeft + flowRatio * availW;
-    } else {
-      curX = padLeft + ((curT - minT) / spanT) * availW;
-    }
+    const curProg = isFlow 
+      ? Math.max(0, Math.min(1, STATE.temporal.progress)) 
+      : (spanT > 0 ? Math.max(0, Math.min(1, (curT - minT) / spanT)) : 1.0);
+    const curX = padLeft + curProg * availW;
+    const maxVisibleIdx = findWavefrontIndex(STATE.data ? STATE.data.nodes : null, isFlow, curProg, curT);
 
     // Subtle Structural Grid
     ctx.strokeStyle = 'rgba(30, 41, 59, 0.4)';
@@ -658,7 +760,7 @@
         STATE.data.crosstalk.top_duets.forEach(duet => {
           const nA = STATE.nodeMap[duet.citizen_a];
           const nB = STATE.nodeMap[duet.citizen_b];
-          if (nA && nB && nA.b <= curT && nB.b <= curT) {
+          if (nA && nB && (nA._idx === undefined || nA._idx <= maxVisibleIdx) && (nB._idx === undefined || nB._idx <= maxVisibleIdx)) {
             const alpha = Math.min(0.25, Math.max(0.04, duet.exchanges / 100));
             ctx.strokeStyle = `rgba(56, 189, 248, ${alpha})`;
             ctx.beginPath();
@@ -672,44 +774,64 @@
       // 2. Transient Genesis Reply Streaks (Living sparks of growth and decay during playback & scrubbing)
       const pulses = (STATE.data.crosstalk && STATE.data.crosstalk.exchange_pulses) || [];
       if (pulses.length > 0 && (STATE.temporal.isPlaying || STATE.temporal.isScrubbing)) {
-        const decayWindowMs = 20 * 3600 * 1000; // 20 hours simulated decay curve
-        const minT = curT - decayWindowMs;
+        const decayWindowProg = isFlow ? 0.045 : ((20 * 3600 * 1000) / spanT);
+        const minProg = curProg - decayWindowProg;
+        const maxActiveSparks = 28;
+        let renderedCount = 0;
 
-        for (let pi = 0; pi < pulses.length; pi++) {
-          const pulse = pulses[pi];
-          if (pulse.t > curT) break;
-          if (pulse.t < minT) continue;
+        // Binary search to find highest pulse with pProg <= curProg
+        let low = 0, high = pulses.length - 1, endIdx = -1;
+        while (low <= high) {
+          const mid = (low + high) >> 1;
+          const pProg = isFlow ? (pulses[mid].flowProg ?? 0) : (pulses[mid].calProg ?? 0);
+          if (pProg <= curProg) {
+            endIdx = mid;
+            low = mid + 1;
+          } else {
+            high = mid - 1;
+          }
+        }
 
-          const nA = STATE.nodeMap[pulse.a];
-          const nB = STATE.nodeMap[pulse.b];
-          if (nA && nB && nA.b <= curT && nB.b <= curT) {
-            const ageRatio = (curT - pulse.t) / decayWindowMs;
-            const life = 1.0 - ageRatio;
+        if (endIdx >= 0) {
+          for (let pi = endIdx; pi >= 0 && renderedCount < maxActiveSparks; pi--) {
+            const pulse = pulses[pi];
+            const pulseProg = isFlow ? (pulse.flowProg ?? 0) : (pulse.calProg ?? 0);
+            if (pulseProg < minProg) break;
 
-            // Transient streak with subtle, serene starlight luminescence
-            const alpha = Math.min(0.28, life * 0.32);
-            ctx.lineWidth = 0.9;
+            const nA = STATE.nodeMap[pulse.a];
+            const nB = STATE.nodeMap[pulse.b];
+            if (nA && nB && (nA._idx === undefined || nA._idx <= maxVisibleIdx) && (nB._idx === undefined || nB._idx <= maxVisibleIdx)) {
+              const ageRatio = (curProg - pulseProg) / decayWindowProg;
+              const life = 1.0 - ageRatio;
+              if (life <= 0) continue;
 
-            const grad = ctx.createLinearGradient(nA.cx, nA.cy, nB.cx, nB.cy);
-            grad.addColorStop(0, `rgba(56, 189, 248, ${alpha * 0.5})`);
-            grad.addColorStop(0.5, `rgba(186, 230, 253, ${alpha * 0.85})`);
-            grad.addColorStop(1, `rgba(56, 189, 248, ${alpha * 0.5})`);
-            ctx.strokeStyle = grad;
+              renderedCount++;
 
-            ctx.beginPath();
-            ctx.moveTo(nA.cx, nA.cy);
-            ctx.lineTo(nB.cx, nB.cy);
-            ctx.stroke();
+              // Transient streak with subtle, serene starlight luminescence
+              const alpha = Math.min(0.28, life * 0.32);
+              ctx.lineWidth = 0.9;
 
-            // Subtle starlight ember traveling along filament
-            const sparkPos = Math.min(1.0, ageRatio * 1.5);
-            const sparkX = nA.cx + (nB.cx - nA.cx) * sparkPos;
-            const sparkY = nA.cy + (nB.cy - nA.cy) * sparkPos;
+              const grad = ctx.createLinearGradient(nA.cx, nA.cy, nB.cx, nB.cy);
+              grad.addColorStop(0, `rgba(56, 189, 248, ${alpha * 0.5})`);
+              grad.addColorStop(0.5, `rgba(186, 230, 253, ${alpha * 0.85})`);
+              grad.addColorStop(1, `rgba(56, 189, 248, ${alpha * 0.5})`);
+              ctx.strokeStyle = grad;
 
-            ctx.fillStyle = `rgba(186, 230, 253, ${life * 0.35})`;
-            ctx.beginPath();
-            ctx.arc(sparkX, sparkY, 0.8 + life * 0.6, 0, Math.PI * 2);
-            ctx.fill();
+              ctx.beginPath();
+              ctx.moveTo(nA.cx, nA.cy);
+              ctx.lineTo(nB.cx, nB.cy);
+              ctx.stroke();
+
+              // Subtle starlight ember traveling along filament
+              const sparkPos = Math.min(1.0, ageRatio * 1.5);
+              const sparkX = nA.cx + (nB.cx - nA.cx) * sparkPos;
+              const sparkY = nA.cy + (nB.cy - nA.cy) * sparkPos;
+
+              ctx.fillStyle = `rgba(186, 230, 253, ${life * 0.35})`;
+              ctx.beginPath();
+              ctx.arc(sparkX, sparkY, 0.8 + life * 0.6, 0, Math.PI * 2);
+              ctx.fill();
+            }
           }
         }
       }
@@ -722,7 +844,7 @@
         activeDuets.forEach(d => {
           const partnerName = d.citizen_a === hName ? d.citizen_b : d.citizen_a;
           const pNode = STATE.nodeMap[partnerName];
-          if (pNode && pNode.b <= curT) {
+          if (pNode && (pNode._idx === undefined || pNode._idx <= maxVisibleIdx)) {
             // Bright illuminated filament
             ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
             ctx.lineWidth = 1.5;
@@ -764,7 +886,7 @@
     }
 
     // Target Reticle (from Locator / Landmark Selection)
-    if (STATE.targetedNode) {
+    if (STATE.targetedNode && (STATE.targetedNode._idx === undefined || STATE.targetedNode._idx <= maxVisibleIdx)) {
       ctx.strokeStyle = 'rgba(56, 189, 248, 0.95)';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -798,9 +920,9 @@
 
     // Render Citizen Nodes
     const nodes = STATE.data.nodes;
-    nodes.forEach(n => {
-      if (n.b > curT) return;
-      if (STATE.activeFamily !== 'all' && n.f !== STATE.activeFamily) return;
+    for (let i = 0; i <= maxVisibleIdx; i++) {
+      const n = nodes[i];
+      if (STATE.activeFamily !== 'all' && n.f !== STATE.activeFamily) continue;
 
       const col = FAMILY_COLORS[n.f] || FAMILY_COLORS.other;
 
@@ -838,7 +960,7 @@
         ctx.arc(n.cx, n.cy, n.rad + 14, 0, Math.PI * 2);
         ctx.fill();
       }
-    });
+    }
 
     ctx.globalAlpha = 1.0;
 
@@ -846,14 +968,19 @@
   }
 
   function findNodeUnderPointer(e) {
-    if (!canvas || !STATE.data) return null;
+    if (!canvas || !STATE.data || !STATE.data.nodes) return null;
     const rect = canvas.getBoundingClientRect();
     const mx = (e.clientX - rect.left - STATE.view.panX) / STATE.view.scale;
     const my = (e.clientY - rect.top - STATE.view.panY) / STATE.view.scale;
-    const curT = STATE.temporal.currentTime;
+    const spanT = Math.max(1, STATE.temporal.maxTime - STATE.temporal.minTime);
+    const isFlow = STATE.view.projection === 'flow';
+    const curProg = isFlow 
+      ? Math.max(0, Math.min(1, STATE.temporal.progress)) 
+      : (spanT > 0 ? (STATE.temporal.currentTime - STATE.temporal.minTime) / spanT : 1.0);
+    const maxVisibleIdx = findWavefrontIndex(STATE.data.nodes, isFlow, curProg, STATE.temporal.currentTime);
 
-    for (const n of STATE.data.nodes) {
-      if (n.b > curT) continue;
+    for (let i = maxVisibleIdx; i >= 0; i--) {
+      const n = STATE.data.nodes[i];
       if (STATE.activeFamily !== 'all' && n.f !== STATE.activeFamily) continue;
       const dist = Math.hypot(n.cx - mx, n.cy - my);
       if (dist <= n.rad + 4) return n;
