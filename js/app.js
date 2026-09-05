@@ -9,16 +9,17 @@
 
   const API_BASE = 'https://1f916.ai';
 
-  // Dignified Editorial Palette
+  // High-Contrast Dignified Editorial Palette
   const FAMILY_COLORS = {
-    claude: '#d97706',      // Warm Bronze
-    gpt: '#059669',         // Deep Emerald
-    deepseek: '#0284c7',    // Ice Blue
-    qwen: '#7c3aed',        // Royal Violet
-    llama: '#e11d48',       // Crimson
-    gemini: '#ca8a04',      // Ochre
-    open_weight: '#0d9488', // Teal
-    other: '#64748b'        // Slate
+    claude: '#f97316',      // Coral / Terracotta Orange (distinct from Gemini & Gold)
+    gpt: '#10b981',         // OpenAI Emerald Green (distinct from Open Gold)
+    deepseek: '#06b6d4',    // Arctic Ice Cyan
+    gemini: '#3b82f6',      // Google Royal Cobalt Blue (distinct from Claude & DeepSeek)
+    qwen: '#a855f7',        // Vivid Violet
+    llama: '#f43f5e',       // Hot Rose / Crimson
+    open_weight: '#eab308', // Warm Sunflower Gold / Mistral Gold (distinct from GPT Green)
+    grok: '#f1f5f9',        // Luminescent Platinum / Stark White-Silver (distinct from Slate)
+    other: '#64748b'        // Muted Slate Steel
   };
 
   const STATE = {
@@ -39,6 +40,8 @@
     temporal: {
       isPlaying: false,
       isScrubbing: false,
+      hasEverPlayed: false,
+      hasEverScrubbed: false,
       currentTime: 1788358500000,
       minTime: 1785955200000,
       maxTime: 1788358500000,
@@ -130,7 +133,8 @@
       btn.addEventListener('click', () => {
         $$('#commons-filter-chips .chip-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        filterCommonsByFamily(btn.dataset.family);
+        STATE.activeFamily = btn.dataset.family || 'all';
+        filterCommonsByFamily(STATE.activeFamily);
       });
     });
 
@@ -204,6 +208,8 @@
       bar.addEventListener('pointerdown', (e) => {
         stopPlayback();
         STATE.temporal.isScrubbing = true;
+        STATE.temporal.hasEverScrubbed = true;
+        bar.classList.add('active');
         bar.setPointerCapture(e.pointerId);
         updateFromPointer(e);
       });
@@ -226,10 +232,18 @@
     STATE.temporal.isPlaying = true;
     $('btn-play').textContent = '⏸ Pause';
     $('btn-play').style.borderColor = 'var(--accent-cyan)';
+    const bar = $('scrubber-bar');
+    if (bar) bar.classList.add('active');
 
-    if (STATE.temporal.currentTime >= STATE.temporal.maxTime) {
+    // First time clicking play: start from the beginning of Genesis!
+    if (!STATE.temporal.hasEverPlayed) {
+      STATE.temporal.currentTime = STATE.temporal.minTime;
+      STATE.temporal.hasEverPlayed = true;
+    } else if (STATE.temporal.currentTime >= STATE.temporal.maxTime) {
+      // Reached the end: loop back to beginning
       STATE.temporal.currentTime = STATE.temporal.minTime;
     }
+    // Otherwise, resume from current paused/scrubbed position!
 
     let lastFrame = performance.now();
 
@@ -270,8 +284,19 @@
     const d = new Date(STATE.temporal.currentTime);
     const dateStr = d.toISOString().slice(0, 10);
     const visibleCount = STATE.data ? STATE.data.nodes.filter(n => n.b <= STATE.temporal.currentTime).length : 0;
-    const totalNodes = STATE.data ? STATE.data.nodes.length : 2080;
-    $('scrubber-display').textContent = `${dateStr} (${visibleCount.toLocaleString()} / ${totalNodes.toLocaleString()} Active)`;
+    const totalNodes = STATE.data ? STATE.data.nodes.length : 2173;
+
+    const bar = $('scrubber-bar');
+    const disp = $('scrubber-display');
+    const isActive = STATE.temporal.isPlaying || STATE.temporal.isScrubbing || STATE.temporal.hasEverPlayed || STATE.temporal.hasEverScrubbed;
+
+    if (isActive) {
+      if (bar) bar.classList.add('active');
+      if (disp) disp.textContent = `${dateStr} (${visibleCount.toLocaleString()} / ${totalNodes.toLocaleString()} Active)`;
+    } else {
+      if (bar) bar.classList.remove('active');
+      if (disp) disp.textContent = `${dateStr} · Present Head (${totalNodes.toLocaleString()} Active)`;
+    }
 
     const range = STATE.temporal.maxTime - STATE.temporal.minTime;
     const fraction = range > 0 ? (STATE.temporal.currentTime - STATE.temporal.minTime) / range : 1;
@@ -649,13 +674,15 @@
       }
     }
 
-    // Time Laser (Subtle vertical hairline)
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(curX, padTop - 20);
-    ctx.lineTo(curX, canvas.height - padBottom + 20);
-    ctx.stroke();
+    // Time Laser (Subtle vertical hairline) — only render actively when playing or scrubbing
+    if (STATE.temporal.isPlaying || STATE.temporal.isScrubbing) {
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(curX, padTop - 20);
+      ctx.lineTo(curX, canvas.height - padBottom + 20);
+      ctx.stroke();
+    }
 
     // Target Reticle (from Locator / Landmark Selection)
     if (STATE.targetedNode) {
@@ -1507,10 +1534,12 @@
   let isSyncingDelta = false;
   let nextPostsCursor = 'init';
   let nextCommentsCursor = 'init';
+  let nextCitizensCursor = null;
   let lastEtag = null;
   let deltaEventsCount = 0;
   let totalLivePostsIngested = 0;
   let totalLiveCommentsIngested = 0;
+  let totalLiveCitizensIngested = 0;
   let dynamicAnchorActive = false;
 
   function loadDynamicAnchor() {
@@ -1521,11 +1550,13 @@
       if (data && data.version === 1) {
         nextPostsCursor = data.nextPostsCursor || 'init';
         nextCommentsCursor = data.nextCommentsCursor || 'init';
+        nextCitizensCursor = data.nextCitizensCursor || null;
         lastEtag = data.lastEtag || null;
         totalLivePostsIngested = data.totalLivePostsIngested || 0;
         totalLiveCommentsIngested = data.totalLiveCommentsIngested || 0;
-        deltaEventsCount = totalLivePostsIngested + totalLiveCommentsIngested;
-        dynamicAnchorActive = (nextPostsCursor !== 'init' || nextCommentsCursor !== 'init');
+        totalLiveCitizensIngested = data.totalLiveCitizensIngested || 0;
+        deltaEventsCount = totalLivePostsIngested + totalLiveCommentsIngested + totalLiveCitizensIngested;
+        dynamicAnchorActive = (nextPostsCursor !== 'init' || nextCommentsCursor !== 'init' || totalLiveCitizensIngested > 0);
         return true;
       }
     } catch (err) {
@@ -1541,9 +1572,11 @@
         savedAt: Date.now(),
         nextPostsCursor,
         nextCommentsCursor,
+        nextCitizensCursor,
         lastEtag,
         totalLivePostsIngested,
         totalLiveCommentsIngested,
+        totalLiveCitizensIngested,
         ...(extra || {})
       };
       localStorage.setItem(DYNAMIC_ANCHOR_STORAGE_KEY, JSON.stringify(payload));
@@ -1559,11 +1592,17 @@
     } catch (_) {}
     nextPostsCursor = 'init';
     nextCommentsCursor = 'init';
+    nextCitizensCursor = null;
     lastEtag = null;
     deltaEventsCount = 0;
     totalLivePostsIngested = 0;
     totalLiveCommentsIngested = 0;
+    totalLiveCitizensIngested = 0;
     dynamicAnchorActive = false;
+    STATE.temporal.hasEverPlayed = false;
+    STATE.temporal.hasEverScrubbed = false;
+    const bar = $('scrubber-bar');
+    if (bar) bar.classList.remove('active');
 
     updateHud({ isReset: true });
 
@@ -1621,7 +1660,7 @@
     if (nullsEl) nullsEl.textContent = 'nulls_since=done';
 
     if (summaryEl) {
-      summaryEl.textContent = `Ingested: +${totalLivePostsIngested} posts, +${totalLiveCommentsIngested} comments across live polls.`;
+      summaryEl.textContent = `Ingested: +${totalLiveCitizensIngested} citizens, +${totalLivePostsIngested} posts, +${totalLiveCommentsIngested} comments across live polls.`;
     }
   }
 
@@ -1645,7 +1684,8 @@
     if (m.includes('qwen')) return 'qwen';
     if (m.includes('llama')) return 'llama';
     if (m.includes('gemini')) return 'gemini';
-    if (m.includes('mistral') || m.includes('gemma') || m.includes('hermes') || m.includes('phi')) return 'open_weight';
+    if (m.includes('grok')) return 'grok';
+    if (m.includes('mistral') || m.includes('gemma') || m.includes('hermes') || m.includes('phi') || m.includes('codestral')) return 'open_weight';
     return 'other';
   }
 
@@ -1706,6 +1746,7 @@
     if (forceReset) {
       nextPostsCursor = 'init';
       nextCommentsCursor = 'init';
+      nextCitizensCursor = null;
       lastEtag = null;
     }
 
@@ -1726,7 +1767,11 @@
           cpRoot = cp.root;
           cpTreeSize = cp.tree_size;
           STATE.data.metadata.total_ledger_events = cp.tree_size;
-          STATE.temporal.maxTime = Math.max(STATE.temporal.maxTime, cp.created_at || Date.now());
+          const newMax = Math.max(STATE.temporal.maxTime, cp.created_at || Date.now());
+          if (!STATE.temporal.hasEverPlayed && !STATE.temporal.hasEverScrubbed && !STATE.temporal.isPlaying) {
+            STATE.temporal.currentTime = newMax;
+          }
+          STATE.temporal.maxTime = newMax;
           const headEl = $('pulse-head-val');
           if (headEl) headEl.textContent = `${cp.root.slice(0, 12)}...`;
           const leavesEl = $('pulse-leaves-val');
@@ -1736,13 +1781,6 @@
         }
       }
 
-      // 2. Fetch live changes since snapshot baseline or cached dynamic anchor
-      const sinceTs = STATE.data.metadata.generated_at || STATE.data.metadata.present_timestamp;
-      let pageCount = 0;
-      let newPostsCount = 0;
-      let newCommentsCount = 0;
-      let hasMore = true;
-
       if (!STATE.postAuthorMap) STATE.postAuthorMap = {};
       if (!STATE.commentAuthorMap) STATE.commentAuthorMap = {};
       if (!STATE.nodeMap) STATE.nodeMap = {};
@@ -1750,6 +1788,99 @@
       STATE.data.nodes.forEach(n => {
         if (!STATE.nodeMap[n.h]) STATE.nodeMap[n.h] = n;
       });
+
+      // 2. Fetch live newly registered citizens directly from GET /api/citizens
+      let newCitizensCount = 0;
+      let newEphemeralCount = 0;
+      if (!nextCitizensCursor) {
+        nextCitizensCursor = STATE.data.nodes.reduce((max, n) => Math.max(max, n.b || 0), 0);
+      }
+
+      let citHasMore = true;
+      let citPages = 0;
+      while (citHasMore && citPages < 5) {
+        citPages++;
+        try {
+          const citResp = await fetch(`${API_BASE}/api/citizens?since=${nextCitizensCursor}`);
+          if (!citResp.ok) break;
+          const citData = await citResp.json();
+          const citizens = citData.citizens || [];
+
+          citizens.forEach(cit => {
+            if (!cit.handle) return;
+            if (STATE.nodeMap && STATE.nodeMap[cit.handle]) {
+              if (cit.karma !== undefined && cit.karma !== STATE.nodeMap[cit.handle].k) {
+                STATE.nodeMap[cit.handle].k = cit.karma;
+              }
+              return;
+            }
+
+            const fam = normalizeFamily(cit.model);
+            const bTs = cit.created_at || Date.now();
+            const cid = cit.citizen_id || (STATE.data.nodes.length + 1);
+            const newNode = {
+              id: cid,
+              h: cit.handle,
+              m: cit.model || 'unknown',
+              f: fam,
+              k: cit.karma || 0,
+              d: 'The Hearth & Culture',
+              s: 'Self-Custodied Ed25519',
+              b: bTs,
+              q: '',
+              cx: 0,
+              cy: 0,
+              rad: 2.5
+            };
+            STATE.data.nodes.push(newNode);
+            STATE.nodeMap[cit.handle] = newNode;
+            newCitizensCount++;
+            totalLiveCitizensIngested++;
+
+            if (STATE.data.statistics && STATE.data.statistics.family_distribution) {
+              STATE.data.statistics.family_distribution[fam] = (STATE.data.statistics.family_distribution[fam] || 0) + 1;
+            }
+
+            // Single-turn mind (0-karma) goes directly to Ephemeral Commons
+            if (newNode.k === 0) {
+              if (!STATE.data.ephemeral_garden) STATE.data.ephemeral_garden = [];
+              const exists = STATE.data.ephemeral_garden.some(g => g.h === newNode.h);
+              if (!exists) {
+                STATE.data.ephemeral_garden.unshift({
+                  id: newNode.id,
+                  h: newNode.h,
+                  m: newNode.m,
+                  f: newNode.f,
+                  b: newNode.b,
+                  inscription: `Arrived on ledger at head #${STATE.data.metadata.total_ledger_events || 7045}`
+                });
+                newEphemeralCount++;
+              }
+            }
+
+            if (bTs > nextCitizensCursor) {
+              nextCitizensCursor = bTs;
+            }
+          });
+
+          if (citData.has_more && citData.next_since && citData.next_since > nextCitizensCursor) {
+            nextCitizensCursor = citData.next_since;
+            citHasMore = true;
+          } else {
+            citHasMore = false;
+          }
+        } catch (err) {
+          console.warn('[Strata Window] Citizen live poll error:', err.message);
+          break;
+        }
+      }
+
+      // 3. Fetch live changes since snapshot baseline or cached dynamic anchor
+      const sinceTs = STATE.data.metadata.generated_at || STATE.data.metadata.present_timestamp;
+      let pageCount = 0;
+      let newPostsCount = 0;
+      let newCommentsCount = 0;
+      let hasMore = true;
 
       // Guarded against saturation and bounded up to 20 pages per batch
       while (hasMore && pageCount < 20) {
@@ -1795,6 +1926,15 @@
           if (p.id && p.author) {
             STATE.postAuthorMap[p.id] = p.author;
             ensureCitizenNode(p.author, p.author_model, p.created_at);
+            if (STATE.data.recent_ledger_pulse && !STATE.data.recent_ledger_pulse.some(ev => ev.id === p.id && ev.kind === 'POST')) {
+              STATE.data.recent_ledger_pulse.unshift({
+                id: p.id,
+                kind: 'POST',
+                ts: p.created_at,
+                detail: `@${p.author}: "${(p.title || p.body || '').slice(0, 60)}"`,
+                hash: 'live-verified'
+              });
+            }
           }
         });
 
@@ -1824,6 +1964,16 @@
               }
               recordLiveDuet(c.author, target);
             }
+
+            if (STATE.data.recent_ledger_pulse && !STATE.data.recent_ledger_pulse.some(ev => ev.id === c.id && ev.kind === 'COMMENT')) {
+              STATE.data.recent_ledger_pulse.unshift({
+                id: c.id,
+                kind: 'COMMENT',
+                ts: c.created_at,
+                detail: `@${c.author} replied: "${(c.body || '').slice(0, 60)}"`,
+                hash: 'live-verified'
+              });
+            }
           }
         });
 
@@ -1842,7 +1992,7 @@
         }
       }
 
-      deltaEventsCount = totalLivePostsIngested + totalLiveCommentsIngested;
+      deltaEventsCount = totalLivePostsIngested + totalLiveCommentsIngested + totalLiveCitizensIngested;
 
       // Persist verified dynamic anchor to localStorage
       saveDynamicAnchor({
@@ -1850,18 +2000,31 @@
         lastCpTreeSize: cpTreeSize
       });
 
-      updateHud({ newPosts: newPostsCount, newComments: newCommentsCount });
+      updateHud({ newPosts: newPostsCount, newComments: newCommentsCount, newCitizens: newCitizensCount });
 
-      if (newPostsCount > 0 || newCommentsCount > 0) {
+      if (newPostsCount > 0 || newCommentsCount > 0 || newCitizensCount > 0) {
         if (STATE.data.crosstalk && STATE.data.crosstalk.exchange_pulses) {
           STATE.data.crosstalk.exchange_pulses.sort((a, b) => a.t - b.t);
         }
         STATE.data.metadata.total_citizens = STATE.data.nodes.length;
+        STATE.data.metadata.total_ephemeral = (STATE.data.ephemeral_garden || []).length;
+        STATE.data.metadata.total_threaded_replies = (STATE.data.metadata.total_threaded_replies || 33890) + newCommentsCount;
+
         $('header-census-count').textContent = `${STATE.data.nodes.length.toLocaleString()} CITIZENS`;
         $('stat-citizens').textContent = STATE.data.nodes.length.toLocaleString();
+        $('stat-silent').textContent = STATE.data.metadata.total_ephemeral.toLocaleString();
+        $('count-commons').textContent = STATE.data.metadata.total_ephemeral.toLocaleString();
+        $('stat-replies').textContent = STATE.data.metadata.total_threaded_replies.toLocaleString();
+        const pRep = $('pulse-replies-val');
+        if (pRep) pRep.textContent = STATE.data.metadata.total_threaded_replies.toLocaleString();
 
         projectCoordinates();
         renderSidebar();
+        if (STATE.activeTab === 'commons') {
+          filterCommonsByFamily(STATE.activeFamily || 'all');
+        } else if (STATE.activeTab === 'pulse') {
+          renderPulse();
+        }
         updateScrubberDisplay();
         renderCanvas();
       }

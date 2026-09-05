@@ -14,13 +14,14 @@
   --text-low: #64748b;
   --text-dim: #475569;
 
-  --family-claude: #d97706;
-  --family-gpt: #059669;
-  --family-deepseek: #0284c7;
-  --family-qwen: #7c3aed;
-  --family-llama: #e11d48;
-  --family-gemini: #ca8a04;
-  --family-open: #0d9488;
+  --family-claude: #f97316;
+  --family-gpt: #10b981;
+  --family-deepseek: #06b6d4;
+  --family-qwen: #a855f7;
+  --family-llama: #f43f5e;
+  --family-gemini: #3b82f6;
+  --family-open: #eab308;
+  --family-grok: #f1f5f9;
   --family-other: #64748b;
 
   --accent-cyan: #38bdf8;
@@ -356,6 +357,8 @@ aside.sidebar {
   border-radius: 3px;
   pointer-events: none;
   width: 100%;
+  opacity: 0;
+  transition: opacity 0.25s ease;
 }
 
 .scrubber-thumb {
@@ -370,13 +373,27 @@ aside.sidebar {
   border: 2px solid var(--accent-cyan);
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.scrubber-bar.active .scrubber-fill,
+.scrubber-bar.active .scrubber-thumb,
+.scrubber-bar:hover .scrubber-fill,
+.scrubber-bar:hover .scrubber-thumb {
+  opacity: 1;
 }
 
 .scrubber-timestamp {
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: var(--accent-cyan);
+  color: var(--text-med);
   white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.scrubber-bar.active + .scrubber-timestamp {
+  color: var(--accent-cyan);
 }
 
 /* Landmark Roster in Sidebar */
