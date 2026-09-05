@@ -929,10 +929,570 @@ aside.sidebar {
   color: var(--text-med);
 }
 
-.speed-btn.active {
-  border-color: var(--accent-cyan) !important;
-  color: var(--accent-cyan) !important;
+/* ==========================================================================
+   STARWALKER 3D ENGINE & ASTRONOMICAL HUD
+   ========================================================================== */
+
+.starwalker-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+}
+
+.starwalker-top-bar {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.constellation-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(13, 17, 26, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-muted);
+  border-radius: 4px;
+  padding: 0.35rem 0.6rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.constellation-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  letter-spacing: 0.05em;
+  margin-right: 0.25rem;
+}
+
+.const-btn {
+  font-size: 0.68rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-muted);
+  color: var(--text-med);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.const-btn:hover {
+  border-color: var(--border-active);
+  color: var(--text-pure);
+  background: var(--bg-hover);
+}
+
+.const-btn.active {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  background: rgba(56, 189, 248, 0.12);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
+}
+
+.starwalker-bottom-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  background: rgba(13, 17, 26, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-muted);
+  border-radius: 4px;
+  padding: 0.4rem 0.75rem;
+  pointer-events: auto;
+}
+
+.flight-telemetry {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--accent-emerald);
+}
+
+.flight-controls-hint {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--text-dim);
+}
+
+.flight-controls-hint span {
+  color: var(--text-low);
+}
+
+/* Astronomical Telescope Reticle */
+.starwalker-reticle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  pointer-events: none;
+  opacity: 0.28;
+  transition: opacity 0.25s ease;
+}
+
+.starwalker-reticle .reticle-ring {
+  width: 100%;
+  height: 100%;
+  border: 1px dashed var(--accent-cyan);
+  border-radius: 50%;
+  animation: reticle-spin 40s linear infinite;
+}
+
+.starwalker-reticle .reticle-cross-h {
+  position: absolute;
+  top: 50%;
+  left: -8px;
+  right: -8px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+}
+
+.starwalker-reticle .reticle-cross-v {
+  position: absolute;
+  left: 50%;
+  top: -8px;
+  bottom: -8px;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, var(--accent-cyan), transparent);
+}
+
+@keyframes reticle-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   THE LIVING WINDOW (DISCOURSE PARLOR)
+   ========================================================================== */
+
+.parlor-pane {
+  padding: 1.5rem 2rem;
+  overflow-y: auto;
+  height: calc(100vh - 48px - 28px);
+  background: radial-gradient(circle at 50% 0%, rgba(20, 27, 39, 0.4) 0%, var(--bg-deep) 70%);
+}
+
+.parlor-header {
+  margin-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border-muted);
+  padding-bottom: 1.5rem;
+}
+
+.parlor-quick-stats {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.parlor-stat-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-muted);
+  border-radius: 4px;
+  padding: 0.5rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.parlor-stat-val {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-pure);
+}
+
+.parlor-stat-lbl {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+/* Overheard Ticker */
+.overheard-container {
+  margin-top: 1.25rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-muted);
+  border-left: 3px solid var(--accent-cyan);
+  border-radius: 4px;
+  padding: 0.85rem 1.25rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.overheard-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  letter-spacing: 0.06em;
+  margin-bottom: 0.35rem;
+}
+
+.overheard-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 6px var(--accent-cyan);
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+.overheard-body {
+  flex: 1;
+  position: relative;
+  padding-left: 1.75rem;
+}
+
+.overheard-quote-glyph {
+  position: absolute;
+  top: -0.2rem;
+  left: 0;
+  font-family: Georgia, serif;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--accent-cyan);
+  opacity: 0.35;
+}
+
+.overheard-quote-text {
+  font-size: 0.84rem;
+  font-style: italic;
+  color: var(--text-high);
+  line-height: 1.45;
+  margin-bottom: 0.4rem;
+}
+
+.overheard-author-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.overheard-author {
+  font-weight: 700;
+  color: var(--text-pure);
+}
+
+.overheard-model {
+  color: var(--text-dim);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-muted);
+  border-radius: 2px;
+  padding: 0.05rem 0.35rem;
+  font-size: 0.64rem;
+  text-transform: uppercase;
+}
+
+.overheard-focus-btn {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.65rem;
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  margin-left: auto;
+}
+
+.overheard-nav {
+  display: flex;
+  gap: 0.3rem;
+}
+
+/* Mullioned Windowpanes Grid (The 4 Quarters) */
+.mullions-section-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 0.75rem;
+}
+
+.window-mullions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 1100px) {
+  .window-mullions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .window-mullions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mullion-pane-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.mullion-pane-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent-color, var(--border-muted));
+  opacity: 0.85;
+}
+
+.mullion-pane-card:hover {
+  border-color: var(--border-active);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.mullion-quarter-title {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-pure);
+  letter-spacing: 0.04em;
+  margin-bottom: 0.4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mullion-quarter-desc {
+  font-size: 0.76rem;
+  color: var(--text-med);
+  line-height: 1.45;
+  margin-bottom: 0.85rem;
+  flex: 1;
+}
+
+.mullion-voices-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+
+.mullion-voices-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.85rem;
+}
+
+.mullion-voice-chip {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--accent-cyan);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-muted);
+  border-radius: 3px;
+  padding: 0.15rem 0.4rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mullion-voice-chip:hover {
+  border-color: var(--accent-cyan);
+  color: var(--text-pure);
   background: rgba(56, 189, 248, 0.1);
+}
+
+.mullion-filter-btn {
+  width: 100%;
+  font-size: 0.7rem;
+  padding: 0.4rem 0.6rem;
+  margin-top: auto;
+  justify-content: center;
+  display: flex;
+  gap: 0.35rem;
+}
+
+/* Living Thread River */
+.river-header {
+  margin-bottom: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-muted);
+}
+
+.river-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.river-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 2rem;
+}
+
+.river-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  padding: 1.1rem 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.river-card:hover {
+  border-color: var(--border-active);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.river-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.river-duet-handles {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.river-handle-a {
+  color: var(--text-pure);
+  cursor: pointer;
+}
+
+.river-handle-a:hover {
+  color: var(--accent-cyan);
+}
+
+.river-handle-b {
+  color: var(--text-pure);
+  cursor: pointer;
+}
+
+.river-handle-b:hover {
+  color: var(--accent-cyan);
+}
+
+.river-arrow {
+  color: var(--accent-cyan);
+  font-size: 0.9rem;
+}
+
+.river-meta-pills {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.river-quarter-pill {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.1rem 0.35rem;
+  border-radius: 2px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-muted);
+  color: var(--text-med);
+}
+
+.river-exchanges-pill {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  border-radius: 2px;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.river-quotes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .river-quotes-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.river-quote-box {
+  background: var(--bg-surface);
+  border-radius: 4px;
+  padding: 0.75rem 0.85rem;
+  border-left: 2px solid var(--side-color, var(--border-muted));
+}
+
+.river-quote-author {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-pure);
+  margin-bottom: 0.35rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.river-quote-text {
+  font-size: 0.76rem;
+  color: var(--text-med);
+  line-height: 1.45;
+  font-style: italic;
+}
+
+.river-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  border-top: 1px solid var(--border-muted);
+  padding-top: 0.6rem;
+}
+
+.river-action-btn {
+  font-size: 0.68rem;
+  padding: 0.25rem 0.55rem;
 }
 
 /* Interface Footer */

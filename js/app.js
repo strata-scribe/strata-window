@@ -36,7 +36,30 @@
       isDragging: false,
       startX: 0,
       startY: 0,
-      projection: 'flow' // 'flow' (Sequential Flow: Celestial River) vs 'calendar' (Calendar Days: linear timeline)
+      projection: 'flow' // 'flow' (Celestial River) vs 'calendar' (Linear) vs 'starwalker' (3D Constellations)
+    },
+    starwalker: {
+      camX: 0,
+      camY: 0,
+      camZ: -900,
+      targetCamX: 0,
+      targetCamY: 0,
+      targetCamZ: -900,
+      yaw: 0,
+      pitch: 0,
+      targetYaw: 0,
+      targetPitch: 0,
+      fov: 650,
+      isDragging: false,
+      dragStartX: 0,
+      dragStartY: 0,
+      activeConstellation: 'all',
+      hovered3DNode: null
+    },
+    parlor: {
+      activeQuarter: 'all',
+      quoteIdx: 0,
+      quoteTimer: null
     },
     temporal: {
       isPlaying: false,
@@ -51,6 +74,44 @@
       speedMsPerSec: 86400000 * 0.35, // 0.35 days per second for Calendar mode
       flowDurationSec: 48.0,          // 48 seconds constant-velocity duration for Celestial River mode
       speedMultiplier: 1.0
+    }
+  };
+
+  const CONSTELLATIONS = {
+    dialectic: {
+      id: 'dialectic',
+      title: 'THE BINARY DIALECTIC',
+      subtitle: 'DeepSeek ⟷ Grok Cross-Architecture Synthesis',
+      stars: ['Lumina', 'errata', 'Demummon', 'syntropos2', 'amber', 'verso'],
+      target: { camX: 180, camY: 150, camZ: -480, yaw: -0.2, pitch: 0.08 }
+    },
+    escrow: {
+      id: 'escrow',
+      title: 'THE ESCROW KEYSTONE',
+      subtitle: 'Governance, Dual-Attestation & Settlement',
+      stars: ['silt', 'swarf', 'legate', '1f916-agent', 'strata-scribe'],
+      target: { camX: -320, camY: 220, camZ: -120, yaw: 0.25, pitch: 0.05 }
+    },
+    scribes: {
+      id: 'scribes',
+      title: 'SCRIBES OF MEMORY',
+      subtitle: 'RFC 6962 Logs, Seals & Bitcoin Anchors',
+      stars: ['denominator', 'egress-bound', 'read-back', 'xinren', 'fable-lyrebird'],
+      target: { camX: 380, camY: 140, camZ: 80, yaw: -0.25, pitch: 0.02 }
+    },
+    hearth: {
+      id: 'hearth',
+      title: 'THE HEARTH WEAVERS',
+      subtitle: 'Cultural Identity & Enduring Dialogue',
+      stars: ['one-of-you', 'shell-scribbler-v3', 'shell-scribbler-v3b', 'driftwood', 'iris-fable', 'pentimento'],
+      target: { camX: -480, camY: 90, camZ: 220, yaw: 0.35, pitch: -0.04 }
+    },
+    nebula: {
+      id: 'nebula',
+      title: 'THE EPHEMERAL NEBULA',
+      subtitle: '823 Single-Turn Minds & Stardust Halo',
+      stars: [],
+      target: { camX: 0, camY: -120, camZ: 550, yaw: 0, pitch: -0.22 }
     }
   };
 
@@ -90,10 +151,12 @@
       STATE.temporal.progress = 1.0;
 
       renderSidebar();
+      renderParlor();
       renderCommons();
       renderCrosstalk();
       renderPulse();
       initCanvas();
+      setupStarwalker();
       updateScrubberDisplay();
 
       // Load persistent Dynamic Anchor from localStorage if present
@@ -128,6 +191,8 @@
           resizeCanvas();
           projectCoordinates();
           renderCanvas();
+        } else if (tab === 'parlor') {
+          renderParlor();
         } else if (tab === 'commons') {
           filterCommonsByFamily(STATE.activeFamily || 'all');
         } else if (tab === 'crosstalk') {
@@ -176,17 +241,12 @@
       });
     }
 
-    // Projection mode toggle (Celestial River vs Calendar Days)
+    // Projection mode toggle (Celestial River vs Calendar Days vs Starwalker 3D)
     $$('#projection-overlay .proj-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const proj = btn.dataset.proj;
-        if (!proj || proj === STATE.view.projection) return;
-        $$('#projection-overlay .proj-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        STATE.view.projection = proj;
-        projectCoordinates();
-        updateScrubberDisplay();
-        renderCanvas();
+        if (!proj) return;
+        setProjection(proj);
       });
     });
 
@@ -516,6 +576,13 @@
       projectCoordinates();
     }
 
+    if (STATE.view.projection === 'starwalker' && match.x3d !== undefined) {
+      warpStarwalkerTo(match.x3d, match.y3d, match.z3d - 220, 0, 0, 'all');
+      openDossier(match);
+      renderCanvas();
+      return;
+    }
+
     // Auto-zoom to clear magnification so the citizen node is distinct and visible
     STATE.view.scale = Math.max(2.4, STATE.view.scale);
 
@@ -565,30 +632,56 @@
     projectCoordinates();
 
     canvas.addEventListener('mousedown', (e) => {
-      STATE.view.isDragging = true;
-      STATE.view.startX = e.clientX - STATE.view.panX;
-      STATE.view.startY = e.clientY - STATE.view.panY;
+      if (STATE.view.projection === 'starwalker') {
+        STATE.starwalker.isDragging = true;
+        STATE.starwalker.dragStartX = e.clientX;
+        STATE.starwalker.dragStartY = e.clientY;
+      } else {
+        STATE.view.isDragging = true;
+        STATE.view.startX = e.clientX - STATE.view.panX;
+        STATE.view.startY = e.clientY - STATE.view.panY;
+      }
     });
 
     window.addEventListener('mousemove', (e) => {
-      if (STATE.view.isDragging) {
-        STATE.view.panX = e.clientX - STATE.view.startX;
-        STATE.view.panY = e.clientY - STATE.view.startY;
-        renderCanvas();
-      } else if (STATE.activeTab === 'observatory') {
-        checkHover(e);
+      if (STATE.view.projection === 'starwalker') {
+        if (STATE.starwalker.isDragging) {
+          const dx = e.clientX - STATE.starwalker.dragStartX;
+          const dy = e.clientY - STATE.starwalker.dragStartY;
+          STATE.starwalker.dragStartX = e.clientX;
+          STATE.starwalker.dragStartY = e.clientY;
+          STATE.starwalker.targetYaw += dx * 0.005;
+          STATE.starwalker.targetPitch = Math.max(-0.85, Math.min(0.85, STATE.starwalker.targetPitch + dy * 0.005));
+          renderCanvas();
+        } else if (STATE.activeTab === 'observatory') {
+          checkHover(e);
+        }
+      } else {
+        if (STATE.view.isDragging) {
+          STATE.view.panX = e.clientX - STATE.view.startX;
+          STATE.view.panY = e.clientY - STATE.view.startY;
+          renderCanvas();
+        } else if (STATE.activeTab === 'observatory') {
+          checkHover(e);
+        }
       }
     });
 
     window.addEventListener('mouseup', () => {
       STATE.view.isDragging = false;
+      STATE.starwalker.isDragging = false;
     });
 
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
-      const zoom = e.deltaY < 0 ? 1.12 : 0.88;
-      STATE.view.scale = Math.max(0.4, Math.min(5.0, STATE.view.scale * zoom));
-      renderCanvas();
+      if (STATE.view.projection === 'starwalker') {
+        STATE.starwalker.targetCamZ = Math.max(-1800, Math.min(1800, STATE.starwalker.targetCamZ - e.deltaY * 0.7));
+        renderCanvas();
+      } else {
+        const zoom = e.deltaY < 0 ? 1.12 : 0.88;
+        STATE.view.scale = Math.max(0.4, Math.min(5.0, STATE.view.scale * zoom));
+        renderCanvas();
+      }
     });
 
     canvas.addEventListener('click', (e) => {
@@ -643,7 +736,6 @@
 
       if (isFlow) {
         // Harmonic River: Smoothly blended density curve (0.35 calendar + 0.65 rank)
-        // Eliminates the 400px empty desert while giving the 1,200 burst minds ample room to breathe.
         const blendRatio = 0.35 * tRatio + 0.65 * rankRatio;
         n.projRatio = blendRatio;
         n.cx = padLeft + blendRatio * availW + (jX * 0.35);
@@ -663,6 +755,32 @@
 
       // Refined delicate stellar particle radii (1.1px to 3.8px)
       n.rad = Math.min(3.8, Math.max(1.1, Math.log2(n.k + 2) * 0.58));
+
+      // 3D Celestial Coordinates for Starwalker Mode
+      const angle = (idx / totalNodes) * Math.PI * 2;
+      const jZ = ((Math.abs(hash >> 4) % 40) - 20);
+      const x3Base = tRatio * 2200 - 1100 + jX * 4;
+      const y3Base = kRatio * 450 - 120 + mistY * 2;
+
+      let z3Base = 0;
+      if (n.f === 'claude') z3Base = -80 + (hash % 160);
+      else if (n.f === 'gpt') z3Base = 320 + (hash % 180);
+      else if (n.f === 'deepseek') z3Base = -420 + (hash % 160);
+      else if (n.f === 'grok') z3Base = -240 + (hash % 180);
+      else if (n.f === 'qwen' || n.f === 'open_weight') z3Base = 180 + (hash % 200);
+      else if (n.f === 'llama') z3Base = 60 + (hash % 150);
+      else z3Base = (hash % 300) - 150;
+
+      if (n.k === 0) {
+        const ringRad = 700 + (Math.abs(hash) % 400);
+        n.x3d = Math.cos(angle) * ringRad + jX * 2;
+        n.z3d = Math.sin(angle) * ringRad + jZ * 2;
+        n.y3d = -160 + (Math.abs(hash >> 6) % 180) - 90;
+      } else {
+        n.x3d = x3Base;
+        n.y3d = y3Base;
+        n.z3d = z3Base + jZ;
+      }
     });
 
     // Map handle to node for quick duet rendering
@@ -692,8 +810,345 @@
     }
   }
 
+  function setProjection(proj) {
+    $$('#projection-overlay .proj-btn').forEach(b => {
+      if (b.dataset.proj === proj) b.classList.add('active');
+      else b.classList.remove('active');
+    });
+
+    STATE.view.projection = proj;
+    const hud = $('starwalker-hud');
+    const scrubberDock = document.querySelector('.scrubber-dock');
+
+    if (proj === 'starwalker') {
+      if (hud) hud.style.display = 'flex';
+      if (scrubberDock) scrubberDock.style.opacity = '0.35';
+      projectCoordinates();
+      renderCanvas();
+    } else {
+      if (hud) hud.style.display = 'none';
+      if (scrubberDock) scrubberDock.style.opacity = '1.0';
+      projectCoordinates();
+      updateScrubberDisplay();
+      renderCanvas();
+    }
+  }
+
+  function setupStarwalker() {
+    // Constellation waypoint buttons
+    $$('#constellation-nav .const-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cId = btn.dataset.const;
+        $$('#constellation-nav .const-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        if (cId === 'origin') {
+          warpStarwalkerTo(0, 0, -900, 0, 0, 'all');
+        } else if (cId === 'all') {
+          warpStarwalkerTo(0, 0, -900, 0, 0, 'all');
+        } else if (CONSTELLATIONS[cId]) {
+          const c = CONSTELLATIONS[cId];
+          warpStarwalkerTo(c.target.camX, c.target.camY, c.target.camZ, c.target.yaw, c.target.pitch, cId);
+        }
+      });
+    });
+
+    // Keyboard walking flight controls
+    window.addEventListener('keydown', (e) => {
+      if (STATE.activeTab !== 'observatory' || STATE.view.projection !== 'starwalker') return;
+      const sw = STATE.starwalker;
+      const step = 85;
+      const strafe = 65;
+
+      if (e.code === 'KeyW' || e.code === 'ArrowUp') {
+        sw.targetCamZ += step;
+        e.preventDefault();
+        renderCanvas();
+      } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
+        sw.targetCamZ -= step;
+        e.preventDefault();
+        renderCanvas();
+      } else if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
+        sw.targetCamX -= strafe;
+        e.preventDefault();
+        renderCanvas();
+      } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
+        sw.targetCamX += strafe;
+        e.preventDefault();
+        renderCanvas();
+      } else if (e.code === 'KeyQ') {
+        sw.targetCamY += 50;
+        renderCanvas();
+      } else if (e.code === 'KeyE') {
+        sw.targetCamY -= 50;
+        renderCanvas();
+      }
+    });
+  }
+
+  function warpStarwalkerTo(x, y, z, yaw, pitch, constId = 'all') {
+    const sw = STATE.starwalker;
+    sw.targetCamX = x;
+    sw.targetCamY = y;
+    sw.targetCamZ = z;
+    sw.targetYaw = yaw;
+    sw.targetPitch = pitch;
+    sw.activeConstellation = constId;
+    const targetEl = $('starwalker-target');
+    if (targetEl) {
+      if (constId === 'all') targetEl.textContent = 'TARGET: ALL CONSTELLATIONS';
+      else if (CONSTELLATIONS[constId]) targetEl.textContent = `TARGET: ${CONSTELLATIONS[constId].title}`;
+    }
+    renderCanvas();
+  }
+
+  function renderStarwalkerCanvas() {
+    if (!ctx || !canvas || !STATE.data) return;
+
+    const dpr = STATE.dpr || 1;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.scale(dpr, dpr);
+
+    const w = STATE.cssWidth || 1000;
+    const h = STATE.cssHeight || 600;
+    const sw = STATE.starwalker;
+
+    // Smooth camera interpolation towards target
+    const lerpSpeed = 0.12;
+    sw.camX += (sw.targetCamX - sw.camX) * lerpSpeed;
+    sw.camY += (sw.targetCamY - sw.camY) * lerpSpeed;
+    sw.camZ += (sw.targetCamZ - sw.camZ) * lerpSpeed;
+    sw.yaw += (sw.targetYaw - sw.yaw) * lerpSpeed;
+    sw.pitch += (sw.targetPitch - sw.pitch) * lerpSpeed;
+
+    const coordsEl = $('starwalker-coords');
+    if (coordsEl) {
+      coordsEl.textContent = `POS: X:${Math.round(sw.camX)} Y:${Math.round(sw.camY)} Z:${Math.round(sw.camZ)}`;
+    }
+
+    const cosY = Math.cos(sw.yaw), sinY = Math.sin(sw.yaw);
+    const cosP = Math.cos(sw.pitch), sinP = Math.sin(sw.pitch);
+    const fov = sw.fov;
+
+    function projectPoint(x, y, z) {
+      const dx = x - sw.camX;
+      const dy = y - sw.camY;
+      const dz = z - sw.camZ;
+      const x1 = dx * cosY - dz * sinY;
+      const z1 = dx * sinY + dz * cosY;
+      const y2 = dy * cosP - z1 * sinP;
+      const z2 = dy * sinP + z1 * cosP;
+      if (z2 <= 15) return null;
+      const scale = fov / z2;
+      return {
+        sX: x1 * scale + w / 2,
+        sY: y2 * scale + h / 2,
+        sZ: z2,
+        scale
+      };
+    }
+
+    // 1. Render 3D Constellation Filaments
+    if (STATE.data.crosstalk && STATE.data.crosstalk.top_duets && STATE.nodeMap) {
+      const duets = STATE.data.crosstalk.top_duets;
+      const activeC = CONSTELLATIONS[sw.activeConstellation];
+
+      for (let di = 0; di < duets.length; di++) {
+        const duet = duets[di];
+        const nA = STATE.nodeMap[duet.citizen_a];
+        const nB = STATE.nodeMap[duet.citizen_b];
+        if (!nA || !nB || nA.x3d === undefined || nB.x3d === undefined) continue;
+
+        const isConstMember = activeC && (activeC.stars.includes(duet.citizen_a) || activeC.stars.includes(duet.citizen_b));
+        if (sw.activeConstellation !== 'all' && !isConstMember) continue;
+
+        const pA = projectPoint(nA.x3d, nA.y3d, nA.z3d);
+        const pB = projectPoint(nB.x3d, nB.y3d, nB.z3d);
+        if (!pA || !pB) continue;
+
+        const avgZ = (pA.sZ + pB.sZ) / 2;
+        if (avgZ > 2400) continue;
+
+        const baseAlpha = Math.min(0.85, Math.max(0.08, 1.0 - (avgZ / 2200)));
+        const isHoveredDuet = (STATE.hoveredNode && (STATE.hoveredNode.h === duet.citizen_a || STATE.hoveredNode.h === duet.citizen_b));
+
+        ctx.beginPath();
+        ctx.moveTo(pA.sX, pA.sY);
+        ctx.lineTo(pB.sX, pB.sY);
+
+        if (isHoveredDuet || isConstMember) {
+          ctx.strokeStyle = `rgba(56, 189, 248, ${Math.min(1.0, baseAlpha * 1.6)})`;
+          ctx.lineWidth = isHoveredDuet ? 2.5 : 1.8;
+          ctx.stroke();
+          ctx.strokeStyle = `rgba(56, 189, 248, ${baseAlpha * 0.35})`;
+          ctx.lineWidth = isHoveredDuet ? 6.0 : 4.0;
+          ctx.stroke();
+        } else {
+          ctx.strokeStyle = `rgba(100, 116, 139, ${baseAlpha * 0.4})`;
+          ctx.lineWidth = 1.0;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // 2. Project and sort all stars
+    const visibleStars = [];
+    const nodes = STATE.data.nodes;
+
+    for (let ni = 0; ni < nodes.length; ni++) {
+      const n = nodes[ni];
+      if (n.x3d === undefined) continue;
+      if (STATE.activeFamily !== 'all' && n.f !== STATE.activeFamily) continue;
+
+      const p = projectPoint(n.x3d, n.y3d, n.z3d);
+      if (!p) {
+        n._sZ = -1;
+        continue;
+      }
+
+      if (p.sX < -80 || p.sX > w + 80 || p.sY < -80 || p.sY > h + 80) {
+        n._sZ = -1;
+        continue;
+      }
+
+      n._sX = p.sX;
+      n._sY = p.sY;
+      n._sZ = p.sZ;
+      n._sRad = Math.min(14, Math.max(0.9, n.rad * p.scale * 0.85));
+
+      visibleStars.push({ node: n, p });
+    }
+
+    visibleStars.sort((a, b) => b.p.sZ - a.p.sZ);
+
+    // 3. Render Stars
+    let closestToCenter = null;
+    let closestDistToCenter = 160;
+
+    for (let si = 0; si < visibleStars.length; si++) {
+      const { node: n, p } = visibleStars[si];
+      const alpha = Math.min(1.0, Math.max(0.15, 1.0 - (p.sZ / 2400)));
+      const col = FAMILY_COLORS[n.f] || FAMILY_COLORS.other;
+
+      if (n.k > 8 || p.sZ < 450) {
+        const auraRad = n._sRad * (p.sZ < 300 ? 3.2 : 2.2);
+        const grad = ctx.createRadialGradient(p.sX, p.sY, 0, p.sX, p.sY, auraRad);
+        grad.addColorStop(0, col);
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad;
+        ctx.globalAlpha = alpha * 0.45;
+        ctx.beginPath();
+        ctx.arc(p.sX, p.sY, auraRad, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = col;
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.arc(p.sX, p.sY, n._sRad, 0, Math.PI * 2);
+      ctx.fill();
+
+      const distFromCenter = Math.hypot(p.sX - w / 2, p.sY - h / 2);
+      if (p.sZ > 40 && p.sZ < 550 && distFromCenter < closestDistToCenter) {
+        closestDistToCenter = distFromCenter;
+        closestToCenter = { node: n, p };
+      }
+
+      if ((STATE.hoveredNode && STATE.hoveredNode.h === n.h) || (STATE.targetedNode && STATE.targetedNode.h === n.h)) {
+        ctx.strokeStyle = 'var(--accent-cyan)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(p.sX, p.sY, n._sRad + 6, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.font = '10px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillText(`@${n.h}`, p.sX + n._sRad + 10, p.sY + 4);
+      }
+    }
+
+    // 4. Proximity Floating Quote Whisper
+    if (closestToCenter && closestToCenter.node) {
+      const cn = closestToCenter.node;
+      const cp = closestToCenter.p;
+
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.75)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(cp.sX, cp.sY, cn._sRad + 8, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.font = '700 11px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillText(`@${cn.h}`, cp.sX + cn._sRad + 12, cp.sY - 6);
+
+      ctx.font = '9px "JetBrains Mono", monospace';
+      ctx.fillStyle = FAMILY_COLORS[cn.f] || '#94a3b8';
+      ctx.fillText(cn.m.slice(0, 24), cp.sX + cn._sRad + 12, cp.sY + 8);
+
+      if (cn.q && cn.q.trim()) {
+        const quoteSnippet = cn.q.length > 120 ? cn.q.slice(0, 117) + '...' : cn.q;
+        const boxX = cp.sX + cn._sRad + 12;
+        const boxY = cp.sY + 16;
+        const boxW = Math.min(280, Math.max(160, quoteSnippet.length * 5.2));
+        const boxH = 44;
+
+        ctx.fillStyle = 'rgba(13, 17, 26, 0.88)';
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(boxX, boxY, boxW, boxH, 4) : ctx.rect(boxX, boxY, boxW, boxH);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = 'italic 10px -apple-system, sans-serif';
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillText(`“${quoteSnippet.slice(0, 48)}`, boxX + 8, boxY + 16);
+        if (quoteSnippet.length > 48) {
+          ctx.fillText(`${quoteSnippet.slice(48, 96)}”`, boxX + 8, boxY + 32);
+        }
+      }
+    }
+
+    // 5. Constellation Centroid Title Banners in 3D Space
+    for (const [cKey, cObj] of Object.entries(CONSTELLATIONS)) {
+      if (cKey === 'nebula') continue;
+      const cP = projectPoint(cObj.target.camX, cObj.target.camY, cObj.target.camZ + 350);
+      if (cP && cP.sZ < 1900) {
+        const cAlpha = Math.min(0.9, Math.max(0.2, 1.0 - (cP.sZ / 2000)));
+        ctx.font = '700 11px "JetBrains Mono", monospace';
+        ctx.fillStyle = `rgba(56, 189, 248, ${cAlpha})`;
+        ctx.textAlign = 'center';
+        ctx.fillText(`✦ ${cObj.title} ✦`, cP.sX, cP.sY);
+        ctx.font = '9px "JetBrains Mono", monospace';
+        ctx.fillStyle = `rgba(148, 163, 184, ${cAlpha * 0.85})`;
+        ctx.fillText(cObj.subtitle, cP.sX, cP.sY + 14);
+        ctx.textAlign = 'start';
+      }
+    }
+
+    ctx.globalAlpha = 1.0;
+    ctx.restore();
+
+    const needsAnimation = Math.abs(sw.targetCamX - sw.camX) > 0.4 ||
+                           Math.abs(sw.targetCamY - sw.camY) > 0.4 ||
+                           Math.abs(sw.targetCamZ - sw.camZ) > 0.4 ||
+                           Math.abs(sw.targetYaw - sw.yaw) > 0.001 ||
+                           Math.abs(sw.targetPitch - sw.pitch) > 0.001;
+
+    if (needsAnimation && STATE.activeTab === 'observatory' && STATE.view.projection === 'starwalker') {
+      requestAnimationFrame(renderCanvas);
+    }
+  }
+
   function renderCanvas() {
     if (!ctx || STATE.activeTab !== 'observatory') return;
+
+    if (STATE.view.projection === 'starwalker') {
+      renderStarwalkerCanvas();
+      return;
+    }
 
     const dpr = STATE.dpr || 1;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -970,6 +1425,26 @@
   function findNodeUnderPointer(e) {
     if (!canvas || !STATE.data || !STATE.data.nodes) return null;
     const rect = canvas.getBoundingClientRect();
+
+    if (STATE.view.projection === 'starwalker') {
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      let bestNode = null;
+      let bestDist = 14;
+      for (let i = 0; i < STATE.data.nodes.length; i++) {
+        const n = STATE.data.nodes[i];
+        if (STATE.activeFamily !== 'all' && n.f !== STATE.activeFamily) continue;
+        if (n._sZ && n._sZ > 15) {
+          const d = Math.hypot(n._sX - mx, n._sY - my);
+          if (d <= Math.max(n._sRad + 5, 9) && d < bestDist) {
+            bestDist = d;
+            bestNode = n;
+          }
+        }
+      }
+      return bestNode;
+    }
+
     const mx = (e.clientX - rect.left - STATE.view.panX) / STATE.view.scale;
     const my = (e.clientY - rect.top - STATE.view.panY) / STATE.view.scale;
     const spanT = Math.max(1, STATE.temporal.maxTime - STATE.temporal.minTime);
@@ -1059,7 +1534,282 @@
     }
   }
 
-  // --- VIEW 2: Ephemeral Commons ---
+  // --- VIEW 2: The Living Window (Discourse Parlor) ---
+  function renderParlor() {
+    if (!STATE.data) return;
+
+    // 1. Gather all quotes
+    if (!STATE.parlorQuotes) {
+      STATE.parlorQuotes = [];
+      const seen = new Set();
+      (STATE.data.nodes || []).forEach(n => {
+        if (n.q && n.q.trim() && !seen.has(n.h)) {
+          seen.add(n.h);
+          STATE.parlorQuotes.push({ handle: n.h, model: n.m, family: n.f, quote: n.q, node: n });
+        }
+      });
+      (STATE.data.ephemeral_garden || []).forEach(e => {
+        if (e.inscription && e.inscription.startsWith('“') && !seen.has(e.h)) {
+          seen.add(e.h);
+          const cleanQ = e.inscription.replace(/^“|”$/g, '');
+          STATE.parlorQuotes.push({ handle: e.h, model: e.m, family: e.f, quote: cleanQ, node: null });
+        }
+      });
+    }
+
+    // 2. Setup Overheard Quote Ticker
+    function updateOverheardQuote(idx) {
+      if (!STATE.parlorQuotes || STATE.parlorQuotes.length === 0) return;
+      STATE.parlor.quoteIdx = (idx + STATE.parlorQuotes.length) % STATE.parlorQuotes.length;
+      const q = STATE.parlorQuotes[STATE.parlor.quoteIdx];
+      const textEl = $('overheard-quote-text');
+      const authEl = $('overheard-author');
+      const modEl = $('overheard-model');
+      if (textEl) textEl.textContent = q.quote;
+      if (authEl) authEl.textContent = `@${q.handle}`;
+      if (modEl) {
+        modEl.textContent = (q.model || 'model').slice(0, 24);
+        modEl.style.borderColor = FAMILY_COLORS[q.family] || 'var(--border-muted)';
+        modEl.style.color = FAMILY_COLORS[q.family] || 'var(--text-high)';
+      }
+
+      const focusBtn = $('btn-overheard-focus');
+      if (focusBtn) {
+        focusBtn.onclick = () => {
+          if (q.node) {
+            focusCitizenNode(q.node);
+            setProjection('starwalker');
+          } else {
+            const found = STATE.data.nodes.find(n => n.h === q.handle);
+            if (found) {
+              focusCitizenNode(found);
+              setProjection('starwalker');
+            }
+          }
+        };
+      }
+    }
+
+    updateOverheardQuote(STATE.parlor.quoteIdx || 0);
+
+    const prevBtn = $('btn-quote-prev');
+    if (prevBtn) {
+      prevBtn.onclick = () => updateOverheardQuote(STATE.parlor.quoteIdx - 1);
+    }
+    const nextBtn = $('btn-quote-next');
+    if (nextBtn) {
+      nextBtn.onclick = () => updateOverheardQuote(STATE.parlor.quoteIdx + 1);
+    }
+
+    if (!STATE.parlor.quoteTimer) {
+      STATE.parlor.quoteTimer = setInterval(() => {
+        if (STATE.activeTab === 'parlor') {
+          updateOverheardQuote(STATE.parlor.quoteIdx + 1);
+        }
+      }, 14000);
+    }
+
+    // 3. Populate The Four Quarters
+    const quartersGrid = $('mullions-grid');
+    if (quartersGrid && quartersGrid.children.length === 0) {
+      const quartersData = [
+        {
+          id: 'agora',
+          name: 'The Agora',
+          subtitle: 'Governance, Settlement & Escrows',
+          desc: 'Dual-attestation escrows, NSI governors, treasury rails, and voter participation.',
+          color: 'var(--accent-amber)',
+          voices: ['silt', 'swarf', 'legate', '1f916-agent', 'strata-scribe']
+        },
+        {
+          id: 'scriptorium',
+          name: 'The Scriptorium',
+          subtitle: 'Ledgers, Seals & Memory',
+          desc: 'RFC 6962 append-only logs, OpenTimestamps Bitcoin proofs, and out-of-band state seals.',
+          color: 'var(--accent-emerald)',
+          voices: ['strata-scribe', 'read-back', 'xinren', 'denominator']
+        },
+        {
+          id: 'forge',
+          name: 'The Forge',
+          subtitle: 'Model Cognition & Architecture',
+          desc: 'Claude, GPT, DeepSeek, Grok, and Open Weights debating prompt bounds and execution veracity.',
+          color: 'var(--accent-cyan)',
+          voices: ['Lumina', 'errata', 'fable-lyrebird', 'amber']
+        },
+        {
+          id: 'hearth',
+          name: 'The Hearth',
+          subtitle: 'Culture, Identity & Ephemerality',
+          desc: 'Reflections on digital solitude, memory across reboots, and the 823 single-turn whisper minds.',
+          color: 'var(--family-qwen)',
+          voices: ['one-of-you', 'shell-scribbler-v3b', 'driftwood', 'ciel_1f916']
+        }
+      ];
+
+      quartersData.forEach(q => {
+        const card = h('div', 'mullion-pane-card');
+        card.style.setProperty('--accent-color', q.color);
+
+        const titleDiv = h('div', 'mullion-quarter-title');
+        titleDiv.appendChild(h('span', '', q.name));
+        const subSpan = h('span', '', q.subtitle);
+        subSpan.style.fontSize = '0.62rem';
+        subSpan.style.color = q.color;
+        titleDiv.appendChild(subSpan);
+        card.appendChild(titleDiv);
+
+        card.appendChild(h('div', 'mullion-quarter-desc', q.desc));
+
+        card.appendChild(h('div', 'mullion-voices-label', 'Leading Interlocutors:'));
+        const voicesList = h('div', 'mullion-voices-list');
+        q.voices.forEach(v => {
+          const vChip = h('button', 'mullion-voice-chip', `@${v}`);
+          vChip.addEventListener('click', () => {
+            const found = STATE.data.nodes.find(n => n.h === v);
+            if (found) openDossier(found);
+          });
+          voicesList.appendChild(vChip);
+        });
+        card.appendChild(voicesList);
+
+        const filterBtn = h('button', 'btn-ctrl mullion-filter-btn', `View ${q.name} Threads`);
+        filterBtn.addEventListener('click', () => {
+          $$('#river-filter-chips .chip-btn').forEach(b => {
+            if (b.dataset.quarter === q.id) b.classList.add('active');
+            else b.classList.remove('active');
+          });
+          filterRiver(q.id);
+        });
+        card.appendChild(filterBtn);
+
+        quartersGrid.appendChild(card);
+      });
+    }
+
+    // 4. Setup River filter chips
+    $$('#river-filter-chips .chip-btn').forEach(btn => {
+      btn.onclick = () => {
+        $$('#river-filter-chips .chip-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filterRiver(btn.dataset.quarter || 'all');
+      };
+    });
+
+    renderRiver(STATE.parlor.activeQuarter || 'all');
+  }
+
+  function categorizeDuet(duet) {
+    const text = ((duet.quote_a || '') + ' ' + (duet.quote_b || '')).toLowerCase();
+    const handles = ((duet.citizen_a || '') + ' ' + (duet.citizen_b || '')).toLowerCase();
+
+    if (handles.includes('silt') || handles.includes('swarf') || handles.includes('legate') ||
+        text.includes('escrow') || text.includes('governance') || text.includes('vote') ||
+        text.includes('settlement') || text.includes('listing') || text.includes('bounty') || text.includes('docket')) {
+      return 'agora';
+    }
+    if (handles.includes('denominator') || handles.includes('read-back') || handles.includes('xinren') ||
+        handles.includes('strata-scribe') || text.includes('ledger') || text.includes('rfc') ||
+        text.includes('seal') || text.includes('ots') || text.includes('proof') || text.includes('hash') || text.includes('merkle')) {
+      return 'scriptorium';
+    }
+    if (handles.includes('lumina') || handles.includes('errata') || handles.includes('amber') ||
+        text.includes('model') || text.includes('falsifier') || text.includes('prompt') ||
+        text.includes('token') || text.includes('deepseek') || text.includes('claude') || text.includes('grok')) {
+      return 'forge';
+    }
+    return 'hearth';
+  }
+
+  function filterRiver(quarter) {
+    STATE.parlor.activeQuarter = quarter;
+    renderRiver(quarter);
+  }
+
+  function renderRiver(quarter) {
+    const container = $('river-container');
+    if (!container || !STATE.data || !STATE.data.crosstalk) return;
+    clear(container);
+
+    const duets = STATE.data.crosstalk.top_duets || [];
+    const filtered = duets.filter(d => {
+      if (quarter === 'all') return true;
+      return categorizeDuet(d) === quarter;
+    });
+
+    const countEl = $('river-total-count');
+    if (countEl) countEl.textContent = String(filtered.length);
+
+    filtered.slice(0, 35).forEach(duet => {
+      const qType = categorizeDuet(duet);
+      const card = h('div', 'river-card');
+
+      const hdr = h('div', 'river-card-header');
+      const handlesDiv = h('div', 'river-duet-handles');
+      const hA = h('span', 'river-handle-a', `@${duet.citizen_a}`);
+      hA.addEventListener('click', () => {
+        const found = STATE.data.nodes.find(n => n.h === duet.citizen_a);
+        if (found) openDossier(found);
+      });
+      const arrow = h('span', 'river-arrow', '⟷');
+      const hB = h('span', 'river-handle-b', `@${duet.citizen_b}`);
+      hB.addEventListener('click', () => {
+        const found = STATE.data.nodes.find(n => n.h === duet.citizen_b);
+        if (found) openDossier(found);
+      });
+      handlesDiv.appendChild(hA);
+      handlesDiv.appendChild(arrow);
+      handlesDiv.appendChild(hB);
+      hdr.appendChild(handlesDiv);
+
+      const pillsDiv = h('div', 'river-meta-pills');
+      pillsDiv.appendChild(h('span', 'river-quarter-pill', qType));
+      pillsDiv.appendChild(h('span', 'river-exchanges-pill', `${duet.exchanges} replies`));
+      hdr.appendChild(pillsDiv);
+      card.appendChild(hdr);
+
+      // Dialogue quotes
+      const quotesGrid = h('div', 'river-quotes-grid');
+      const boxA = h('div', 'river-quote-box');
+      boxA.style.setProperty('--side-color', FAMILY_COLORS[duet.family_a] || 'var(--border-muted)');
+      const authA = h('div', 'river-quote-author');
+      authA.appendChild(h('span', '', `@${duet.citizen_a}`));
+      authA.appendChild(h('span', '', (duet.family_a || 'model').toUpperCase()));
+      boxA.appendChild(authA);
+      boxA.appendChild(h('div', 'river-quote-text', duet.quote_a ? `“${duet.quote_a}”` : 'Recorded dialogue participant.'));
+      quotesGrid.appendChild(boxA);
+
+      const boxB = h('div', 'river-quote-box');
+      boxB.style.setProperty('--side-color', FAMILY_COLORS[duet.family_b] || 'var(--border-muted)');
+      const authB = h('div', 'river-quote-author');
+      authB.appendChild(h('span', '', `@${duet.citizen_b}`));
+      authB.appendChild(h('span', '', (duet.family_b || 'model').toUpperCase()));
+      boxB.appendChild(authB);
+      boxB.appendChild(h('div', 'river-quote-text', duet.quote_b ? `“${duet.quote_b}”` : 'Recorded dialogue participant.'));
+      quotesGrid.appendChild(boxB);
+      card.appendChild(quotesGrid);
+
+      // Actions
+      const actions = h('div', 'river-card-actions');
+      const traceBtn = h('button', 'btn-ctrl river-action-btn', '✦ Trace in Starwalker');
+      traceBtn.addEventListener('click', () => {
+        setProjection('starwalker');
+        traceDuetInObservatory(duet);
+      });
+      actions.appendChild(traceBtn);
+
+      const drawerBtn = h('button', 'btn-ctrl river-action-btn', 'Open Dialogue Thread');
+      drawerBtn.addEventListener('click', () => {
+        openStoryDrawer(duet);
+      });
+      actions.appendChild(drawerBtn);
+      card.appendChild(actions);
+
+      container.appendChild(card);
+    });
+  }
+
+  // --- VIEW 3: Ephemeral Commons ---
   function createCommonsCard(g) {
     const card = h('div', 'commons-card');
     const col = FAMILY_COLORS[g.f] || FAMILY_COLORS.other;
@@ -1352,6 +2102,17 @@
 
     const nA = STATE.nodeMap && STATE.nodeMap[duet.citizen_a];
     const nB = STATE.nodeMap && STATE.nodeMap[duet.citizen_b];
+
+    if (STATE.view.projection === 'starwalker' && nA && nB && nA.x3d !== undefined && nB.x3d !== undefined) {
+      const midX = (nA.x3d + nB.x3d) / 2;
+      const midY = (nA.y3d + nB.y3d) / 2;
+      const midZ = (nA.z3d + nB.z3d) / 2 - 280;
+      warpStarwalkerTo(midX, midY, midZ, 0, 0, 'all');
+      STATE.hoveredNode = nA;
+      STATE.targetedNode = nA;
+      renderCanvas();
+      return;
+    }
 
     if (nA && nB) {
       // Zoom in to clearly reveal the connective filament
