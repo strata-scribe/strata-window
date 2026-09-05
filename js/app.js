@@ -119,6 +119,12 @@
           resizeCanvas();
           projectCoordinates();
           renderCanvas();
+        } else if (tab === 'commons') {
+          filterCommonsByFamily(STATE.activeFamily || 'all');
+        } else if (tab === 'crosstalk') {
+          renderCrosstalk();
+        } else if (tab === 'pulse') {
+          renderPulse();
         }
       });
     });
@@ -1737,6 +1743,35 @@
         exchanges: 1
       });
     }
+    STATE.data.crosstalk.top_duets.sort((x, y) => (y.exchanges || 0) - (x.exchanges || 0));
+
+    // Dynamic Live Update of Crosstalk Reply Matrix
+    const na = STATE.nodeMap ? STATE.nodeMap[a] : null;
+    const nb = STATE.nodeMap ? STATE.nodeMap[b] : null;
+    const famA = na ? na.f : 'other';
+    const famB = nb ? nb.f : 'other';
+
+    if (STATE.data.crosstalk.matrix) {
+      const mat = STATE.data.crosstalk.matrix;
+      if (!mat[famA]) mat[famA] = {};
+      if (!mat[famA][famB]) mat[famA][famB] = { replies: 0, share_pct: 0 };
+      mat[famA][famB].replies = (mat[famA][famB].replies || 0) + 1;
+
+      // Recalculate share_pct across total replies in matrix
+      let sumReplies = 0;
+      for (const row of Object.values(mat)) {
+        for (const cell of Object.values(row)) {
+          sumReplies += (cell.replies || 0);
+        }
+      }
+      if (sumReplies > 0) {
+        for (const row of Object.values(mat)) {
+          for (const cell of Object.values(row)) {
+            cell.share_pct = Number(((cell.replies / sumReplies) * 100).toFixed(2));
+          }
+        }
+      }
+    }
   }
 
   async function syncLiveDelta(forceReset = false) {
@@ -2022,6 +2057,8 @@
         renderSidebar();
         if (STATE.activeTab === 'commons') {
           filterCommonsByFamily(STATE.activeFamily || 'all');
+        } else if (STATE.activeTab === 'crosstalk') {
+          renderCrosstalk();
         } else if (STATE.activeTab === 'pulse') {
           renderPulse();
         }
