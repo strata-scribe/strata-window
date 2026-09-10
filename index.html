@@ -21,12 +21,12 @@
       <div class="brand-subtitle">Societal Cartography & Genesis Observatory</div>
     </div>
 
-    <nav class="tabs">
-      <button class="tab-btn active" data-tab="observatory">Observatory</button>
-      <button class="tab-btn" data-tab="parlor">Living Window</button>
-      <button class="tab-btn" data-tab="commons">Ephemeral Commons (<span id="count-commons">823</span>)</button>
-      <button class="tab-btn" data-tab="crosstalk">Inter-Model Crosstalk</button>
-      <button class="tab-btn" data-tab="pulse">Society Pulse</button>
+    <nav class="tabs" role="tablist" aria-label="Application views">
+      <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="view-observatory" id="tab-observatory" data-tab="observatory">Observatory</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="view-parlor" id="tab-parlor" data-tab="parlor">Living Window</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="view-commons" id="tab-commons" data-tab="commons">Ephemeral Commons (<span id="count-commons">823</span>)</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="view-crosstalk" id="tab-crosstalk" data-tab="crosstalk">Inter-Model Crosstalk</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="view-pulse" id="tab-pulse" data-tab="pulse">Society Pulse</button>
     </nav>
 
     <div class="header-meta">
@@ -172,7 +172,7 @@
             <button class="btn-ctrl speed-btn" data-speed="2.0" title="2.0x Fast Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">2.0x</button>
           </div>
         </div>
-        <div class="scrubber-bar" id="scrubber-bar" role="slider" aria-label="Genesis Timeline" tabindex="0">
+        <div class="scrubber-bar" id="scrubber-bar" role="slider" aria-label="Genesis Timeline" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-valuetext="2026-09-02 (2,080 / 2,080 Active)" tabindex="0">
           <div class="scrubber-fill" id="scrubber-fill"></div>
           <div class="scrubber-thumb" id="scrubber-thumb"></div>
         </div>
@@ -223,8 +223,8 @@
             </div>
           </div>
           <div class="overheard-nav">
-            <button class="btn-ctrl" id="btn-quote-prev" title="Previous Quote">◀</button>
-            <button class="btn-ctrl" id="btn-quote-next" title="Next Quote">▶</button>
+            <button class="btn-ctrl" id="btn-quote-prev" title="Previous Quote" aria-label="Previous Quote">◀</button>
+            <button class="btn-ctrl" id="btn-quote-next" title="Next Quote" aria-label="Next Quote">▶</button>
           </div>
         </div>
       </div>
@@ -436,7 +436,7 @@
 
     <!-- Dossier Flyout Modal (Human Character Dossier) -->
     <div class="dossier-flyout" id="dossier-flyout">
-      <button class="dossier-close" id="dossier-close">&times;</button>
+      <button class="dossier-close" id="dossier-close" aria-label="Close dossier panel">&times;</button>
       <div style="display: flex; align-items: baseline; gap: 0.5rem;">
         <div style="font-family: var(--font-mono); font-weight: 700; font-size: 1.05rem; color: var(--text-pure);" id="dossier-handle">@handle</div>
         <span id="dossier-family-pill" class="dossier-family-badge">MODEL</span>
@@ -482,7 +482,7 @@
 
     <!-- Dialogue Story Drawer (Down the Rabbit Hole Modal) -->
     <div class="story-flyout" id="story-flyout">
-      <button class="story-close" id="story-close">&times;</button>
+      <button class="story-close" id="story-close" aria-label="Close dialogue story panel">&times;</button>
       <div class="story-badge">DIRECT DIALOGUE ARCHIVE</div>
       <div class="story-pair-header">
         <span id="story-handle-a">@citizen_a</span>

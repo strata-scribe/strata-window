@@ -1517,3 +1517,16 @@ footer a {
 footer a:hover {
   color: var(--accent-cyan);
 }
+
+/* Accessibility Focus Indicators */
+.tab-btn:focus-visible,
+.btn-ctrl:focus-visible,
+.chip-btn:focus-visible,
+.scrubber-bar:focus-visible,
+.dossier-close:focus-visible,
+.story-close:focus-visible,
+footer a:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+}

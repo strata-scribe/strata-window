@@ -180,10 +180,14 @@
         const tab = btn.dataset.tab;
         if (tab === STATE.activeTab) return;
 
-        $$('.tab-btn').forEach(b => b.classList.remove('active'));
+        $$('.tab-btn').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-selected', 'false');
+        });
         $$('.viewport-pane').forEach(v => v.classList.remove('active'));
 
         btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
         $(`view-${tab}`).classList.add('active');
         STATE.activeTab = tab;
 
@@ -372,8 +376,12 @@
 
   function startPlayback() {
     STATE.temporal.isPlaying = true;
-    $('btn-play').textContent = '⏸ Pause';
-    $('btn-play').style.borderColor = 'var(--accent-cyan)';
+    const playBtn = $('btn-play');
+    if (playBtn) {
+      playBtn.textContent = '⏸ Pause';
+      playBtn.style.borderColor = 'var(--accent-cyan)';
+      playBtn.setAttribute('aria-label', 'Pause Genesis Playback');
+    }
     const bar = $('scrubber-bar');
     if (bar) bar.classList.add('active');
 
@@ -437,8 +445,12 @@
 
   function stopPlayback() {
     STATE.temporal.isPlaying = false;
-    $('btn-play').textContent = '⏵ Play Genesis';
-    $('btn-play').style.borderColor = '';
+    const playBtn = $('btn-play');
+    if (playBtn) {
+      playBtn.textContent = '⏵ Play Genesis';
+      playBtn.style.borderColor = '';
+      playBtn.setAttribute('aria-label', 'Play Genesis Timeline');
+    }
     if (STATE.temporal.animId) {
       cancelAnimationFrame(STATE.temporal.animId);
       STATE.temporal.animId = null;
@@ -472,12 +484,15 @@
     const disp = $('scrubber-display');
     const isActive = STATE.temporal.isPlaying || STATE.temporal.isScrubbing || STATE.temporal.hasEverPlayed || STATE.temporal.hasEverScrubbed;
 
+    let textVal = '';
     if (isActive) {
       if (bar) bar.classList.add('active');
-      if (disp) disp.textContent = `${dateStr} (${visibleCount.toLocaleString()} / ${totalNodes.toLocaleString()} Active)`;
+      textVal = `${dateStr} (${visibleCount.toLocaleString()} / ${totalNodes.toLocaleString()} Active)`;
+      if (disp) disp.textContent = textVal;
     } else {
       if (bar) bar.classList.remove('active');
-      if (disp) disp.textContent = `${dateStr} · Present Head (${totalNodes.toLocaleString()} Active)`;
+      textVal = `${dateStr} · Present Head (${totalNodes.toLocaleString()} Active)`;
+      if (disp) disp.textContent = textVal;
     }
 
     const pct = (curProg * 100).toFixed(2);
@@ -485,6 +500,10 @@
     const thumb = $('scrubber-thumb');
     if (fill) fill.style.width = `${pct}%`;
     if (thumb) thumb.style.left = `${pct}%`;
+    if (bar) {
+      bar.setAttribute('aria-valuenow', Math.round(curProg * 100));
+      bar.setAttribute('aria-valuetext', textVal);
+    }
   }
 
   function renderSidebar() {
@@ -567,9 +586,16 @@
     STATE.hoveredNode = match;
 
     if (STATE.activeTab !== 'observatory') {
-      $$('.tab-btn').forEach(b => b.classList.remove('active'));
+      $$('.tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
       $$('.viewport-pane').forEach(v => v.classList.remove('active'));
-      $$('.tab-btn')[0].classList.add('active');
+      const obsTab = $$('.tab-btn')[0];
+      if (obsTab) {
+        obsTab.classList.add('active');
+        obsTab.setAttribute('aria-selected', 'true');
+      }
       $('view-observatory').classList.add('active');
       STATE.activeTab = 'observatory';
       resizeCanvas();
@@ -853,8 +879,20 @@
       });
     });
 
-    // Keyboard walking flight controls
+    // Global keyboard shortcuts (Escape to dismiss flyouts) & Starwalker walking controls
     window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const dossier = $('dossier-flyout');
+        const story = $('story-flyout');
+        if (dossier && dossier.classList.contains('active')) {
+          dossier.classList.remove('active');
+          STATE.selectedNode = null;
+        }
+        if (story && story.classList.contains('active')) {
+          story.classList.remove('active');
+        }
+      }
+
       if (STATE.activeTab !== 'observatory' || STATE.view.projection !== 'starwalker') return;
       const sw = STATE.starwalker;
       const step = 85;
@@ -2091,9 +2129,16 @@
 
     // Switch to observatory tab if not already active
     if (STATE.activeTab !== 'observatory') {
-      $$('.tab-btn').forEach(b => b.classList.remove('active'));
+      $$('.tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
       $$('.viewport-pane').forEach(v => v.classList.remove('active'));
-      $$('.tab-btn')[0].classList.add('active');
+      const obsTab = $$('.tab-btn')[0];
+      if (obsTab) {
+        obsTab.classList.add('active');
+        obsTab.setAttribute('aria-selected', 'true');
+      }
       $('view-observatory').classList.add('active');
       STATE.activeTab = 'observatory';
       resizeCanvas();
