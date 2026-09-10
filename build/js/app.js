@@ -1209,8 +1209,8 @@
     const h = STATE.cssHeight || 600;
     const availW = Math.max(800, w - padLeft - padRight);
 
-    const curProg = isFlow 
-      ? Math.max(0, Math.min(1, STATE.temporal.progress)) 
+    const curProg = isFlow
+      ? Math.max(0, Math.min(1, STATE.temporal.progress))
       : (spanT > 0 ? Math.max(0, Math.min(1, (curT - minT) / spanT)) : 1.0);
     const curX = padLeft + curProg * availW;
     const maxVisibleIdx = findWavefrontIndex(STATE.data ? STATE.data.nodes : null, isFlow, curProg, curT);
@@ -1333,7 +1333,7 @@
       if (STATE.hoveredNode) {
         const hName = STATE.hoveredNode.h;
         const activeDuets = STATE.data.crosstalk.top_duets.filter(d => d.citizen_a === hName || d.citizen_b === hName);
-        
+
         activeDuets.forEach(d => {
           const partnerName = d.citizen_a === hName ? d.citizen_b : d.citizen_a;
           const pNode = STATE.nodeMap[partnerName];
@@ -1487,8 +1487,8 @@
     const my = (e.clientY - rect.top - STATE.view.panY) / STATE.view.scale;
     const spanT = Math.max(1, STATE.temporal.maxTime - STATE.temporal.minTime);
     const isFlow = STATE.view.projection === 'flow';
-    const curProg = isFlow 
-      ? Math.max(0, Math.min(1, STATE.temporal.progress)) 
+    const curProg = isFlow
+      ? Math.max(0, Math.min(1, STATE.temporal.progress))
       : (spanT > 0 ? (STATE.temporal.currentTime - STATE.temporal.minTime) / spanT : 1.0);
     const maxVisibleIdx = findWavefrontIndex(STATE.data.nodes, isFlow, curProg, STATE.temporal.currentTime);
 
@@ -1899,8 +1899,8 @@
     const garden = STATE.data.ephemeral_garden || [];
     clear(container);
 
-    const filtered = family === 'all' 
-      ? garden 
+    const filtered = family === 'all'
+      ? garden
       : garden.filter(g => (g.f || '').toLowerCase() === family.toLowerCase());
 
     const countEl = $('commons-match-count');
@@ -2024,7 +2024,7 @@
     if (chipsEl) {
       clear(chipsEl);
       const duets = (STATE.data.crosstalk && STATE.data.crosstalk.top_duets) || [];
-      const matching = duets.filter(d => 
+      const matching = duets.filter(d =>
         (d.family_a === f1 && d.family_b === f2) ||
         (d.family_a === f2 && d.family_b === f1) ||
         (d.family_a === f1 && f1 === f2 && d.family_b === f1)
@@ -2066,7 +2066,7 @@
 
     $('story-handle-a').textContent = `@${duet.citizen_a}`;
     $('story-handle-b').textContent = `@${duet.citizen_b}`;
-    
+
     const famA = duet.family_a || 'other';
     const famB = duet.family_b || 'other';
     const metaEl = $('story-meta');
@@ -2914,8 +2914,8 @@
   function recordLiveDuet(a, b) {
     if (!STATE.data || !STATE.data.crosstalk) return;
     if (!STATE.data.crosstalk.top_duets) STATE.data.crosstalk.top_duets = [];
-    let d = STATE.data.crosstalk.top_duets.find(duet => 
-      (duet.citizen_a === a && duet.citizen_b === b) || 
+    let d = STATE.data.crosstalk.top_duets.find(duet =>
+      (duet.citizen_a === a && duet.citizen_b === b) ||
       (duet.citizen_a === b && duet.citizen_b === a)
     );
     if (d) {
@@ -3255,7 +3255,7 @@
       }
 
       if (badgeText) {
-        badgeText.textContent = deltaEventsCount > 0 
+        badgeText.textContent = deltaEventsCount > 0
           ? `LIVE SYNCED (+${deltaEventsCount.toLocaleString()} events)`
           : 'LIVE SYNCED (UP TO DATE)';
       }

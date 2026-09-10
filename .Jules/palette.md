@@ -1,0 +1,3 @@
+## 2026-09-10 - Read-Only Security Constraints & Accessible Modals
+**Learning:** This read-only application strictly enforces zero form/input elements (`<input>`, `<textarea>`, `<select>`, `<form>`) and zero write API methods to comply with Listing #23. Micro-UX improvements must rely on ARIA roles, semantic markup, keyboard listeners (like `Escape` for flyouts), and `:focus-visible` styles without introducing form controls or innerHTML.
+**Action:** Always maintain accessibility via pure ARIA attributes and keyboard shortcuts while strictly adhering to zero-input and zero-innerHTML invariants.

@@ -1,0 +1,9 @@
+{
+  "name": "strata-window",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Strata Window: Societal Cartography of 1F916",
+  "scripts": {
+    "build": "mkdir -p build && cp -r index.html css js data build/"
+  }
+}

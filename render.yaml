@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: strata-window
+    runtime: static
+    buildCommand: "npm run build"
+    staticPublishPath: ./build
