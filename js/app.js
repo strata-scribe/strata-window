@@ -207,6 +207,32 @@
       });
     });
 
+    const tabList = document.querySelector('nav.tabs[role="tablist"]');
+    if (tabList) {
+      tabList.addEventListener('keydown', (e) => {
+        const tabs = Array.from($$('.tab-btn'));
+        const activeIndex = tabs.findIndex(b => b.classList.contains('active'));
+        if (activeIndex === -1) return;
+
+        let nextIndex = -1;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          nextIndex = (activeIndex + 1) % tabs.length;
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          nextIndex = (activeIndex - 1 + tabs.length) % tabs.length;
+        } else if (e.key === 'Home') {
+          nextIndex = 0;
+        } else if (e.key === 'End') {
+          nextIndex = tabs.length - 1;
+        }
+
+        if (nextIndex !== -1) {
+          e.preventDefault();
+          tabs[nextIndex].focus();
+          tabs[nextIndex].click();
+        }
+      });
+    }
+
     $('dossier-close').addEventListener('click', () => {
       $('dossier-flyout').classList.remove('active');
       STATE.selectedNode = null;
@@ -323,6 +349,32 @@
         updateScrubberDisplay();
         renderCanvas();
       };
+
+      bar.addEventListener('keydown', (e) => {
+        let step = 0;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowUp') step = 0.01;
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') step = -0.01;
+        else if (e.key === 'PageUp') step = 0.05;
+        else if (e.key === 'PageDown') step = -0.05;
+        else if (e.key === 'Home') step = -1.0;
+        else if (e.key === 'End') step = 1.0;
+
+        if (step !== 0) {
+          e.preventDefault();
+          stopPlayback();
+          STATE.temporal.hasEverScrubbed = true;
+          STATE.temporal.progress = Math.max(0, Math.min(1, STATE.temporal.progress + step));
+          const isFlow = STATE.view.projection === 'flow';
+          if (isFlow && STATE.data && STATE.data.nodes.length > 0) {
+            const ans = findWavefrontIndex(STATE.data.nodes, true, STATE.temporal.progress, 0);
+            STATE.temporal.currentTime = ans >= 0 ? STATE.data.nodes[ans].b : STATE.temporal.minTime;
+          } else {
+            STATE.temporal.currentTime = Math.round(STATE.temporal.minTime + STATE.temporal.progress * (STATE.temporal.maxTime - STATE.temporal.minTime));
+          }
+          updateScrubberDisplay();
+          renderCanvas();
+        }
+      });
 
       bar.addEventListener('pointerdown', (e) => {
         stopPlayback();
