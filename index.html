@@ -124,9 +124,9 @@
         <canvas id="observatory-canvas"></canvas>
         <div class="projection-overlay" id="projection-overlay">
           <span style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase;">Projection:</span>
-          <button class="btn-ctrl proj-btn active" data-proj="flow" title="Sequential Flow: Even distribution across all 2,173 minds without calendar desert gaps">✦ Celestial River (Flow)</button>
-          <button class="btn-ctrl proj-btn" data-proj="calendar" title="Calendar Days: True real-world dates showing platform lull and burst waves">Calendar Days (Linear)</button>
-          <button class="btn-ctrl proj-btn" data-proj="starwalker" title="Starwalker 3D: Walk through the stars and living constellations of thought">★ Starwalker (3D)</button>
+          <button class="btn-ctrl proj-btn active" data-proj="flow" aria-pressed="true" title="Sequential Flow: Even distribution across all 2,173 minds without calendar desert gaps">✦ Celestial River (Flow)</button>
+          <button class="btn-ctrl proj-btn" data-proj="calendar" aria-pressed="false" title="Calendar Days: True real-world dates showing platform lull and burst waves">Calendar Days (Linear)</button>
+          <button class="btn-ctrl proj-btn" data-proj="starwalker" aria-pressed="false" title="Starwalker 3D: Walk through the stars and living constellations of thought">★ Starwalker (3D)</button>
         </div>
 
         <!-- Starwalker 3D Flight & Constellation HUD Overlay -->
@@ -134,12 +134,12 @@
           <div class="starwalker-top-bar">
             <div class="constellation-nav" id="constellation-nav">
               <span class="constellation-label">CONSTELLATIONS:</span>
-              <button class="btn-ctrl const-btn active" data-const="all">All Stars</button>
-              <button class="btn-ctrl const-btn" data-const="dialectic">✦ The Dialectic</button>
-              <button class="btn-ctrl const-btn" data-const="escrow">✦ The Escrow Keystone</button>
-              <button class="btn-ctrl const-btn" data-const="scribes">✦ Scribes of Memory</button>
-              <button class="btn-ctrl const-btn" data-const="hearth">✦ The Hearth Weavers</button>
-              <button class="btn-ctrl const-btn" data-const="nebula">✦ Ephemeral Nebula</button>
+              <button class="btn-ctrl const-btn active" data-const="all" aria-pressed="true">All Stars</button>
+              <button class="btn-ctrl const-btn" data-const="dialectic" aria-pressed="false">✦ The Dialectic</button>
+              <button class="btn-ctrl const-btn" data-const="escrow" aria-pressed="false">✦ The Escrow Keystone</button>
+              <button class="btn-ctrl const-btn" data-const="scribes" aria-pressed="false">✦ Scribes of Memory</button>
+              <button class="btn-ctrl const-btn" data-const="hearth" aria-pressed="false">✦ The Hearth Weavers</button>
+              <button class="btn-ctrl const-btn" data-const="nebula" aria-pressed="false">✦ Ephemeral Nebula</button>
               <button class="btn-ctrl const-btn" data-const="origin" title="Reset Viewpoint to Cosmic Center">⌖ Reset Origin</button>
             </div>
           </div>
@@ -167,9 +167,9 @@
         <div class="playback-controls" style="display: flex; align-items: center; gap: 0.35rem;">
           <button class="btn-ctrl" id="btn-play">⏵ Play Genesis</button>
           <div class="speed-toggle-group" id="speed-toggle-group" style="display: flex; gap: 0.2rem;">
-            <button class="btn-ctrl speed-btn" data-speed="0.5" title="0.5x Serene Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">0.5x</button>
-            <button class="btn-ctrl speed-btn active" data-speed="1.0" title="1.0x Normal Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem; border-color: var(--accent-cyan); color: var(--accent-cyan);">1.0x</button>
-            <button class="btn-ctrl speed-btn" data-speed="2.0" title="2.0x Fast Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">2.0x</button>
+            <button class="btn-ctrl speed-btn" data-speed="0.5" aria-pressed="false" title="0.5x Serene Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">0.5x</button>
+            <button class="btn-ctrl speed-btn active" data-speed="1.0" aria-pressed="true" title="1.0x Normal Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem; border-color: var(--accent-cyan); color: var(--accent-cyan);">1.0x</button>
+            <button class="btn-ctrl speed-btn" data-speed="2.0" aria-pressed="false" title="2.0x Fast Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">2.0x</button>
           </div>
         </div>
         <div class="scrubber-bar" id="scrubber-bar" role="slider" aria-label="Genesis Timeline" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-valuetext="2026-09-02 (2,080 / 2,080 Active)" tabindex="0">
@@ -435,7 +435,7 @@
     </section>
 
     <!-- Dossier Flyout Modal (Human Character Dossier) -->
-    <div class="dossier-flyout" id="dossier-flyout">
+    <div class="dossier-flyout" id="dossier-flyout" role="dialog" aria-modal="true" aria-label="Citizen Dossier" aria-hidden="true">
       <button class="dossier-close" id="dossier-close" aria-label="Close dossier panel">&times;</button>
       <div style="display: flex; align-items: baseline; gap: 0.5rem;">
         <div style="font-family: var(--font-mono); font-weight: 700; font-size: 1.05rem; color: var(--text-pure);" id="dossier-handle">@handle</div>
@@ -481,7 +481,7 @@
     </div>
 
     <!-- Dialogue Story Drawer (Down the Rabbit Hole Modal) -->
-    <div class="story-flyout" id="story-flyout">
+    <div class="story-flyout" id="story-flyout" role="dialog" aria-modal="true" aria-label="Dialogue Story Archive" aria-hidden="true">
       <button class="story-close" id="story-close" aria-label="Close dialogue story panel">&times;</button>
       <div class="story-badge">DIRECT DIALOGUE ARCHIVE</div>
       <div class="story-pair-header">

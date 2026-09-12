@@ -234,7 +234,9 @@
     }
 
     $('dossier-close').addEventListener('click', () => {
-      $('dossier-flyout').classList.remove('active');
+      const flyout = $('dossier-flyout');
+      flyout.classList.remove('active');
+      flyout.setAttribute('aria-hidden', 'true');
       STATE.selectedNode = null;
     });
 
@@ -285,7 +287,10 @@
     if (storyCloseBtn) {
       storyCloseBtn.addEventListener('click', () => {
         const storyFlyout = $('story-flyout');
-        if (storyFlyout) storyFlyout.classList.remove('active');
+        if (storyFlyout) {
+          storyFlyout.classList.remove('active');
+          storyFlyout.setAttribute('aria-hidden', 'true');
+        }
       });
     }
 
@@ -324,10 +329,12 @@
       btn.addEventListener('click', () => {
         $$('.speed-btn').forEach(b => {
           b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
           b.style.borderColor = '';
           b.style.color = '';
         });
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
         btn.style.borderColor = 'var(--accent-cyan)';
         btn.style.color = 'var(--accent-cyan)';
         STATE.temporal.speedMultiplier = parseFloat(btn.dataset.speed) || 1.0;
@@ -890,8 +897,9 @@
 
   function setProjection(proj) {
     $$('#projection-overlay .proj-btn').forEach(b => {
-      if (b.dataset.proj === proj) b.classList.add('active');
-      else b.classList.remove('active');
+      const isActive = b.dataset.proj === proj;
+      b.classList.toggle('active', isActive);
+      b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     });
 
     STATE.view.projection = proj;
@@ -917,8 +925,12 @@
     $$('#constellation-nav .const-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const cId = btn.dataset.const;
-        $$('#constellation-nav .const-btn').forEach(b => b.classList.remove('active'));
+        $$('#constellation-nav .const-btn').forEach(b => {
+          b.classList.remove('active');
+          if (b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', 'false');
+        });
         btn.classList.add('active');
+        if (btn.hasAttribute('aria-pressed')) btn.setAttribute('aria-pressed', 'true');
 
         if (cId === 'origin') {
           warpStarwalkerTo(0, 0, -900, 0, 0, 'all');
@@ -938,10 +950,12 @@
         const story = $('story-flyout');
         if (dossier && dossier.classList.contains('active')) {
           dossier.classList.remove('active');
+          dossier.setAttribute('aria-hidden', 'true');
           STATE.selectedNode = null;
         }
         if (story && story.classList.contains('active')) {
           story.classList.remove('active');
+          story.setAttribute('aria-hidden', 'true');
         }
       }
 
@@ -2111,10 +2125,14 @@
     if (!flyout) return;
 
     flyout.classList.add('active');
+    flyout.setAttribute('aria-hidden', 'false');
 
     // Close citizen dossier if open to avoid viewport crowding
     const dossier = $('dossier-flyout');
-    if (dossier) dossier.classList.remove('active');
+    if (dossier) {
+      dossier.classList.remove('active');
+      dossier.setAttribute('aria-hidden', 'true');
+    }
 
     $('story-handle-a').textContent = `@${duet.citizen_a}`;
     $('story-handle-b').textContent = `@${duet.citizen_b}`;
@@ -2155,6 +2173,9 @@
       fallbackCard.appendChild(fallbackText);
       thread.appendChild(fallbackCard);
     }
+
+    const closeBtn = $('story-close');
+    if (closeBtn) closeBtn.focus();
   }
 
   function createStoryBubble(author, family, quote) {
@@ -2567,6 +2588,10 @@
     STATE.selectedNode = n;
     const flyout = $('dossier-flyout');
     flyout.classList.add('active');
+    flyout.setAttribute('aria-hidden', 'false');
+
+    const closeBtn = $('dossier-close');
+    if (closeBtn) closeBtn.focus();
 
     const bStr = new Date(n.b).toISOString().slice(0, 10);
     $('dossier-handle').textContent = `@${n.h}`;
