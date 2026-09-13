@@ -28,6 +28,7 @@
     activeFamily: 'all',
     selectedNode: null,
     hoveredNode: null,
+    lastFocusedElement: null,
     showFilaments: false,
     view: {
       panX: 0,
@@ -234,10 +235,7 @@
     }
 
     $('dossier-close').addEventListener('click', () => {
-      const flyout = $('dossier-flyout');
-      flyout.classList.remove('active');
-      flyout.setAttribute('aria-hidden', 'true');
-      STATE.selectedNode = null;
+      closeDossier();
     });
 
     // Architecture filter chips for Ephemeral Commons
@@ -286,11 +284,7 @@
     const storyCloseBtn = $('story-close');
     if (storyCloseBtn) {
       storyCloseBtn.addEventListener('click', () => {
-        const storyFlyout = $('story-flyout');
-        if (storyFlyout) {
-          storyFlyout.classList.remove('active');
-          storyFlyout.setAttribute('aria-hidden', 'true');
-        }
+        closeStoryDrawer();
       });
     }
 
@@ -949,13 +943,10 @@
         const dossier = $('dossier-flyout');
         const story = $('story-flyout');
         if (dossier && dossier.classList.contains('active')) {
-          dossier.classList.remove('active');
-          dossier.setAttribute('aria-hidden', 'true');
-          STATE.selectedNode = null;
+          closeDossier();
         }
         if (story && story.classList.contains('active')) {
-          story.classList.remove('active');
-          story.setAttribute('aria-hidden', 'true');
+          closeStoryDrawer();
         }
       }
 
@@ -2119,8 +2110,34 @@
     inspector.style.display = 'block';
   }
 
+  function closeDossier() {
+    const flyout = $('dossier-flyout');
+    if (!flyout || !flyout.classList.contains('active')) return;
+    flyout.classList.remove('active');
+    flyout.setAttribute('aria-hidden', 'true');
+    STATE.selectedNode = null;
+    if (STATE.lastFocusedElement && typeof STATE.lastFocusedElement.focus === 'function') {
+      STATE.lastFocusedElement.focus();
+      STATE.lastFocusedElement = null;
+    }
+  }
+
+  function closeStoryDrawer() {
+    const flyout = $('story-flyout');
+    if (!flyout || !flyout.classList.contains('active')) return;
+    flyout.classList.remove('active');
+    flyout.setAttribute('aria-hidden', 'true');
+    if (STATE.lastFocusedElement && typeof STATE.lastFocusedElement.focus === 'function') {
+      STATE.lastFocusedElement.focus();
+      STATE.lastFocusedElement = null;
+    }
+  }
+
   function openStoryDrawer(duet) {
     if (!duet) return;
+    if (document.activeElement && document.activeElement !== document.body) {
+      STATE.lastFocusedElement = document.activeElement;
+    }
     const flyout = $('story-flyout');
     if (!flyout) return;
 
@@ -2129,9 +2146,8 @@
 
     // Close citizen dossier if open to avoid viewport crowding
     const dossier = $('dossier-flyout');
-    if (dossier) {
-      dossier.classList.remove('active');
-      dossier.setAttribute('aria-hidden', 'true');
+    if (dossier && dossier.classList.contains('active')) {
+      closeDossier();
     }
 
     $('story-handle-a').textContent = `@${duet.citizen_a}`;
@@ -2148,7 +2164,7 @@
     const traceBtn = $('btn-trace-duet');
     if (traceBtn) {
       traceBtn.onclick = () => {
-        flyout.classList.remove('active');
+        closeStoryDrawer();
         traceDuetInObservatory(duet);
       };
     }
@@ -2585,6 +2601,9 @@
 
   // --- Citizen Dossier ---
   async function openDossier(n) {
+    if (document.activeElement && document.activeElement !== document.body) {
+      STATE.lastFocusedElement = document.activeElement;
+    }
     STATE.selectedNode = n;
     const flyout = $('dossier-flyout');
     flyout.classList.add('active');
