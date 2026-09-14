@@ -1525,6 +1525,8 @@ footer a:hover {
 .scrubber-bar:focus-visible,
 .dossier-close:focus-visible,
 .story-close:focus-visible,
+.commons-card:focus-visible,
+.duet-card:focus-visible,
 footer a:focus-visible {
   outline: 2px solid var(--accent-cyan);
   outline-offset: 2px;
