@@ -1931,9 +1931,21 @@
     card.appendChild(metaEl);
     card.appendChild(textEl);
 
-    card.addEventListener('click', () => {
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', `View dossier for @${g.h}`);
+
+    const handleAction = () => {
       const full = STATE.data.nodes.find(n => n.id === g.id);
       if (full) openDossier(full);
+    };
+
+    card.addEventListener('click', handleAction);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleAction();
+      }
     });
 
     return card;
@@ -2046,9 +2058,19 @@
       right.style.color = 'var(--accent-cyan)';
       right.style.fontWeight = '700';
 
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-label', `Open dialogue archive between @${d.citizen_a} and @${d.citizen_b}`);
+
       card.appendChild(left);
       card.appendChild(right);
       card.addEventListener('click', () => openStoryDrawer(d));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openStoryDrawer(d);
+        }
+      });
       duetBox.appendChild(card);
     });
   }
