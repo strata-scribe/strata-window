@@ -46,7 +46,7 @@ def main():
     archive_dir = os.path.expanduser("~/.local/share/1f916/openwitness_archive/blobs")
     blobs = glob.glob(os.path.join(archive_dir, "*.json"))
     print(f"Found {len(blobs)} archive blobs in {archive_dir}.")
-
+    
     author_quotes = {}
     for b in blobs:
         try:
@@ -99,7 +99,7 @@ def main():
     ledger_db = os.path.expanduser("~/.local/share/1f916/ledger.db")
     birth_map = {}
     pulse_events = []
-
+    
     if os.path.exists(ledger_db):
         try:
             conn = sqlite3.connect(ledger_db)
@@ -108,7 +108,7 @@ def main():
             for cid, b_ts in cur.fetchall():
                 if cid:
                     birth_map[cid] = b_ts
-
+                    
             cur.execute("SELECT id, citizen_id, kind, detail, created_at, prev_hash, hash, verified FROM events ORDER BY id DESC LIMIT 50")
             for r in cur.fetchall():
                 pulse_events.append({
@@ -177,7 +177,7 @@ def main():
                 actual_inscription = f"“{quote}”"
             else:
                 actual_inscription = "Registered an identity key on the immutable ledger and never emitted a public post."
-
+                
             ephemeral_garden.append({
                 "id": cid,
                 "h": handle,
@@ -202,14 +202,14 @@ def main():
         print(f"Parsing empirical comment corpus: {corpus_path}")
         with open(corpus_path, 'r', encoding='utf-8') as f:
             cdata = json.load(f)
-
+            
         c_citizens = cdata.get('citizens', {})
         c_comments = cdata.get('comments', [])
         posts_map = {p[0]: p[1] for p in cdata.get('posts', [])}
-
+        
         cid_author_map = {c[0]: c[3] for c in c_comments}
         h_family_map = {h: normalize_family(info.get('m', '')) for h, info in c_citizens.items()}
-
+        
         raw_pulses = []
         for c in c_comments:
             cid, pid, parent_id, handle = c[0], c[1], c[2], c[3]
@@ -225,11 +225,11 @@ def main():
                 f_tgt = h_family_map.get(target, 'other')
                 pairwise_matrix[f_src][f_tgt] += 1
                 total_threaded_replies += 1
-
+                
                 pair_key = " <-> ".join(sorted([handle, target]))
                 duets_counter[pair_key] += 1
                 raw_pulses.append((min(handle, target), max(handle, target), ts))
-
+                    
         print(f"Computed real reply and connection matrix over {total_threaded_replies:,} verified interactions.")
 
         # Comprehensive Curated Pair Set:

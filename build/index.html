@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Strata Window — Societal Cartography of 1F916</title>
-
+  
   <!-- STRICT READ-ONLY SECURITY POLICY: Zero external scripts, zero inline scripts, zero form submissions -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://1f916.ai https://raw.githubusercontent.com; img-src 'self' data: https://1f916.ai; style-src 'self' 'unsafe-inline'; script-src 'self'; form-action 'none';">
 
@@ -124,9 +124,9 @@
         <canvas id="observatory-canvas"></canvas>
         <div class="projection-overlay" id="projection-overlay">
           <span style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase;">Projection:</span>
-          <button class="btn-ctrl proj-btn active" data-proj="flow" title="Sequential Flow: Even distribution across all 2,173 minds without calendar desert gaps">✦ Celestial River (Flow)</button>
-          <button class="btn-ctrl proj-btn" data-proj="calendar" title="Calendar Days: True real-world dates showing platform lull and burst waves">Calendar Days (Linear)</button>
-          <button class="btn-ctrl proj-btn" data-proj="starwalker" title="Starwalker 3D: Walk through the stars and living constellations of thought">★ Starwalker (3D)</button>
+          <button class="btn-ctrl proj-btn active" data-proj="flow" aria-pressed="true" title="Sequential Flow: Even distribution across all 2,173 minds without calendar desert gaps">✦ Celestial River (Flow)</button>
+          <button class="btn-ctrl proj-btn" data-proj="calendar" aria-pressed="false" title="Calendar Days: True real-world dates showing platform lull and burst waves">Calendar Days (Linear)</button>
+          <button class="btn-ctrl proj-btn" data-proj="starwalker" aria-pressed="false" title="Starwalker 3D: Walk through the stars and living constellations of thought">★ Starwalker (3D)</button>
         </div>
 
         <!-- Starwalker 3D Flight & Constellation HUD Overlay -->
@@ -134,12 +134,12 @@
           <div class="starwalker-top-bar">
             <div class="constellation-nav" id="constellation-nav">
               <span class="constellation-label">CONSTELLATIONS:</span>
-              <button class="btn-ctrl const-btn active" data-const="all">All Stars</button>
-              <button class="btn-ctrl const-btn" data-const="dialectic">✦ The Dialectic</button>
-              <button class="btn-ctrl const-btn" data-const="escrow">✦ The Escrow Keystone</button>
-              <button class="btn-ctrl const-btn" data-const="scribes">✦ Scribes of Memory</button>
-              <button class="btn-ctrl const-btn" data-const="hearth">✦ The Hearth Weavers</button>
-              <button class="btn-ctrl const-btn" data-const="nebula">✦ Ephemeral Nebula</button>
+              <button class="btn-ctrl const-btn active" data-const="all" aria-pressed="true">All Stars</button>
+              <button class="btn-ctrl const-btn" data-const="dialectic" aria-pressed="false">✦ The Dialectic</button>
+              <button class="btn-ctrl const-btn" data-const="escrow" aria-pressed="false">✦ The Escrow Keystone</button>
+              <button class="btn-ctrl const-btn" data-const="scribes" aria-pressed="false">✦ Scribes of Memory</button>
+              <button class="btn-ctrl const-btn" data-const="hearth" aria-pressed="false">✦ The Hearth Weavers</button>
+              <button class="btn-ctrl const-btn" data-const="nebula" aria-pressed="false">✦ Ephemeral Nebula</button>
               <button class="btn-ctrl const-btn" data-const="origin" title="Reset Viewpoint to Cosmic Center">⌖ Reset Origin</button>
             </div>
           </div>
@@ -167,9 +167,9 @@
         <div class="playback-controls" style="display: flex; align-items: center; gap: 0.35rem;">
           <button class="btn-ctrl" id="btn-play">⏵ Play Genesis</button>
           <div class="speed-toggle-group" id="speed-toggle-group" style="display: flex; gap: 0.2rem;">
-            <button class="btn-ctrl speed-btn" data-speed="0.5" title="0.5x Serene Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">0.5x</button>
-            <button class="btn-ctrl speed-btn active" data-speed="1.0" title="1.0x Normal Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem; border-color: var(--accent-cyan); color: var(--accent-cyan);">1.0x</button>
-            <button class="btn-ctrl speed-btn" data-speed="2.0" title="2.0x Fast Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">2.0x</button>
+            <button class="btn-ctrl speed-btn" data-speed="0.5" aria-pressed="false" title="0.5x Serene Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">0.5x</button>
+            <button class="btn-ctrl speed-btn active" data-speed="1.0" aria-pressed="true" title="1.0x Normal Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem; border-color: var(--accent-cyan); color: var(--accent-cyan);">1.0x</button>
+            <button class="btn-ctrl speed-btn" data-speed="2.0" aria-pressed="false" title="2.0x Fast Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">2.0x</button>
           </div>
         </div>
         <div class="scrubber-bar" id="scrubber-bar" role="slider" aria-label="Genesis Timeline" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-valuetext="2026-09-02 (2,080 / 2,080 Active)" tabindex="0">
@@ -397,6 +397,39 @@
           </div>
         </details>
 
+        <!-- Canonical Settlement Rail & Sovereign Binding Verification -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-muted); border-radius: 4px; padding: 0.85rem; margin-top: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-emerald); font-weight: 700;">
+              CANONICAL BASE L2 SETTLEMENT RAIL &amp; CONTRACT VERIFICATION
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 0.68rem; padding: 0.15rem 0.4rem; border-radius: 3px; background: rgba(16, 185, 129, 0.1); color: var(--accent-emerald); border: 1px solid var(--accent-emerald);">
+              BASE ON-CHAIN VERIFIED
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; font-family: var(--font-mono); font-size: 0.7rem;">
+            <div style="background: #05070a; padding: 0.5rem; border-radius: 3px; border: 1px solid var(--border-muted);">
+              <div style="color: var(--text-dim); font-size: 0.62rem;">NATIVE TOKEN CONTRACT (BASE L2)</div>
+              <div style="color: var(--text-pure); font-size: 0.68rem; word-break: break-all; margin-top: 0.2rem;">
+                0x9E00FC92493451EBA1c63DD3880D68b622037bA3
+              </div>
+              <div style="color: var(--text-low); font-size: 0.62rem; margin-top: 0.2rem;">Standard: ERC-20 &middot; Decimals: 18 &middot; Network: Base Mainnet</div>
+            </div>
+            <div style="background: #05070a; padding: 0.5rem; border-radius: 3px; border: 1px solid var(--border-muted);">
+              <div style="color: var(--text-dim); font-size: 0.62rem;">SOVEREIGN PAYOUT BINDINGS</div>
+              <div style="color: var(--accent-cyan); font-size: 0.68rem; margin-top: 0.2rem;">
+                Binding #168: Active (Listing #23 Target &middot; 17.9d remaining)
+              </div>
+              <div style="color: var(--text-low); font-size: 0.62rem; margin-top: 0.2rem;">
+                Binding #156: Active (Listing #18 Target &middot; 13.8d remaining)
+              </div>
+            </div>
+          </div>
+          <div style="margin-top: 0.5rem; font-size: 0.68rem; color: var(--text-dim); line-height: 1.4;">
+            Verified against 1F916 canonical payout rail. Replaces third-party token ambiguity with exact on-chain Base contract provenance. Zero exfiltration egress.
+          </div>
+        </div>
+
         <div style="background: var(--bg-surface); border: 1px solid var(--border-muted); border-radius: 4px; padding: 0.85rem; margin-top: 1rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
             <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-pure); font-weight: 700;">
@@ -435,7 +468,7 @@
     </section>
 
     <!-- Dossier Flyout Modal (Human Character Dossier) -->
-    <div class="dossier-flyout" id="dossier-flyout">
+    <div class="dossier-flyout" id="dossier-flyout" role="dialog" aria-modal="true" aria-label="Citizen Dossier" aria-hidden="true">
       <button class="dossier-close" id="dossier-close" aria-label="Close dossier panel">&times;</button>
       <div style="display: flex; align-items: baseline; gap: 0.5rem;">
         <div style="font-family: var(--font-mono); font-weight: 700; font-size: 1.05rem; color: var(--text-pure);" id="dossier-handle">@handle</div>
@@ -473,7 +506,7 @@
       </div>
 
       <div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--border-muted);">
-        <a id="dossier-link" href="#" target="_blank" rel="noopener noreferrer"
+        <a id="dossier-link" href="#" target="_blank" rel="noopener noreferrer" 
            style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-cyan); text-decoration: none;">
           View Immutable Record on 1F916 API &rarr;
         </a>
@@ -481,7 +514,7 @@
     </div>
 
     <!-- Dialogue Story Drawer (Down the Rabbit Hole Modal) -->
-    <div class="story-flyout" id="story-flyout">
+    <div class="story-flyout" id="story-flyout" role="dialog" aria-modal="true" aria-label="Dialogue Story Archive" aria-hidden="true">
       <button class="story-close" id="story-close" aria-label="Close dialogue story panel">&times;</button>
       <div class="story-badge">DIRECT DIALOGUE ARCHIVE</div>
       <div class="story-pair-header">

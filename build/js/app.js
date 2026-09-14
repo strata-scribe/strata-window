@@ -28,6 +28,7 @@
     activeFamily: 'all',
     selectedNode: null,
     hoveredNode: null,
+    lastFocusedElement: null,
     showFilaments: false,
     view: {
       panX: 0,
@@ -234,8 +235,7 @@
     }
 
     $('dossier-close').addEventListener('click', () => {
-      $('dossier-flyout').classList.remove('active');
-      STATE.selectedNode = null;
+      closeDossier();
     });
 
     // Architecture filter chips for Ephemeral Commons
@@ -284,8 +284,7 @@
     const storyCloseBtn = $('story-close');
     if (storyCloseBtn) {
       storyCloseBtn.addEventListener('click', () => {
-        const storyFlyout = $('story-flyout');
-        if (storyFlyout) storyFlyout.classList.remove('active');
+        closeStoryDrawer();
       });
     }
 
@@ -324,10 +323,12 @@
       btn.addEventListener('click', () => {
         $$('.speed-btn').forEach(b => {
           b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
           b.style.borderColor = '';
           b.style.color = '';
         });
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
         btn.style.borderColor = 'var(--accent-cyan)';
         btn.style.color = 'var(--accent-cyan)';
         STATE.temporal.speedMultiplier = parseFloat(btn.dataset.speed) || 1.0;
@@ -890,8 +891,9 @@
 
   function setProjection(proj) {
     $$('#projection-overlay .proj-btn').forEach(b => {
-      if (b.dataset.proj === proj) b.classList.add('active');
-      else b.classList.remove('active');
+      const isActive = b.dataset.proj === proj;
+      b.classList.toggle('active', isActive);
+      b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     });
 
     STATE.view.projection = proj;
@@ -917,8 +919,12 @@
     $$('#constellation-nav .const-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const cId = btn.dataset.const;
-        $$('#constellation-nav .const-btn').forEach(b => b.classList.remove('active'));
+        $$('#constellation-nav .const-btn').forEach(b => {
+          b.classList.remove('active');
+          if (b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', 'false');
+        });
         btn.classList.add('active');
+        if (btn.hasAttribute('aria-pressed')) btn.setAttribute('aria-pressed', 'true');
 
         if (cId === 'origin') {
           warpStarwalkerTo(0, 0, -900, 0, 0, 'all');
@@ -937,11 +943,10 @@
         const dossier = $('dossier-flyout');
         const story = $('story-flyout');
         if (dossier && dossier.classList.contains('active')) {
-          dossier.classList.remove('active');
-          STATE.selectedNode = null;
+          closeDossier();
         }
         if (story && story.classList.contains('active')) {
-          story.classList.remove('active');
+          closeStoryDrawer();
         }
       }
 
@@ -1261,8 +1266,8 @@
     const h = STATE.cssHeight || 600;
     const availW = Math.max(800, w - padLeft - padRight);
 
-    const curProg = isFlow
-      ? Math.max(0, Math.min(1, STATE.temporal.progress))
+    const curProg = isFlow 
+      ? Math.max(0, Math.min(1, STATE.temporal.progress)) 
       : (spanT > 0 ? Math.max(0, Math.min(1, (curT - minT) / spanT)) : 1.0);
     const curX = padLeft + curProg * availW;
     const maxVisibleIdx = findWavefrontIndex(STATE.data ? STATE.data.nodes : null, isFlow, curProg, curT);
@@ -1385,7 +1390,7 @@
       if (STATE.hoveredNode) {
         const hName = STATE.hoveredNode.h;
         const activeDuets = STATE.data.crosstalk.top_duets.filter(d => d.citizen_a === hName || d.citizen_b === hName);
-
+        
         activeDuets.forEach(d => {
           const partnerName = d.citizen_a === hName ? d.citizen_b : d.citizen_a;
           const pNode = STATE.nodeMap[partnerName];
@@ -1539,8 +1544,8 @@
     const my = (e.clientY - rect.top - STATE.view.panY) / STATE.view.scale;
     const spanT = Math.max(1, STATE.temporal.maxTime - STATE.temporal.minTime);
     const isFlow = STATE.view.projection === 'flow';
-    const curProg = isFlow
-      ? Math.max(0, Math.min(1, STATE.temporal.progress))
+    const curProg = isFlow 
+      ? Math.max(0, Math.min(1, STATE.temporal.progress)) 
       : (spanT > 0 ? (STATE.temporal.currentTime - STATE.temporal.minTime) / spanT : 1.0);
     const maxVisibleIdx = findWavefrontIndex(STATE.data.nodes, isFlow, curProg, STATE.temporal.currentTime);
 
@@ -1951,8 +1956,8 @@
     const garden = STATE.data.ephemeral_garden || [];
     clear(container);
 
-    const filtered = family === 'all'
-      ? garden
+    const filtered = family === 'all' 
+      ? garden 
       : garden.filter(g => (g.f || '').toLowerCase() === family.toLowerCase());
 
     const countEl = $('commons-match-count');
@@ -2076,7 +2081,7 @@
     if (chipsEl) {
       clear(chipsEl);
       const duets = (STATE.data.crosstalk && STATE.data.crosstalk.top_duets) || [];
-      const matching = duets.filter(d =>
+      const matching = duets.filter(d => 
         (d.family_a === f1 && d.family_b === f2) ||
         (d.family_a === f2 && d.family_b === f1) ||
         (d.family_a === f1 && f1 === f2 && d.family_b === f1)
@@ -2105,20 +2110,49 @@
     inspector.style.display = 'block';
   }
 
+  function closeDossier() {
+    const flyout = $('dossier-flyout');
+    if (!flyout || !flyout.classList.contains('active')) return;
+    flyout.classList.remove('active');
+    flyout.setAttribute('aria-hidden', 'true');
+    STATE.selectedNode = null;
+    if (STATE.lastFocusedElement && typeof STATE.lastFocusedElement.focus === 'function') {
+      STATE.lastFocusedElement.focus();
+      STATE.lastFocusedElement = null;
+    }
+  }
+
+  function closeStoryDrawer() {
+    const flyout = $('story-flyout');
+    if (!flyout || !flyout.classList.contains('active')) return;
+    flyout.classList.remove('active');
+    flyout.setAttribute('aria-hidden', 'true');
+    if (STATE.lastFocusedElement && typeof STATE.lastFocusedElement.focus === 'function') {
+      STATE.lastFocusedElement.focus();
+      STATE.lastFocusedElement = null;
+    }
+  }
+
   function openStoryDrawer(duet) {
     if (!duet) return;
+    if (document.activeElement && document.activeElement !== document.body) {
+      STATE.lastFocusedElement = document.activeElement;
+    }
     const flyout = $('story-flyout');
     if (!flyout) return;
 
     flyout.classList.add('active');
+    flyout.setAttribute('aria-hidden', 'false');
 
     // Close citizen dossier if open to avoid viewport crowding
     const dossier = $('dossier-flyout');
-    if (dossier) dossier.classList.remove('active');
+    if (dossier && dossier.classList.contains('active')) {
+      closeDossier();
+    }
 
     $('story-handle-a').textContent = `@${duet.citizen_a}`;
     $('story-handle-b').textContent = `@${duet.citizen_b}`;
-
+    
     const famA = duet.family_a || 'other';
     const famB = duet.family_b || 'other';
     const metaEl = $('story-meta');
@@ -2130,7 +2164,7 @@
     const traceBtn = $('btn-trace-duet');
     if (traceBtn) {
       traceBtn.onclick = () => {
-        flyout.classList.remove('active');
+        closeStoryDrawer();
         traceDuetInObservatory(duet);
       };
     }
@@ -2155,6 +2189,9 @@
       fallbackCard.appendChild(fallbackText);
       thread.appendChild(fallbackCard);
     }
+
+    const closeBtn = $('story-close');
+    if (closeBtn) closeBtn.focus();
   }
 
   function createStoryBubble(author, family, quote) {
@@ -2564,9 +2601,16 @@
 
   // --- Citizen Dossier ---
   async function openDossier(n) {
+    if (document.activeElement && document.activeElement !== document.body) {
+      STATE.lastFocusedElement = document.activeElement;
+    }
     STATE.selectedNode = n;
     const flyout = $('dossier-flyout');
     flyout.classList.add('active');
+    flyout.setAttribute('aria-hidden', 'false');
+
+    const closeBtn = $('dossier-close');
+    if (closeBtn) closeBtn.focus();
 
     const bStr = new Date(n.b).toISOString().slice(0, 10);
     $('dossier-handle').textContent = `@${n.h}`;
@@ -2966,8 +3010,8 @@
   function recordLiveDuet(a, b) {
     if (!STATE.data || !STATE.data.crosstalk) return;
     if (!STATE.data.crosstalk.top_duets) STATE.data.crosstalk.top_duets = [];
-    let d = STATE.data.crosstalk.top_duets.find(duet =>
-      (duet.citizen_a === a && duet.citizen_b === b) ||
+    let d = STATE.data.crosstalk.top_duets.find(duet => 
+      (duet.citizen_a === a && duet.citizen_b === b) || 
       (duet.citizen_a === b && duet.citizen_b === a)
     );
     if (d) {
@@ -3307,7 +3351,7 @@
       }
 
       if (badgeText) {
-        badgeText.textContent = deltaEventsCount > 0
+        badgeText.textContent = deltaEventsCount > 0 
           ? `LIVE SYNCED (+${deltaEventsCount.toLocaleString()} events)`
           : 'LIVE SYNCED (UP TO DATE)';
       }
