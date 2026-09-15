@@ -241,8 +241,12 @@
     // Architecture filter chips for Ephemeral Commons
     $$('#commons-filter-chips .chip-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        $$('#commons-filter-chips .chip-btn').forEach(b => b.classList.remove('active'));
+        $$('#commons-filter-chips .chip-btn').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
         STATE.activeFamily = btn.dataset.family || 'all';
         filterCommonsByFamily(STATE.activeFamily);
       });
@@ -253,6 +257,7 @@
     if (filamentBtn) {
       filamentBtn.addEventListener('click', () => {
         STATE.showFilaments = !STATE.showFilaments;
+        filamentBtn.setAttribute('aria-pressed', STATE.showFilaments ? 'true' : 'false');
         const badge = $('filaments-badge');
         if (badge) {
           badge.textContent = STATE.showFilaments ? 'ON (ACTIVE)' : 'OFF';
@@ -292,9 +297,7 @@
     const closeInspectorBtn = $('btn-close-inspector');
     if (closeInspectorBtn) {
       closeInspectorBtn.addEventListener('click', () => {
-        const insp = $('crosstalk-cell-inspector');
-        if (insp) insp.style.display = 'none';
-        $$('#matrix-table td').forEach(c => c.classList.remove('selected'));
+        closeCrosstalkInspector();
       });
     }
 
@@ -942,11 +945,15 @@
       if (e.key === 'Escape') {
         const dossier = $('dossier-flyout');
         const story = $('story-flyout');
+        const inspector = $('crosstalk-cell-inspector');
         if (dossier && dossier.classList.contains('active')) {
           closeDossier();
         }
         if (story && story.classList.contains('active')) {
           closeStoryDrawer();
+        }
+        if (inspector && inspector.style.display !== 'none') {
+          closeCrosstalkInspector();
         }
       }
 
@@ -1771,8 +1778,9 @@
         const filterBtn = h('button', 'btn-ctrl mullion-filter-btn', `View ${q.name} Threads`);
         filterBtn.addEventListener('click', () => {
           $$('#river-filter-chips .chip-btn').forEach(b => {
-            if (b.dataset.quarter === q.id) b.classList.add('active');
-            else b.classList.remove('active');
+            const isActive = b.dataset.quarter === q.id;
+            b.classList.toggle('active', isActive);
+            b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
           });
           filterRiver(q.id);
         });
@@ -1785,8 +1793,12 @@
     // 4. Setup River filter chips
     $$('#river-filter-chips .chip-btn').forEach(btn => {
       btn.onclick = () => {
-        $$('#river-filter-chips .chip-btn').forEach(b => b.classList.remove('active'));
+        $$('#river-filter-chips .chip-btn').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
         filterRiver(btn.dataset.quarter || 'all');
       };
     });
@@ -2014,6 +2026,9 @@
           td.style.background = 'transparent';
         }
         td.style.cursor = 'pointer';
+        td.setAttribute('tabindex', '0');
+        td.setAttribute('role', 'button');
+        td.setAttribute('aria-label', `Inspect dialogue pairings between ${f1.toUpperCase()} and ${f2.toUpperCase()}: ${replies.toLocaleString()} replies (${pct}%)`);
         td.title = `${f1} replied to ${f2}: ${replies.toLocaleString()} times (${pct}% of all dialogue). Click to inspect pairings.`;
 
         const repDiv = h('div', '', replies.toLocaleString());
@@ -2027,6 +2042,12 @@
         td.appendChild(repDiv);
         td.appendChild(pctDiv);
         td.addEventListener('click', () => inspectMatrixCell(f1, f2, cell, td));
+        td.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            inspectMatrixCell(f1, f2, cell, td);
+          }
+        });
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
@@ -2130,6 +2151,17 @@
     }
 
     inspector.style.display = 'block';
+  }
+
+  function closeCrosstalkInspector() {
+    const insp = $('crosstalk-cell-inspector');
+    if (!insp) return;
+    insp.style.display = 'none';
+    $$('#matrix-table td').forEach(c => c.classList.remove('selected'));
+    if (STATE.lastFocusedElement && typeof STATE.lastFocusedElement.focus === 'function') {
+      STATE.lastFocusedElement.focus();
+      STATE.lastFocusedElement = null;
+    }
   }
 
   function closeDossier() {
