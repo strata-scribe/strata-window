@@ -1527,6 +1527,10 @@ footer a:hover {
 .story-close:focus-visible,
 .commons-card:focus-visible,
 .duet-card:focus-visible,
+.landmark-chip:focus-visible,
+.mullion-voice-chip:focus-visible,
+.interlocutor-pill:focus-visible,
+.sync-badge:focus-visible,
 footer a:focus-visible {
   outline: 2px solid var(--accent-cyan);
   outline-offset: 2px;

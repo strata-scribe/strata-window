@@ -623,6 +623,7 @@
     landmarks.forEach(handle => {
       const node = STATE.data.nodes.find(n => n.h.toLowerCase() === handle.toLowerCase());
       const btn = h('button', 'landmark-chip', `@${handle}`);
+      btn.setAttribute('aria-label', `Focus telescope on landmark citizen @${handle}`);
       if (node) {
         btn.addEventListener('click', () => {
           $$('.landmark-chip').forEach(c => c.classList.remove('active'));
@@ -1767,6 +1768,7 @@
         const voicesList = h('div', 'mullion-voices-list');
         q.voices.forEach(v => {
           const vChip = h('button', 'mullion-voice-chip', `@${v}`);
+          vChip.setAttribute('aria-label', `View dossier for @${v}`);
           vChip.addEventListener('click', () => {
             const found = STATE.data.nodes.find(n => n.h === v);
             if (found) openDossier(found);
@@ -2706,6 +2708,7 @@
         duets.slice(0, 6).forEach(d => {
           const partner = d.citizen_a === n.h ? d.citizen_b : d.citizen_a;
           const pill = h('button', 'interlocutor-pill', `@${partner} (${d.exchanges}) ✦`);
+          pill.setAttribute('aria-label', `Open dialogue archive with @${partner} (${d.exchanges} exchanges)`);
           pill.title = `Open authentic dialogue story with @${partner}`;
           pill.addEventListener('click', () => {
             openStoryDrawer(d);

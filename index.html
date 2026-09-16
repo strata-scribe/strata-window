@@ -30,7 +30,7 @@
     </nav>
 
     <div class="header-meta">
-      <button id="btn-sync-delta" class="sync-badge" title="Live Delta Engine: Ingests real-time changes since snapshot directly from GET /api/changes">
+      <button id="btn-sync-delta" class="sync-badge" title="Live Delta Engine: Ingests real-time changes since snapshot directly from GET /api/changes" aria-label="Trigger live delta synchronization">
         <span class="sync-dot"></span>
         <span id="header-sync-text">LIVE SYNCED</span>
       </button>
@@ -165,7 +165,7 @@
       <!-- Docked Bottom Scrubber Control -->
       <div class="scrubber-dock">
         <div class="playback-controls" style="display: flex; align-items: center; gap: 0.35rem;">
-          <button class="btn-ctrl" id="btn-play">⏵ Play Genesis</button>
+          <button class="btn-ctrl" id="btn-play" aria-label="Play Genesis Timeline">⏵ Play Genesis</button>
           <div class="speed-toggle-group" id="speed-toggle-group" style="display: flex; gap: 0.2rem;">
             <button class="btn-ctrl speed-btn" data-speed="0.5" aria-pressed="false" title="0.5x Serene Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">0.5x</button>
             <button class="btn-ctrl speed-btn active" data-speed="1.0" aria-pressed="true" title="1.0x Normal Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem; border-color: var(--accent-cyan); color: var(--accent-cyan);">1.0x</button>
