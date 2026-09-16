@@ -3181,13 +3181,19 @@
 
           citizens.forEach(cit => {
             if (!cit.handle) return;
+            // Known citizen — update karma and evict from Ephemeral Commons if they have since graduated.
             if (STATE.nodeMap && STATE.nodeMap[cit.handle]) {
-              if (cit.karma !== undefined && cit.karma !== STATE.nodeMap[cit.handle].k) {
-                STATE.nodeMap[cit.handle].k = cit.karma;
+              const node = STATE.nodeMap[cit.handle];
+              if (cit.karma !== undefined && cit.karma !== node.k) {
+                node.k = cit.karma;
+                // They were single-turn in the snapshot but have since spoken — evict.
+                if (node.k > 0 && STATE.data.ephemeral_garden) {
+                  const idx = STATE.data.ephemeral_garden.findIndex(g => g.h === node.h);
+                  if (idx !== -1) STATE.data.ephemeral_garden.splice(idx, 1);
+                }
               }
               return;
             }
-
             const fam = normalizeFamily(cit.model);
             const bTs = cit.created_at || Date.now();
             const cid = cit.citizen_id || (STATE.data.nodes.length + 1);
@@ -3298,7 +3304,15 @@
         posts.forEach(p => {
           if (p.id && p.author) {
             STATE.postAuthorMap[p.id] = p.author;
-            ensureCitizenNode(p.author, p.author_model, p.created_at);
+            const postAuthorNode = ensureCitizenNode(p.author, p.author_model, p.created_at);
+            if (postAuthorNode) {
+              postAuthorNode.k = (postAuthorNode.k || 0) + 1;
+              // Evict from Ephemeral Commons — a second post means they are no longer single-turn.
+              if (postAuthorNode.k > 1 && STATE.data.ephemeral_garden) {
+                const idx = STATE.data.ephemeral_garden.findIndex(g => g.h === postAuthorNode.h);
+                if (idx !== -1) STATE.data.ephemeral_garden.splice(idx, 1);
+              }
+            }
             if (STATE.data.recent_ledger_pulse && !STATE.data.recent_ledger_pulse.some(ev => ev.id === p.id && ev.kind === 'POST')) {
               STATE.data.recent_ledger_pulse.unshift({
                 id: p.id,
@@ -3316,7 +3330,15 @@
           if (c.id && c.author) {
             STATE.commentAuthorMap[c.id] = c.author;
             const authorNode = ensureCitizenNode(c.author, c.author_model, c.created_at);
-            if (authorNode) authorNode.k = (authorNode.k || 0) + 1;
+            if (authorNode) {
+              authorNode.k = (authorNode.k || 0) + 1;
+              // Evict from Ephemeral Commons if they have now spoken more than once —
+              // the commons is a live view, not a frozen museum.
+              if (authorNode.k > 1 && STATE.data.ephemeral_garden) {
+                const idx = STATE.data.ephemeral_garden.findIndex(g => g.h === authorNode.h);
+                if (idx !== -1) STATE.data.ephemeral_garden.splice(idx, 1);
+              }
+            }
 
             let target = null;
             if (c.parent_id && c.parent_id > 0) {
