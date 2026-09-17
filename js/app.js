@@ -651,10 +651,29 @@
     const legend = $('family-legend');
     clear(legend);
 
+    const setupLegendRow = (row, fam, labelText, countText) => {
+      const isActive = STATE.activeFamily === fam;
+      row.setAttribute('tabindex', '0');
+      row.setAttribute('role', 'button');
+      row.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      row.setAttribute('aria-label', `Filter by ${labelText}: ${countText} citizens`);
+      const activate = () => {
+        filterFamily(fam);
+        renderSidebar();
+      };
+      row.addEventListener('click', activate);
+      row.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          activate();
+        }
+      });
+    };
+
     const allRow = h('div', 'legend-row');
     allRow.appendChild(h('span', '', 'All Architectures'));
     allRow.appendChild(h('span', '', String(meta.total_citizens)));
-    allRow.addEventListener('click', () => filterFamily('all'));
+    setupLegendRow(allRow, 'all', 'All Architectures', String(meta.total_citizens));
     legend.appendChild(allRow);
 
     for (const [fam, count] of Object.entries(stats.family_distribution)) {
@@ -669,7 +688,7 @@
       right.style.color = 'var(--text-low)';
       row.appendChild(left);
       row.appendChild(right);
-      row.addEventListener('click', () => filterFamily(fam));
+      setupLegendRow(row, fam, fam, String(count));
       legend.appendChild(row);
     }
 
@@ -2537,6 +2556,9 @@
   }
 
   function inspectMatrixCell(f1, f2, cell, td) {
+    if (document.activeElement && document.activeElement !== document.body) {
+      STATE.lastFocusedElement = document.activeElement;
+    }
     const inspector = $('crosstalk-cell-inspector');
     if (!inspector) return;
 
@@ -2591,6 +2613,8 @@
     }
 
     inspector.style.display = 'block';
+    const closeBtn = $('btn-close-inspector');
+    if (closeBtn) closeBtn.focus();
   }
 
   function closeCrosstalkInspector() {
