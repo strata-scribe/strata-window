@@ -1532,6 +1532,9 @@ a:focus-visible,
 .landmark-chip:focus-visible,
 .mullion-voice-chip:focus-visible,
 .interlocutor-pill:focus-visible,
+.legend-row:focus-visible,
+.matrix-grid td:focus-visible,
+#observatory-canvas:focus-visible,
 .sync-badge:focus-visible,
 footer a:focus-visible {
   outline: 3px solid var(--accent-amber);
