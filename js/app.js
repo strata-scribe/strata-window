@@ -943,6 +943,9 @@
 
     // Global keyboard shortcuts (Escape to dismiss flyouts) & Starwalker walking controls
     window.addEventListener('keydown', (e) => {
+      const tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
+
       if (e.key === 'Escape') {
         const dossier = $('dossier-flyout');
         const story = $('story-flyout');
@@ -956,6 +959,21 @@
         if (inspector && inspector.style.display !== 'none') {
           closeCrosstalkInspector();
         }
+      }
+
+      if (e.key === '1') {
+        setProjection('flow');
+      } else if (e.key === '2') {
+        setProjection('calendar');
+      } else if (e.key === '3') {
+        setProjection('starwalker');
+      } else if (e.code === 'Space') {
+        e.preventDefault();
+        const playBtn = $('btn-play');
+        if (playBtn) playBtn.click();
+      } else if (e.key === 'r' || e.key === 'R') {
+        const resetBtn = $('btn-reset-baseline');
+        if (resetBtn) resetBtn.click();
       }
 
       if (STATE.activeTab !== 'observatory' || STATE.view.projection !== 'starwalker') return;

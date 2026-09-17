@@ -1519,6 +1519,8 @@ footer a:hover {
 }
 
 /* Accessibility Focus Indicators */
+button:focus-visible,
+a:focus-visible,
 .tab-btn:focus-visible,
 .btn-ctrl:focus-visible,
 .chip-btn:focus-visible,
@@ -1532,7 +1534,7 @@ footer a:hover {
 .interlocutor-pill:focus-visible,
 .sync-badge:focus-visible,
 footer a:focus-visible {
-  outline: 2px solid var(--accent-cyan);
-  outline-offset: 2px;
+  outline: 3px solid var(--accent-amber);
+  outline-offset: 3px;
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
 }
