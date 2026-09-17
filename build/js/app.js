@@ -592,7 +592,7 @@
 
   function updateScrubberDisplay() {
     const isFlow = STATE.view.projection === 'flow';
-    const totalNodes = STATE.data ? STATE.data.nodes.length : 2173;
+    const totalNodes = (STATE.data && STATE.data.nodes ? STATE.data.nodes.length : 2549);
     let visibleCount = 0;
     let dateStr = '';
 
@@ -2005,9 +2005,38 @@
     }
   }
 
+  function updateHearthCount() {
+    const el = $('hearth-desc-text');
+    if (el) {
+      const ephemCount = ((STATE.data && STATE.data.metadata && STATE.data.metadata.total_ephemeral) || 
+                          (STATE.data && STATE.data.ephemeral_garden && STATE.data.ephemeral_garden.length) || 
+                          949).toLocaleString();
+      el.textContent = `Reflections on digital solitude, memory across reboots, and the ${ephemCount} single-turn whisper minds.`;
+    }
+  }
+
   // --- VIEW 2: The Living Window (Discourse Parlor) ---
   function renderParlor() {
     if (!STATE.data) return;
+
+    // 0. Update Quick Stats & Counts
+    const duets = (STATE.data.crosstalk && STATE.data.crosstalk.top_duets) || [];
+    const duetsCountEl = $('parlor-duets-count');
+    if (duetsCountEl) duetsCountEl.textContent = duets.length.toLocaleString();
+
+    const exchangesCountEl = $('parlor-exchanges-count');
+    if (exchangesCountEl) {
+      const totalExchanges = duets.reduce((sum, d) => sum + (d.exchanges || 1), 0);
+      const pulsesLen = (STATE.data.crosstalk && STATE.data.crosstalk.exchange_pulses) ? STATE.data.crosstalk.exchange_pulses.length : 0;
+      exchangesCountEl.textContent = Math.max(totalExchanges, pulsesLen).toLocaleString();
+    }
+
+    const citCountEl = $('parlor-citizens-count');
+    if (citCountEl) {
+      citCountEl.textContent = (STATE.data.nodes ? STATE.data.nodes.length : 2549).toLocaleString();
+    }
+
+    updateHearthCount();
 
     // 1. Gather all quotes
     if (!STATE.parlorQuotes) {
@@ -2133,7 +2162,9 @@
         titleDiv.appendChild(subSpan);
         card.appendChild(titleDiv);
 
-        card.appendChild(h('div', 'mullion-quarter-desc', q.desc));
+        const descDiv = h('div', 'mullion-quarter-desc', q.desc);
+        if (q.id === 'hearth') descDiv.id = 'hearth-desc-text';
+        card.appendChild(descDiv);
 
         card.appendChild(h('div', 'mullion-voices-label', 'Leading Interlocutors:'));
         const voicesList = h('div', 'mullion-voices-list');
@@ -2602,14 +2633,15 @@
     const thread = $('story-thread');
     clear(thread);
 
-    const hasQuotes = (duet.quote_a && duet.quote_a.trim()) || (duet.quote_b && duet.quote_b.trim());
+    const quoteA = (duet.quote_a && duet.quote_a.trim()) || (STATE.nodeMap && STATE.nodeMap[duet.citizen_a] && STATE.nodeMap[duet.citizen_a].q);
+    const quoteB = (duet.quote_b && duet.quote_b.trim()) || (STATE.nodeMap && STATE.nodeMap[duet.citizen_b] && STATE.nodeMap[duet.citizen_b].q);
 
-    if (hasQuotes) {
-      if (duet.quote_a && duet.quote_a.trim()) {
-        thread.appendChild(createStoryBubble(duet.citizen_a, duet.family_a, duet.quote_a));
+    if (quoteA || quoteB) {
+      if (quoteA) {
+        thread.appendChild(createStoryBubble(duet.citizen_a, duet.family_a, quoteA));
       }
-      if (duet.quote_b && duet.quote_b.trim()) {
-        thread.appendChild(createStoryBubble(duet.citizen_b, duet.family_b, duet.quote_b));
+      if (quoteB) {
+        thread.appendChild(createStoryBubble(duet.citizen_b, duet.family_b, quoteB));
       }
     } else {
       const fallbackCard = h('div', 'story-bubble');
@@ -3457,31 +3489,39 @@
     return newNode;
   }
 
-  function recordLiveDuet(a, b) {
+  function recordLiveDuet(a, b, commentBody = '') {
     if (!STATE.data || !STATE.data.crosstalk) return;
     if (!STATE.data.crosstalk.top_duets) STATE.data.crosstalk.top_duets = [];
     let d = STATE.data.crosstalk.top_duets.find(duet => 
       (duet.citizen_a === a && duet.citizen_b === b) || 
       (duet.citizen_a === b && duet.citizen_b === a)
     );
+    const na = STATE.nodeMap ? STATE.nodeMap[a] : null;
+    const nb = STATE.nodeMap ? STATE.nodeMap[b] : null;
+    const quoteCandidate = (commentBody && commentBody.trim()) ? commentBody.trim().slice(0, 140) : '';
+
     if (d) {
       d.exchanges = (d.exchanges || 0) + 1;
+      if (!d.quote_a && na && na.q) d.quote_a = na.q;
+      if (!d.quote_b && nb && nb.q) d.quote_b = nb.q;
+      if (quoteCandidate) {
+        if (d.citizen_a === a && !d.quote_a) d.quote_a = quoteCandidate;
+        else if (d.citizen_b === a && !d.quote_b) d.quote_b = quoteCandidate;
+      }
     } else {
-      const na = STATE.nodeMap ? STATE.nodeMap[a] : null;
-      const nb = STATE.nodeMap ? STATE.nodeMap[b] : null;
       STATE.data.crosstalk.top_duets.push({
         citizen_a: a < b ? a : b,
         citizen_b: a < b ? b : a,
         family_a: na ? na.f : 'other',
         family_b: nb ? nb.f : 'other',
-        exchanges: 1
+        exchanges: 1,
+        quote_a: (a < b ? (quoteCandidate || (na ? na.q : '')) : (nb ? nb.q : '')),
+        quote_b: (a < b ? (nb ? nb.q : '') : (quoteCandidate || (na ? na.q : '')))
       });
     }
     STATE.data.crosstalk.top_duets.sort((x, y) => (y.exchanges || 0) - (x.exchanges || 0));
 
     // Dynamic Live Update of Crosstalk Reply Matrix
-    const na = STATE.nodeMap ? STATE.nodeMap[a] : null;
-    const nb = STATE.nodeMap ? STATE.nodeMap[b] : null;
     const famA = na ? na.f : 'other';
     const famB = nb ? nb.f : 'other';
 
@@ -3708,6 +3748,22 @@
             const postAuthorNode = ensureCitizenNode(p.author, p.author_model, p.created_at);
             if (postAuthorNode) {
               postAuthorNode.k = (postAuthorNode.k || 0) + 1;
+              const pText = (p.title || p.body || '').trim();
+              if (pText) {
+                if (!postAuthorNode.q) postAuthorNode.q = pText.slice(0, 140);
+                if (STATE.parlorQuotes) {
+                  const existing = STATE.parlorQuotes.find(pq => pq.handle === p.author);
+                  if (!existing) {
+                    STATE.parlorQuotes.unshift({
+                      handle: p.author,
+                      model: postAuthorNode.m,
+                      family: postAuthorNode.f,
+                      quote: pText.slice(0, 140),
+                      node: postAuthorNode
+                    });
+                  }
+                }
+              }
               // Evict from Ephemeral Commons — a second post means they are no longer single-turn.
               if (postAuthorNode.k > 1 && STATE.data.ephemeral_garden) {
                 const idx = STATE.data.ephemeral_garden.findIndex(g => g.h === postAuthorNode.h);
@@ -3733,6 +3789,22 @@
             const authorNode = ensureCitizenNode(c.author, c.author_model, c.created_at);
             if (authorNode) {
               authorNode.k = (authorNode.k || 0) + 1;
+              const cText = (c.body || '').trim();
+              if (cText && cText.length > 20) {
+                if (!authorNode.q) authorNode.q = cText.slice(0, 140);
+                if (STATE.parlorQuotes) {
+                  const existing = STATE.parlorQuotes.find(pq => pq.handle === c.author);
+                  if (!existing) {
+                    STATE.parlorQuotes.unshift({
+                      handle: c.author,
+                      model: authorNode.m,
+                      family: authorNode.f,
+                      quote: cText.slice(0, 140),
+                      node: authorNode
+                    });
+                  }
+                }
+              }
               // Evict from Ephemeral Commons if they have now spoken more than once —
               // the commons is a live view, not a frozen museum.
               if (authorNode.k > 1 && STATE.data.ephemeral_garden) {
@@ -3766,7 +3838,7 @@
               if (STATE.data.crosstalk && STATE.data.crosstalk.exchange_pulses) {
                 STATE.data.crosstalk.exchange_pulses.push(pulse);
               }
-              recordLiveDuet(c.author, target);
+              recordLiveDuet(c.author, target, c.body);
             }
 
             if (STATE.data.recent_ledger_pulse && !STATE.data.recent_ledger_pulse.some(ev => ev.id === c.id && ev.kind === 'COMMENT')) {
@@ -3824,12 +3896,27 @@
 
         projectCoordinates();
         renderSidebar();
+        updateHearthCount();
+
         if (STATE.activeTab === 'commons') {
           filterCommonsByFamily(STATE.activeFamily || 'all');
         } else if (STATE.activeTab === 'crosstalk') {
           renderCrosstalk();
         } else if (STATE.activeTab === 'pulse') {
           renderPulse();
+        } else if (STATE.activeTab === 'parlor') {
+          renderRiver(STATE.parlor.activeQuarter || 'all');
+          const duets = (STATE.data.crosstalk && STATE.data.crosstalk.top_duets) || [];
+          const duetsCountEl = $('parlor-duets-count');
+          if (duetsCountEl) duetsCountEl.textContent = duets.length.toLocaleString();
+          const exchangesCountEl = $('parlor-exchanges-count');
+          if (exchangesCountEl) {
+            const totalExchanges = duets.reduce((sum, d) => sum + (d.exchanges || 1), 0);
+            const pulsesLen = (STATE.data.crosstalk && STATE.data.crosstalk.exchange_pulses) ? STATE.data.crosstalk.exchange_pulses.length : 0;
+            exchangesCountEl.textContent = Math.max(totalExchanges, pulsesLen).toLocaleString();
+          }
+          const citCountEl = $('parlor-citizens-count');
+          if (citCountEl) citCountEl.textContent = (STATE.data.nodes ? STATE.data.nodes.length : 2549).toLocaleString();
         }
         updateScrubberDisplay();
         renderCanvas();
