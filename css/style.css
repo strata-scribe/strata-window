@@ -999,6 +999,19 @@ aside.sidebar {
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
 }
 
+#btn-starwalker-tour.active {
+  border-color: var(--accent-amber);
+  color: var(--accent-amber);
+  background: rgba(245, 158, 11, 0.16);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+  animation: pulse-tour 2s infinite ease-in-out;
+}
+
+@keyframes pulse-tour {
+  0%, 100% { box-shadow: 0 0 6px rgba(245, 158, 11, 0.25); }
+  50% { box-shadow: 0 0 14px rgba(245, 158, 11, 0.5); }
+}
+
 .starwalker-bottom-bar {
   display: flex;
   justify-content: space-between;

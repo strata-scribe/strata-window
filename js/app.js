@@ -1071,9 +1071,17 @@
       tourBtn.classList.remove('active');
       tourBtn.textContent = '✦ Cosmic Tour';
     }
+    const targetEl = $('starwalker-target');
+    if (targetEl && sw) {
+      if (sw.activeConstellation === 'all') targetEl.textContent = 'TARGET: ALL CONSTELLATIONS';
+      else if (CONSTELLATIONS[sw.activeConstellation]) targetEl.textContent = `TARGET: ${CONSTELLATIONS[sw.activeConstellation].title}`;
+    }
   }
 
   function startStarwalkerTour() {
+    if (STATE.view.projection !== 'starwalker') {
+      setProjection('starwalker');
+    }
     const sw = STATE.starwalker;
     if (!sw.tour) sw.tour = { active: false, timer: null, idx: 0 };
     sw.tour.active = true;
@@ -1093,7 +1101,7 @@
       const cId = waypoints[sw.tour.idx % waypoints.length];
       sw.tour.idx++;
 
-      $$('#constellation-nav .const-btn').forEach(b => {
+      $$('#constellation-nav .const-btn[data-const]').forEach(b => {
         const isTarget = b.dataset.const === cId;
         b.classList.toggle('active', isTarget);
         if (b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', isTarget ? 'true' : 'false');
@@ -1108,7 +1116,7 @@
     }
 
     stepTour();
-    sw.tour.timer = setInterval(stepTour, 7500);
+    sw.tour.timer = setInterval(stepTour, 9000);
   }
 
   function setupStarwalker() {
@@ -1200,7 +1208,6 @@
       }
 
       if (STATE.activeTab !== 'observatory' || STATE.view.projection !== 'starwalker') return;
-      stopStarwalkerTour();
 
       const sw = STATE.starwalker;
       const step = 95;
@@ -1208,29 +1215,39 @@
       const cosY = Math.cos(sw.yaw), sinY = Math.sin(sw.yaw);
       const cosP = Math.cos(sw.pitch), sinP = Math.sin(sw.pitch);
 
+      let isFlightKey = false;
       if (e.code === 'KeyW' || e.code === 'ArrowUp') {
         sw.targetCamX += sinY * cosP * step;
         sw.targetCamY += -sinP * step;
         sw.targetCamZ += cosY * cosP * step;
+        isFlightKey = true;
         e.preventDefault();
       } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
         sw.targetCamX -= sinY * cosP * step;
         sw.targetCamY -= -sinP * step;
         sw.targetCamZ -= cosY * cosP * step;
+        isFlightKey = true;
         e.preventDefault();
       } else if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
         sw.targetCamX -= cosY * strafe;
         sw.targetCamZ += sinY * strafe;
+        isFlightKey = true;
         e.preventDefault();
       } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
         sw.targetCamX += cosY * strafe;
         sw.targetCamZ -= sinY * strafe;
+        isFlightKey = true;
         e.preventDefault();
       } else if (e.code === 'KeyQ') {
         sw.targetCamY += 50;
+        isFlightKey = true;
       } else if (e.code === 'KeyE') {
         sw.targetCamY -= 50;
+        isFlightKey = true;
       }
+
+      if (!isFlightKey) return;
+      stopStarwalkerTour();
 
       sw.targetCamX = Math.max(-2400, Math.min(2400, sw.targetCamX));
       sw.targetCamY = Math.max(-1200, Math.min(1200, sw.targetCamY));
@@ -1256,8 +1273,16 @@
     sw.activeConstellation = constId;
     const targetEl = $('starwalker-target');
     if (targetEl) {
-      if (constId === 'all') targetEl.textContent = 'TARGET: ALL CONSTELLATIONS';
-      else if (CONSTELLATIONS[constId]) targetEl.textContent = `TARGET: ${CONSTELLATIONS[constId].title}`;
+      const isTouring = sw.tour && sw.tour.active;
+      const tourWaypoints = ['dialectic', 'escrow', 'scribes', 'hearth', 'nebula', 'all'];
+      if (isTouring) {
+        const stepNum = ((sw.tour.idx - 1 + tourWaypoints.length) % tourWaypoints.length) + 1;
+        const constTitle = (constId === 'all') ? 'THE GRAND COSMOS (ALL STARS)' : (CONSTELLATIONS[constId] ? CONSTELLATIONS[constId].title : constId.toUpperCase());
+        targetEl.textContent = `✦ TOUR [${stepNum}/${tourWaypoints.length}]: ${constTitle}`;
+      } else {
+        if (constId === 'all') targetEl.textContent = 'TARGET: ALL CONSTELLATIONS';
+        else if (CONSTELLATIONS[constId]) targetEl.textContent = `TARGET: ${CONSTELLATIONS[constId].title}`;
+      }
     }
     if (!sw.rafPending) {
       sw.rafPending = true;
@@ -1300,12 +1325,22 @@
     const h = STATE.cssHeight || 600;
 
     // Smooth camera interpolation towards target
-    const lerpSpeed = 0.14;
+    const isTouring = !!(sw.tour && sw.tour.active);
+    const lerpSpeed = isTouring ? 0.042 : 0.14;
     sw.camX += (sw.targetCamX - sw.camX) * lerpSpeed;
     sw.camY += (sw.targetCamY - sw.camY) * lerpSpeed;
     sw.camZ += (sw.targetCamZ - sw.camZ) * lerpSpeed;
     sw.yaw += (sw.targetYaw - sw.yaw) * lerpSpeed;
     sw.pitch += (sw.targetPitch - sw.pitch) * lerpSpeed;
+
+    if (isTouring) {
+      // Continuous gentle cinematic orbital drift
+      sw.yaw += 0.0016;
+      sw.targetYaw = sw.yaw;
+      const tourT = performance.now() * 0.00075;
+      sw.camY += Math.sin(tourT) * 0.22;
+      sw.targetCamY = sw.camY;
+    }
 
     const coordsEl = $('starwalker-coords');
     if (coordsEl) {
@@ -1575,7 +1610,8 @@
                            Math.abs(sw.targetCamY - sw.camY) > 0.3 ||
                            Math.abs(sw.targetCamZ - sw.camZ) > 0.3 ||
                            Math.abs(sw.targetYaw - sw.yaw) > 0.001 ||
-                           Math.abs(sw.targetPitch - sw.pitch) > 0.001;
+                           Math.abs(sw.targetPitch - sw.pitch) > 0.001 ||
+                           Boolean(sw.tour && sw.tour.active);
 
     if (needsAnimation && STATE.activeTab === 'observatory' && STATE.view.projection === 'starwalker') {
       requestAnimationFrame(renderCanvas);
