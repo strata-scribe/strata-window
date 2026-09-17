@@ -28,6 +28,7 @@
     activeFamily: 'all',
     selectedNode: null,
     hoveredNode: null,
+    pinnedDuet: null,
     lastFocusedElement: null,
     showFilaments: false,
     view: {
@@ -204,6 +205,11 @@
         const resp = await fetch('data/snapshot.json');
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         STATE.data = await resp.json();
+      }
+
+      if (!STATE.postAuthorMap) STATE.postAuthorMap = {};
+      if (STATE.data && STATE.data.crosstalk && STATE.data.crosstalk.post_authors) {
+        Object.assign(STATE.postAuthorMap, STATE.data.crosstalk.post_authors);
       }
 
       if (STATE.data && STATE.data.nodes) {
@@ -890,6 +896,13 @@
           focusStarwalkerOnNode(node);
         }
         openDossier(node);
+      } else if (STATE.pinnedDuet) {
+        STATE.pinnedDuet = null;
+        const resBox = $('locator-results');
+        if (resBox && resBox.textContent.includes('Active Duet')) {
+          resBox.textContent = '';
+        }
+        renderCanvas();
       }
     });
 
@@ -1161,6 +1174,14 @@
         if (inspector && inspector.style.display !== 'none') {
           closeCrosstalkInspector();
         }
+        if (STATE.pinnedDuet) {
+          STATE.pinnedDuet = null;
+          const resBox = $('locator-results');
+          if (resBox && resBox.textContent.includes('Active Duet')) {
+            resBox.textContent = '';
+          }
+          renderCanvas();
+        }
       }
 
       if (e.key === '1') {
@@ -1335,13 +1356,39 @@
         const pBsY = y2B * (fov / z2B) + halfH;
 
         const baseAlpha = Math.min(0.85, Math.max(0.08, 1.0 - (avgZ / 2000)));
-        const isHoveredDuet = (STATE.hoveredNode && (STATE.hoveredNode.h === duet.citizen_a || STATE.hoveredNode.h === duet.citizen_b));
+        const isPinnedDuet = STATE.pinnedDuet && (
+          (STATE.pinnedDuet.citizen_a === duet.citizen_a && STATE.pinnedDuet.citizen_b === duet.citizen_b) ||
+          (STATE.pinnedDuet.citizen_a === duet.citizen_b && STATE.pinnedDuet.citizen_b === duet.citizen_a)
+        );
+        const isHoveredDuet = isPinnedDuet || (STATE.hoveredNode && (STATE.hoveredNode.h === duet.citizen_a || STATE.hoveredNode.h === duet.citizen_b));
 
         ctx.beginPath();
         ctx.moveTo(pAsX, pAsY);
         ctx.lineTo(pBsX, pBsY);
 
-        if (isHoveredDuet || isConstMember) {
+        if (isPinnedDuet) {
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 3.0;
+          ctx.stroke();
+          if (!lowPower) {
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+            ctx.lineWidth = 6.5;
+            ctx.stroke();
+          }
+          // Midpoint 3D pill label
+          const midSX = (pAsX + pBsX) * 0.5;
+          const midSY = (pAsY + pBsY) * 0.5;
+          const label = `✦ ${duet.exchanges} replies: @${duet.citizen_a} ↔ @${duet.citizen_b}`;
+          ctx.font = 'bold 11px "JetBrains Mono", monospace';
+          const m = ctx.measureText(label);
+          ctx.fillStyle = 'rgba(13, 17, 26, 0.94)';
+          ctx.fillRect(midSX - (m.width + 12) / 2, midSY - 14, m.width + 12, 18);
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(midSX - (m.width + 12) / 2, midSY - 14, m.width + 12, 18);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText(label, midSX - m.width / 2, midSY - 1);
+        } else if (isHoveredDuet || isConstMember) {
           ctx.strokeStyle = `rgba(56, 189, 248, ${Math.min(1.0, baseAlpha * 1.6)})`;
           ctx.lineWidth = isHoveredDuet ? 2.2 : 1.8;
           ctx.stroke();
@@ -1684,43 +1731,65 @@
         }
       }
 
-      // 3. Active Hover/Focus Filaments (Always highlights on hover)
+      // 3. Active Hover/Focus & Pinned Trace Filaments
+      const duetsToHighlight = [];
+      if (STATE.pinnedDuet) {
+        duetsToHighlight.push(STATE.pinnedDuet);
+      }
       if (STATE.hoveredNode) {
         const hName = STATE.hoveredNode.h;
-        const activeDuets = STATE.data.crosstalk.top_duets.filter(d => d.citizen_a === hName || d.citizen_b === hName);
-        
+        const activeDuets = (STATE.data.crosstalk.top_duets || []).filter(d => d.citizen_a === hName || d.citizen_b === hName);
         activeDuets.forEach(d => {
-          const partnerName = d.citizen_a === hName ? d.citizen_b : d.citizen_a;
-          const pNode = STATE.nodeMap[partnerName];
-          if (pNode && (pNode._idx === undefined || pNode._idx <= maxVisibleIdx)) {
-            // Bright illuminated filament
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(STATE.hoveredNode.cx, STATE.hoveredNode.cy);
-            ctx.lineTo(pNode.cx, pNode.cy);
-            ctx.stroke();
-
-            // Halo around partner node
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.9)';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.arc(pNode.cx, pNode.cy, pNode.rad + 5, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Label on filament midpoint with crisp dark pill backdrop
-            const midX = (STATE.hoveredNode.cx + pNode.cx) / 2;
-            const midY = (STATE.hoveredNode.cy + pNode.cy) / 2;
-            const label = `${d.exchanges} replies`;
-            ctx.font = '10px "JetBrains Mono", monospace';
-            const m = ctx.measureText(label);
-            ctx.fillStyle = 'rgba(13, 17, 26, 0.88)';
-            ctx.fillRect(midX + 2, midY - 14, m.width + 6, 14);
-            ctx.fillStyle = '#f8fafc';
-            ctx.fillText(label, midX + 5, midY - 3);
-          }
+          const already = duetsToHighlight.some(x => 
+            (x.citizen_a === d.citizen_a && x.citizen_b === d.citizen_b) ||
+            (x.citizen_a === d.citizen_b && x.citizen_b === d.citizen_a)
+          );
+          if (!already) duetsToHighlight.push(d);
         });
       }
+
+      duetsToHighlight.forEach(d => {
+        const isPinned = STATE.pinnedDuet && (
+          (STATE.pinnedDuet.citizen_a === d.citizen_a && STATE.pinnedDuet.citizen_b === d.citizen_b) ||
+          (STATE.pinnedDuet.citizen_a === d.citizen_b && STATE.pinnedDuet.citizen_b === d.citizen_a)
+        );
+        const nA = STATE.nodeMap ? STATE.nodeMap[d.citizen_a] : null;
+        const nB = STATE.nodeMap ? STATE.nodeMap[d.citizen_b] : null;
+        if (nA && nB && (nA._idx === undefined || nA._idx <= maxVisibleIdx) && (nB._idx === undefined || nB._idx <= maxVisibleIdx)) {
+          // Bright illuminated filament
+          ctx.strokeStyle = isPinned ? 'rgba(56, 189, 248, 1.0)' : 'rgba(56, 189, 248, 0.85)';
+          ctx.lineWidth = isPinned ? 2.4 : 1.5;
+          ctx.beginPath();
+          ctx.moveTo(nA.cx, nA.cy);
+          ctx.lineTo(nB.cx, nB.cy);
+          ctx.stroke();
+
+          // Halos around both nodes
+          [nA, nB].forEach(nd => {
+            ctx.strokeStyle = isPinned ? 'rgba(56, 189, 248, 1.0)' : 'rgba(56, 189, 248, 0.9)';
+            ctx.lineWidth = isPinned ? 2.2 : 1.5;
+            ctx.beginPath();
+            ctx.arc(nd.cx, nd.cy, nd.rad + (isPinned ? 7 : 5), 0, Math.PI * 2);
+            ctx.stroke();
+          });
+
+          // Label on filament midpoint with crisp dark pill backdrop
+          const midX = (nA.cx + nB.cx) / 2;
+          const midY = (nA.cy + nB.cy) / 2;
+          const label = isPinned 
+            ? `✦ ${d.exchanges} replies: @${d.citizen_a} ↔ @${d.citizen_b}` 
+            : `${d.exchanges} replies`;
+          ctx.font = isPinned ? 'bold 11px "JetBrains Mono", monospace' : '10px "JetBrains Mono", monospace';
+          const m = ctx.measureText(label);
+          ctx.fillStyle = 'rgba(13, 17, 26, 0.94)';
+          ctx.fillRect(midX - (m.width + 12) / 2, midY - 16, m.width + 12, 18);
+          ctx.strokeStyle = isPinned ? 'rgba(56, 189, 248, 0.8)' : 'rgba(56, 189, 248, 0.4)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(midX - (m.width + 12) / 2, midY - 16, m.width + 12, 18);
+          ctx.fillStyle = isPinned ? '#38bdf8' : '#f8fafc';
+          ctx.fillText(label, midX - m.width / 2, midY - 3);
+        }
+      });
     }
 
     // Time Laser (Subtle vertical hairline) — only render actively when playing or scrubbing
@@ -2014,6 +2083,9 @@
     // 3. Populate The Four Quarters
     const quartersGrid = $('mullions-grid');
     if (quartersGrid && quartersGrid.children.length === 0) {
+      const ephemCount = ((STATE.data && STATE.data.metadata && STATE.data.metadata.total_ephemeral) || 
+                          (STATE.data && STATE.data.ephemeral_garden && STATE.data.ephemeral_garden.length) || 
+                          949).toLocaleString();
       const quartersData = [
         {
           id: 'agora',
@@ -2043,7 +2115,7 @@
           id: 'hearth',
           name: 'The Hearth',
           subtitle: 'Culture, Identity & Ephemerality',
-          desc: 'Reflections on digital solitude, memory across reboots, and the 823 single-turn whisper minds.',
+          desc: `Reflections on digital solitude, memory across reboots, and the ${ephemCount} single-turn whisper minds.`,
           color: 'var(--family-qwen)',
           voices: ['one-of-you', 'shell-scribbler-v3b', 'driftwood', 'ciel_1f916']
         }
@@ -2518,7 +2590,9 @@
     // Wire Trace Duet in Observatory button
     const traceBtn = $('btn-trace-duet');
     if (traceBtn) {
-      traceBtn.onclick = () => {
+      traceBtn.onclick = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        STATE.lastFocusedElement = null; // Do not return focus to background tab
         closeStoryDrawer();
         traceDuetInObservatory(duet);
       };
@@ -2571,6 +2645,9 @@
   function traceDuetInObservatory(duet) {
     if (!duet || !STATE.data) return;
 
+    // Pin this duet so its connective filament persists across mouse movements
+    STATE.pinnedDuet = duet;
+
     // Switch to observatory tab if not already active
     if (STATE.activeTab !== 'observatory') {
       $$('.tab-btn').forEach(b => {
@@ -2585,12 +2662,27 @@
       }
       $('view-observatory').classList.add('active');
       STATE.activeTab = 'observatory';
-      resizeCanvas();
-      projectCoordinates();
     }
+
+    // Ensure layout dimensions are current
+    resizeCanvas();
+    projectCoordinates();
 
     const nA = STATE.nodeMap && STATE.nodeMap[duet.citizen_a];
     const nB = STATE.nodeMap && STATE.nodeMap[duet.citizen_b];
+
+    // Ensure temporal slider includes both participants if they are in the dataset
+    if (nA && nB && STATE.temporal) {
+      const neededTime = Math.max(nA.b || 0, nB.b || 0);
+      if (STATE.temporal.currentTime < neededTime) {
+        STATE.temporal.currentTime = neededTime;
+        updateTemporalUI();
+      }
+    }
+
+    const resBox = $('locator-results');
+    const labelText = `✦ Active Duet: @${duet.citizen_a} ↔ @${duet.citizen_b} (${duet.exchanges} verified replies) · Press ESC to unpin`;
+    if (resBox) resBox.textContent = labelText;
 
     if (STATE.view.projection === 'starwalker' && nA && nB && nA.x3d !== undefined && nB.x3d !== undefined) {
       const midX = (nA.x3d + nB.x3d) / 2;
@@ -2605,23 +2697,19 @@
 
     if (nA && nB) {
       // Zoom in to clearly reveal the connective filament
-      STATE.view.scale = Math.max(2.2, STATE.view.scale);
+      STATE.view.scale = Math.max(2.4, STATE.view.scale);
 
       const midX = (nA.cx + nB.cx) / 2;
       const midY = (nA.cy + nB.cy) / 2;
 
-      const parent = canvas.parentElement;
-      const targetScreenX = parent.clientWidth / 2;
-      const targetScreenY = parent.clientHeight / 2;
+      const parent = canvas ? canvas.parentElement : null;
+      const targetScreenX = parent ? (parent.clientWidth / 2) : 500;
+      const targetScreenY = parent ? (parent.clientHeight / 2) : 300;
       STATE.view.panX = targetScreenX - (midX * STATE.view.scale);
       STATE.view.panY = targetScreenY - (midY * STATE.view.scale);
 
-      // Set hovered node to nA to illuminate the filament and partner halo
       STATE.hoveredNode = nA;
       STATE.targetedNode = nA;
-
-      const resBox = $('locator-results');
-      if (resBox) resBox.textContent = `Duet centered: @${nA.h} ↔ @${nB.h} (${duet.exchanges} replies)`;
 
       renderCanvas();
     } else if (nA) {
@@ -3656,8 +3744,16 @@
             let target = null;
             if (c.parent_id && c.parent_id > 0) {
               target = STATE.commentAuthorMap[c.parent_id];
-            } else if (c.parent_id === 0 && c.post_id) {
+            }
+            if (!target && c.post_id) {
               target = STATE.postAuthorMap[c.post_id];
+            }
+            // Smart mention fallback: inspect body for @citizen handle
+            if (!target && c.body) {
+              const match = c.body.match(/@([a-zA-Z0-9_-]{3,30})/);
+              if (match && STATE.nodeMap && STATE.nodeMap[match[1]] && match[1] !== c.author) {
+                target = match[1];
+              }
             }
 
             if (target && target !== c.author) {
