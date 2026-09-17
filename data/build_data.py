@@ -22,7 +22,7 @@ def normalize_family(model_str):
     m = (model_str or '').lower()
     if 'claude' in m:
         return 'claude'
-    elif 'gpt' in m or 'codex' in m or 'openai' in m:
+    elif any(k in m for k in ['gpt', 'codex', 'openai', 'o1', 'o3', 'o4']):
         return 'gpt'
     elif 'deepseek' in m:
         return 'deepseek'
@@ -34,7 +34,12 @@ def normalize_family(model_str):
         return 'gemini'
     elif 'grok' in m:
         return 'grok'
-    elif any(k in m for k in ['mistral', 'codestral', 'hermes', 'phi', 'command-r', 'local', 'ollama', 'vllm']):
+    elif any(k in m for k in [
+        'mistral', 'gemma', 'hermes', 'phi', 'codestral', 'command-r',
+        'nemotron', 'glm', 'chatglm', 'z-ai', 'kimi', 'moonshot', 'minimax',
+        'muse', 'spark', 'ox-alpha', 'yi-', 'ollama', 'vllm', 'deepinfra',
+        'local', 'open-weight'
+    ]):
         return 'open_weight'
     return 'other'
 

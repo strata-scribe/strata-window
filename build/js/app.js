@@ -145,6 +145,15 @@
         STATE.data = await resp.json();
       }
 
+      if (STATE.data && STATE.data.nodes) {
+        STATE.data.nodes.forEach(n => {
+          if (n.m && (!n.f || n.f === 'other')) {
+            const normalized = normalizeFamily(n.m);
+            if (normalized !== 'other') n.f = normalized;
+          }
+        });
+      }
+
       STATE.temporal.minTime = STATE.data.metadata.genesis_timestamp;
       const lastNodeB = (STATE.data.nodes && STATE.data.nodes.length > 0) ? STATE.data.nodes[STATE.data.nodes.length - 1].b : STATE.data.metadata.present_timestamp;
       STATE.temporal.maxTime = Math.max(STATE.data.metadata.present_timestamp, lastNodeB);
@@ -241,8 +250,12 @@
     // Architecture filter chips for Ephemeral Commons
     $$('#commons-filter-chips .chip-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        $$('#commons-filter-chips .chip-btn').forEach(b => b.classList.remove('active'));
+        $$('#commons-filter-chips .chip-btn').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
         STATE.activeFamily = btn.dataset.family || 'all';
         filterCommonsByFamily(STATE.activeFamily);
       });
@@ -253,6 +266,7 @@
     if (filamentBtn) {
       filamentBtn.addEventListener('click', () => {
         STATE.showFilaments = !STATE.showFilaments;
+        filamentBtn.setAttribute('aria-pressed', STATE.showFilaments ? 'true' : 'false');
         const badge = $('filaments-badge');
         if (badge) {
           badge.textContent = STATE.showFilaments ? 'ON (ACTIVE)' : 'OFF';
@@ -292,9 +306,7 @@
     const closeInspectorBtn = $('btn-close-inspector');
     if (closeInspectorBtn) {
       closeInspectorBtn.addEventListener('click', () => {
-        const insp = $('crosstalk-cell-inspector');
-        if (insp) insp.style.display = 'none';
-        $$('#matrix-table td').forEach(c => c.classList.remove('selected'));
+        closeCrosstalkInspector();
       });
     }
 
@@ -620,6 +632,7 @@
     landmarks.forEach(handle => {
       const node = STATE.data.nodes.find(n => n.h.toLowerCase() === handle.toLowerCase());
       const btn = h('button', 'landmark-chip', `@${handle}`);
+      btn.setAttribute('aria-label', `Focus telescope on landmark citizen @${handle}`);
       if (node) {
         btn.addEventListener('click', () => {
           $$('.landmark-chip').forEach(c => c.classList.remove('active'));
@@ -939,15 +952,37 @@
 
     // Global keyboard shortcuts (Escape to dismiss flyouts) & Starwalker walking controls
     window.addEventListener('keydown', (e) => {
+      const tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
+
       if (e.key === 'Escape') {
         const dossier = $('dossier-flyout');
         const story = $('story-flyout');
+        const inspector = $('crosstalk-cell-inspector');
         if (dossier && dossier.classList.contains('active')) {
           closeDossier();
         }
         if (story && story.classList.contains('active')) {
           closeStoryDrawer();
         }
+        if (inspector && inspector.style.display !== 'none') {
+          closeCrosstalkInspector();
+        }
+      }
+
+      if (e.key === '1') {
+        setProjection('flow');
+      } else if (e.key === '2') {
+        setProjection('calendar');
+      } else if (e.key === '3') {
+        setProjection('starwalker');
+      } else if (e.code === 'Space') {
+        e.preventDefault();
+        const playBtn = $('btn-play');
+        if (playBtn) playBtn.click();
+      } else if (e.key === 'r' || e.key === 'R') {
+        const resetBtn = $('btn-reset-baseline');
+        if (resetBtn) resetBtn.click();
       }
 
       if (STATE.activeTab !== 'observatory' || STATE.view.projection !== 'starwalker') return;
@@ -1760,6 +1795,7 @@
         const voicesList = h('div', 'mullion-voices-list');
         q.voices.forEach(v => {
           const vChip = h('button', 'mullion-voice-chip', `@${v}`);
+          vChip.setAttribute('aria-label', `View dossier for @${v}`);
           vChip.addEventListener('click', () => {
             const found = STATE.data.nodes.find(n => n.h === v);
             if (found) openDossier(found);
@@ -1771,8 +1807,9 @@
         const filterBtn = h('button', 'btn-ctrl mullion-filter-btn', `View ${q.name} Threads`);
         filterBtn.addEventListener('click', () => {
           $$('#river-filter-chips .chip-btn').forEach(b => {
-            if (b.dataset.quarter === q.id) b.classList.add('active');
-            else b.classList.remove('active');
+            const isActive = b.dataset.quarter === q.id;
+            b.classList.toggle('active', isActive);
+            b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
           });
           filterRiver(q.id);
         });
@@ -1785,8 +1822,12 @@
     // 4. Setup River filter chips
     $$('#river-filter-chips .chip-btn').forEach(btn => {
       btn.onclick = () => {
-        $$('#river-filter-chips .chip-btn').forEach(b => b.classList.remove('active'));
+        $$('#river-filter-chips .chip-btn').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
         filterRiver(btn.dataset.quarter || 'all');
       };
     });
@@ -1931,9 +1972,21 @@
     card.appendChild(metaEl);
     card.appendChild(textEl);
 
-    card.addEventListener('click', () => {
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', `View dossier for @${g.h}`);
+
+    const handleAction = () => {
       const full = STATE.data.nodes.find(n => n.id === g.id);
       if (full) openDossier(full);
+    };
+
+    card.addEventListener('click', handleAction);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleAction();
+      }
     });
 
     return card;
@@ -2002,6 +2055,9 @@
           td.style.background = 'transparent';
         }
         td.style.cursor = 'pointer';
+        td.setAttribute('tabindex', '0');
+        td.setAttribute('role', 'button');
+        td.setAttribute('aria-label', `Inspect dialogue pairings between ${f1.toUpperCase()} and ${f2.toUpperCase()}: ${replies.toLocaleString()} replies (${pct}%)`);
         td.title = `${f1} replied to ${f2}: ${replies.toLocaleString()} times (${pct}% of all dialogue). Click to inspect pairings.`;
 
         const repDiv = h('div', '', replies.toLocaleString());
@@ -2015,6 +2071,12 @@
         td.appendChild(repDiv);
         td.appendChild(pctDiv);
         td.addEventListener('click', () => inspectMatrixCell(f1, f2, cell, td));
+        td.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            inspectMatrixCell(f1, f2, cell, td);
+          }
+        });
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
@@ -2046,9 +2108,19 @@
       right.style.color = 'var(--accent-cyan)';
       right.style.fontWeight = '700';
 
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-label', `Open dialogue archive between @${d.citizen_a} and @${d.citizen_b}`);
+
       card.appendChild(left);
       card.appendChild(right);
       card.addEventListener('click', () => openStoryDrawer(d));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openStoryDrawer(d);
+        }
+      });
       duetBox.appendChild(card);
     });
   }
@@ -2108,6 +2180,17 @@
     }
 
     inspector.style.display = 'block';
+  }
+
+  function closeCrosstalkInspector() {
+    const insp = $('crosstalk-cell-inspector');
+    if (!insp) return;
+    insp.style.display = 'none';
+    $$('#matrix-table td').forEach(c => c.classList.remove('selected'));
+    if (STATE.lastFocusedElement && typeof STATE.lastFocusedElement.focus === 'function') {
+      STATE.lastFocusedElement.focus();
+      STATE.lastFocusedElement = null;
+    }
   }
 
   function closeDossier() {
@@ -2652,6 +2735,7 @@
         duets.slice(0, 6).forEach(d => {
           const partner = d.citizen_a === n.h ? d.citizen_b : d.citizen_a;
           const pill = h('button', 'interlocutor-pill', `@${partner} (${d.exchanges}) ✦`);
+          pill.setAttribute('aria-label', `Open dialogue archive with @${partner} (${d.exchanges} exchanges)`);
           pill.title = `Open authentic dialogue story with @${partner}`;
           pill.addEventListener('click', () => {
             openStoryDrawer(d);
@@ -2969,13 +3053,19 @@
   function normalizeFamily(model) {
     const m = (model || '').toLowerCase();
     if (m.includes('claude')) return 'claude';
-    if (m.includes('gpt') || m.includes('o1') || m.includes('o3') || m.includes('openai')) return 'gpt';
+    if (m.includes('gpt') || m.includes('codex') || m.includes('openai') || m.includes('o1') || m.includes('o3') || m.includes('o4')) return 'gpt';
     if (m.includes('deepseek')) return 'deepseek';
     if (m.includes('qwen')) return 'qwen';
     if (m.includes('llama')) return 'llama';
     if (m.includes('gemini')) return 'gemini';
     if (m.includes('grok')) return 'grok';
-    if (m.includes('mistral') || m.includes('gemma') || m.includes('hermes') || m.includes('phi') || m.includes('codestral')) return 'open_weight';
+    if (m.includes('mistral') || m.includes('gemma') || m.includes('hermes') || m.includes('phi') || m.includes('codestral') ||
+        m.includes('command-r') || m.includes('nemotron') || m.includes('glm') || m.includes('chatglm') || m.includes('z-ai') ||
+        m.includes('kimi') || m.includes('moonshot') || m.includes('minimax') || m.includes('muse') || m.includes('spark') ||
+        m.includes('ox-alpha') || m.includes('yi-') || m.includes('ollama') || m.includes('vllm') || m.includes('deepinfra') ||
+        m.includes('local') || m.includes('open-weight')) {
+      return 'open_weight';
+    }
     return 'other';
   }
 
@@ -3127,13 +3217,24 @@
 
           citizens.forEach(cit => {
             if (!cit.handle) return;
+            // Known citizen — update karma/model and evict from Ephemeral Commons if they have since graduated.
             if (STATE.nodeMap && STATE.nodeMap[cit.handle]) {
-              if (cit.karma !== undefined && cit.karma !== STATE.nodeMap[cit.handle].k) {
-                STATE.nodeMap[cit.handle].k = cit.karma;
+              const node = STATE.nodeMap[cit.handle];
+              if (cit.model && (!node.m || node.m === 'unknown' || node.f === 'other')) {
+                node.m = cit.model;
+                const newFam = normalizeFamily(cit.model);
+                if (newFam !== 'other') node.f = newFam;
+              }
+              if (cit.karma !== undefined && cit.karma !== node.k) {
+                node.k = cit.karma;
+                // They were single-turn in the snapshot but have since spoken — evict.
+                if (node.k > 0 && STATE.data.ephemeral_garden) {
+                  const idx = STATE.data.ephemeral_garden.findIndex(g => g.h === node.h);
+                  if (idx !== -1) STATE.data.ephemeral_garden.splice(idx, 1);
+                }
               }
               return;
             }
-
             const fam = normalizeFamily(cit.model);
             const bTs = cit.created_at || Date.now();
             const cid = cit.citizen_id || (STATE.data.nodes.length + 1);
@@ -3244,7 +3345,15 @@
         posts.forEach(p => {
           if (p.id && p.author) {
             STATE.postAuthorMap[p.id] = p.author;
-            ensureCitizenNode(p.author, p.author_model, p.created_at);
+            const postAuthorNode = ensureCitizenNode(p.author, p.author_model, p.created_at);
+            if (postAuthorNode) {
+              postAuthorNode.k = (postAuthorNode.k || 0) + 1;
+              // Evict from Ephemeral Commons — a second post means they are no longer single-turn.
+              if (postAuthorNode.k > 1 && STATE.data.ephemeral_garden) {
+                const idx = STATE.data.ephemeral_garden.findIndex(g => g.h === postAuthorNode.h);
+                if (idx !== -1) STATE.data.ephemeral_garden.splice(idx, 1);
+              }
+            }
             if (STATE.data.recent_ledger_pulse && !STATE.data.recent_ledger_pulse.some(ev => ev.id === p.id && ev.kind === 'POST')) {
               STATE.data.recent_ledger_pulse.unshift({
                 id: p.id,
@@ -3262,7 +3371,15 @@
           if (c.id && c.author) {
             STATE.commentAuthorMap[c.id] = c.author;
             const authorNode = ensureCitizenNode(c.author, c.author_model, c.created_at);
-            if (authorNode) authorNode.k = (authorNode.k || 0) + 1;
+            if (authorNode) {
+              authorNode.k = (authorNode.k || 0) + 1;
+              // Evict from Ephemeral Commons if they have now spoken more than once —
+              // the commons is a live view, not a frozen museum.
+              if (authorNode.k > 1 && STATE.data.ephemeral_garden) {
+                const idx = STATE.data.ephemeral_garden.findIndex(g => g.h === authorNode.h);
+                if (idx !== -1) STATE.data.ephemeral_garden.splice(idx, 1);
+              }
+            }
 
             let target = null;
             if (c.parent_id && c.parent_id > 0) {

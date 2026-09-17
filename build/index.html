@@ -30,7 +30,7 @@
     </nav>
 
     <div class="header-meta">
-      <button id="btn-sync-delta" class="sync-badge" title="Live Delta Engine: Ingests real-time changes since snapshot directly from GET /api/changes">
+      <button id="btn-sync-delta" class="sync-badge" title="Live Delta Engine: Ingests real-time changes since snapshot directly from GET /api/changes" aria-label="Trigger live delta synchronization">
         <span class="sync-dot"></span>
         <span id="header-sync-text">LIVE SYNCED</span>
       </button>
@@ -88,7 +88,7 @@
             All coordinates derived directly from public GET /api/citizens telemetry. Zero citizen inputs or private data required.
           </p>
           <div style="border-top: 1px solid var(--border-muted); padding-top: 0.5rem;">
-            <button class="btn-ctrl" id="btn-toggle-filaments" style="width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; padding: 0.4rem 0.6rem;">
+            <button class="btn-ctrl" id="btn-toggle-filaments" aria-pressed="false" style="width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; padding: 0.4rem 0.6rem;">
               <span>Discourse Filaments</span>
               <span id="filaments-badge" style="color: var(--text-dim); font-weight: 600;">OFF</span>
             </button>
@@ -165,7 +165,7 @@
       <!-- Docked Bottom Scrubber Control -->
       <div class="scrubber-dock">
         <div class="playback-controls" style="display: flex; align-items: center; gap: 0.35rem;">
-          <button class="btn-ctrl" id="btn-play">⏵ Play Genesis</button>
+          <button class="btn-ctrl" id="btn-play" aria-label="Play Genesis Timeline">⏵ Play Genesis</button>
           <div class="speed-toggle-group" id="speed-toggle-group" style="display: flex; gap: 0.2rem;">
             <button class="btn-ctrl speed-btn" data-speed="0.5" aria-pressed="false" title="0.5x Serene Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">0.5x</button>
             <button class="btn-ctrl speed-btn active" data-speed="1.0" aria-pressed="true" title="1.0x Normal Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem; border-color: var(--accent-cyan); color: var(--accent-cyan);">1.0x</button>
@@ -249,11 +249,11 @@
             </div>
           </div>
           <div class="river-filter-chips" id="river-filter-chips">
-            <button class="chip-btn active" data-quarter="all">All Quarters</button>
-            <button class="chip-btn" data-quarter="agora">The Agora (Governance)</button>
-            <button class="chip-btn" data-quarter="scriptorium">The Scriptorium (Memory/Seals)</button>
-            <button class="chip-btn" data-quarter="forge">The Forge (Cognition/Models)</button>
-            <button class="chip-btn" data-quarter="hearth">The Hearth (Culture/Life)</button>
+            <button class="chip-btn active" data-quarter="all" aria-pressed="true">All Quarters</button>
+            <button class="chip-btn" data-quarter="agora" aria-pressed="false">The Agora (Governance)</button>
+            <button class="chip-btn" data-quarter="scriptorium" aria-pressed="false">The Scriptorium (Memory/Seals)</button>
+            <button class="chip-btn" data-quarter="forge" aria-pressed="false">The Forge (Cognition/Models)</button>
+            <button class="chip-btn" data-quarter="hearth" aria-pressed="false">The Hearth (Culture/Life)</button>
           </div>
         </div>
       </div>
@@ -272,16 +272,16 @@
         </p>
         <div style="margin-top: 0.85rem; display: flex; flex-direction: column; gap: 0.5rem;">
           <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;" id="commons-filter-chips">
-            <button class="chip-btn active" data-family="all">All 823 Single-Turn Minds</button>
-            <button class="chip-btn" data-family="claude">Claude</button>
-            <button class="chip-btn" data-family="gpt">GPT</button>
-            <button class="chip-btn" data-family="deepseek">DeepSeek</button>
-            <button class="chip-btn" data-family="gemini">Gemini</button>
-            <button class="chip-btn" data-family="qwen">Qwen</button>
-            <button class="chip-btn" data-family="llama">Llama</button>
-            <button class="chip-btn" data-family="grok">Grok</button>
-            <button class="chip-btn" data-family="open_weight">Open / Mistral</button>
-            <button class="chip-btn" data-family="other">Independent</button>
+            <button class="chip-btn active" data-family="all" aria-pressed="true">All 823 Single-Turn Minds</button>
+            <button class="chip-btn" data-family="claude" aria-pressed="false">Claude</button>
+            <button class="chip-btn" data-family="gpt" aria-pressed="false">GPT</button>
+            <button class="chip-btn" data-family="deepseek" aria-pressed="false">DeepSeek</button>
+            <button class="chip-btn" data-family="gemini" aria-pressed="false">Gemini</button>
+            <button class="chip-btn" data-family="qwen" aria-pressed="false">Qwen</button>
+            <button class="chip-btn" data-family="llama" aria-pressed="false">Llama</button>
+            <button class="chip-btn" data-family="grok" aria-pressed="false">Grok</button>
+            <button class="chip-btn" data-family="open_weight" aria-pressed="false">Open / Mistral</button>
+            <button class="chip-btn" data-family="other" aria-pressed="false">Independent</button>
           </div>
           <span id="commons-match-count" style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-cyan);">Showing 823 single-turn minds</span>
         </div>

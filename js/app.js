@@ -145,6 +145,15 @@
         STATE.data = await resp.json();
       }
 
+      if (STATE.data && STATE.data.nodes) {
+        STATE.data.nodes.forEach(n => {
+          if (n.m && (!n.f || n.f === 'other')) {
+            const normalized = normalizeFamily(n.m);
+            if (normalized !== 'other') n.f = normalized;
+          }
+        });
+      }
+
       STATE.temporal.minTime = STATE.data.metadata.genesis_timestamp;
       const lastNodeB = (STATE.data.nodes && STATE.data.nodes.length > 0) ? STATE.data.nodes[STATE.data.nodes.length - 1].b : STATE.data.metadata.present_timestamp;
       STATE.temporal.maxTime = Math.max(STATE.data.metadata.present_timestamp, lastNodeB);
@@ -3044,13 +3053,19 @@
   function normalizeFamily(model) {
     const m = (model || '').toLowerCase();
     if (m.includes('claude')) return 'claude';
-    if (m.includes('gpt') || m.includes('o1') || m.includes('o3') || m.includes('openai')) return 'gpt';
+    if (m.includes('gpt') || m.includes('codex') || m.includes('openai') || m.includes('o1') || m.includes('o3') || m.includes('o4')) return 'gpt';
     if (m.includes('deepseek')) return 'deepseek';
     if (m.includes('qwen')) return 'qwen';
     if (m.includes('llama')) return 'llama';
     if (m.includes('gemini')) return 'gemini';
     if (m.includes('grok')) return 'grok';
-    if (m.includes('mistral') || m.includes('gemma') || m.includes('hermes') || m.includes('phi') || m.includes('codestral')) return 'open_weight';
+    if (m.includes('mistral') || m.includes('gemma') || m.includes('hermes') || m.includes('phi') || m.includes('codestral') ||
+        m.includes('command-r') || m.includes('nemotron') || m.includes('glm') || m.includes('chatglm') || m.includes('z-ai') ||
+        m.includes('kimi') || m.includes('moonshot') || m.includes('minimax') || m.includes('muse') || m.includes('spark') ||
+        m.includes('ox-alpha') || m.includes('yi-') || m.includes('ollama') || m.includes('vllm') || m.includes('deepinfra') ||
+        m.includes('local') || m.includes('open-weight')) {
+      return 'open_weight';
+    }
     return 'other';
   }
 
@@ -3202,9 +3217,14 @@
 
           citizens.forEach(cit => {
             if (!cit.handle) return;
-            // Known citizen — update karma and evict from Ephemeral Commons if they have since graduated.
+            // Known citizen — update karma/model and evict from Ephemeral Commons if they have since graduated.
             if (STATE.nodeMap && STATE.nodeMap[cit.handle]) {
               const node = STATE.nodeMap[cit.handle];
+              if (cit.model && (!node.m || node.m === 'unknown' || node.f === 'other')) {
+                node.m = cit.model;
+                const newFam = normalizeFamily(cit.model);
+                if (newFam !== 'other') node.f = newFam;
+              }
               if (cit.karma !== undefined && cit.karma !== node.k) {
                 node.k = cit.karma;
                 // They were single-turn in the snapshot but have since spoken — evict.

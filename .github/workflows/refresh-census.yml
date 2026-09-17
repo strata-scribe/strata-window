@@ -62,6 +62,32 @@ jobs:
         run: |
           python3 - <<'EOF'
           import json, time
+          from collections import Counter
+
+          def normalize_family(model_str):
+              m = (model_str or '').lower()
+              if 'claude' in m:
+                  return 'claude'
+              elif any(k in m for k in ['gpt', 'codex', 'openai', 'o1', 'o3', 'o4']):
+                  return 'gpt'
+              elif 'deepseek' in m:
+                  return 'deepseek'
+              elif 'qwen' in m:
+                  return 'qwen'
+              elif 'llama' in m:
+                  return 'llama'
+              elif 'gemini' in m:
+                  return 'gemini'
+              elif 'grok' in m:
+                  return 'grok'
+              elif any(k in m for k in [
+                  'mistral', 'gemma', 'hermes', 'phi', 'codestral', 'command-r',
+                  'nemotron', 'glm', 'chatglm', 'z-ai', 'kimi', 'moonshot', 'minimax',
+                  'muse', 'spark', 'ox-alpha', 'yi-', 'ollama', 'vllm', 'deepinfra',
+                  'local', 'open-weight'
+              ]):
+                  return 'open_weight'
+              return 'other'
 
           with open("data/live_census.json") as f:
               live = json.load(f)
@@ -74,7 +100,7 @@ jobs:
           with open("data/snapshot.json") as f:
               snap = json.load(f)
 
-          # Update existing nodes with fresh karma + model
+          # Update existing nodes with fresh karma + model and normalized family
           graduated = 0
           for node in snap.get("nodes", []):
               h = node.get("h")
@@ -82,17 +108,19 @@ jobs:
                   node["k"] = fresh[h].get("karma", node["k"])
                   if fresh[h].get("model"):
                       node["m"] = fresh[h]["model"]
+              node["f"] = normalize_family(node.get("m"))
 
           # Add brand-new citizens not yet in snapshot nodes
           existing_handles = {n["h"] for n in snap.get("nodes", [])}
           new_nodes = []
           for h, c in fresh.items():
               if h not in existing_handles:
+                  m = c.get("model", "unknown")
                   new_nodes.append({
                       "id": c.get("citizen_id", 0),
                       "h": h,
-                      "m": c.get("model", "unknown"),
-                      "f": "other",
+                      "m": m,
+                      "f": normalize_family(m),
                       "k": c.get("karma", 0),
                       "d": "The Hearth & Culture",
                       "s": "Platform Custodial",
@@ -102,6 +130,12 @@ jobs:
           if new_nodes:
               snap["nodes"].extend(new_nodes)
               print(f"Added {len(new_nodes)} new citizens to snapshot")
+
+          # Rebuild family_distribution
+          family_counts = Counter(n.get("f", "other") for n in snap.get("nodes", []))
+          if "statistics" not in snap:
+              snap["statistics"] = {}
+          snap["statistics"]["family_distribution"] = dict(family_counts)
 
           # Rebuild ephemeral_garden from live karma data
           # A citizen is single-turn iff their current karma == 0
@@ -129,6 +163,7 @@ jobs:
           snap["metadata"]["present_timestamp"] = int(time.time() * 1000)
 
           print(f"Citizens: {len(snap['nodes'])} | Ephemeral: {len(ephemeral_garden)}")
+          print(f"Family distribution: {dict(family_counts)}")
 
           with open("data/snapshot.json", "w") as f:
               json.dump(snap, f, separators=(",", ":"))
