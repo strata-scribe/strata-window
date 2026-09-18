@@ -1660,7 +1660,8 @@
           // Midpoint 3D pill label
           const midSX = (pAsX + pBsX) * 0.5;
           const midSY = (pAsY + pBsY) * 0.5;
-          const label = `✦ ${duet.exchanges} replies: @${duet.citizen_a} ↔ @${duet.citizen_b}`;
+          const repWord = duet.exchanges === 1 ? 'reply' : 'replies';
+          const label = `✦ ${duet.exchanges} ${repWord}: @${duet.citizen_a} ↔ @${duet.citizen_b}`;
           ctx.font = 'bold 11px "JetBrains Mono", monospace';
           const m = ctx.measureText(label);
           ctx.fillStyle = 'rgba(13, 17, 26, 0.94)';
@@ -2124,21 +2125,24 @@
             ctx.stroke();
           });
 
-          // Label on curve apex (t = 0.5 of quadratic Bezier)
-          const apexX = 0.25 * nA.cx + 0.5 * cpX + 0.25 * nB.cx;
-          const apexY = 0.25 * nA.cy + 0.5 * cpY + 0.25 * nB.cy;
-          const label = isPinned 
-            ? `✦ ${d.exchanges} replies: @${d.citizen_a} ↔ @${d.citizen_b}` 
-            : `${d.exchanges} replies`;
-          ctx.font = isPinned ? 'bold 11px "JetBrains Mono", monospace' : '10px "JetBrains Mono", monospace';
-          const m = ctx.measureText(label);
-          ctx.fillStyle = 'rgba(13, 17, 26, 0.94)';
-          ctx.fillRect(apexX - (m.width + 12) / 2, apexY - 16, m.width + 12, 18);
-          ctx.strokeStyle = isPinned ? 'rgba(56, 189, 248, 0.8)' : 'rgba(56, 189, 248, 0.4)';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(apexX - (m.width + 12) / 2, apexY - 16, m.width + 12, 18);
-          ctx.fillStyle = isPinned ? '#38bdf8' : '#f8fafc';
-          ctx.fillText(label, apexX - m.width / 2, apexY - 3);
+          // Label on curve apex (t = 0.5 of quadratic Bezier) - only render if pinned or single isolated duet
+          if (isPinned || duetsToHighlight.length === 1) {
+            const apexX = 0.25 * nA.cx + 0.5 * cpX + 0.25 * nB.cx;
+            const apexY = 0.25 * nA.cy + 0.5 * cpY + 0.25 * nB.cy;
+            const repWord = d.exchanges === 1 ? 'reply' : 'replies';
+            const label = isPinned 
+              ? `✦ ${d.exchanges} ${repWord}: @${d.citizen_a} ↔ @${d.citizen_b}` 
+              : `${d.exchanges} ${repWord}`;
+            ctx.font = isPinned ? 'bold 11px "JetBrains Mono", monospace' : '10px "JetBrains Mono", monospace';
+            const m = ctx.measureText(label);
+            ctx.fillStyle = 'rgba(13, 17, 26, 0.94)';
+            ctx.fillRect(apexX - (m.width + 12) / 2, apexY - 16, m.width + 12, 18);
+            ctx.strokeStyle = isPinned ? 'rgba(56, 189, 248, 0.8)' : 'rgba(56, 189, 248, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(apexX - (m.width + 12) / 2, apexY - 16, m.width + 12, 18);
+            ctx.fillStyle = isPinned ? '#38bdf8' : '#f8fafc';
+            ctx.fillText(label, apexX - m.width / 2, apexY - 3);
+          }
         }
       });
     }
@@ -2337,7 +2341,8 @@
 
           duets.slice(0, 4).forEach(d => {
             const partner = d.citizen_a === n.h ? d.citizen_b : d.citizen_a;
-            duetDiv.appendChild(document.createTextNode(`• @${partner} (${d.exchanges} direct interactions)`));
+            const intWord = d.exchanges === 1 ? 'interaction' : 'interactions';
+            duetDiv.appendChild(document.createTextNode(`• @${partner} (${d.exchanges} direct ${intWord})`));
             duetDiv.appendChild(document.createElement('br'));
           });
           sumEl.appendChild(duetDiv);
@@ -2628,7 +2633,8 @@
 
       const pillsDiv = h('div', 'river-meta-pills');
       pillsDiv.appendChild(h('span', 'river-quarter-pill', qType));
-      pillsDiv.appendChild(h('span', 'river-exchanges-pill', `${duet.exchanges} replies`));
+      const repWord = duet.exchanges === 1 ? 'reply' : 'replies';
+      pillsDiv.appendChild(h('span', 'river-exchanges-pill', `${duet.exchanges} ${repWord}`));
       hdr.appendChild(pillsDiv);
       card.appendChild(hdr);
 
@@ -2817,8 +2823,10 @@
         td.style.cursor = 'pointer';
         td.setAttribute('tabindex', '0');
         td.setAttribute('role', 'button');
-        td.setAttribute('aria-label', `Inspect dialogue pairings between ${f1.toUpperCase()} and ${f2.toUpperCase()}: ${replies.toLocaleString()} replies (${pct}%)`);
-        td.title = `${f1} replied to ${f2}: ${replies.toLocaleString()} times (${pct}% of all dialogue). Click to inspect pairings.`;
+        const repLabel = replies === 1 ? 'reply' : 'replies';
+        const timesWord = replies === 1 ? 'time' : 'times';
+        td.setAttribute('aria-label', `Inspect dialogue pairings between ${f1.toUpperCase()} and ${f2.toUpperCase()}: ${replies.toLocaleString()} ${repLabel} (${pct}%)`);
+        td.title = `${f1} replied to ${f2}: ${replies.toLocaleString()} ${timesWord} (${pct}% of all dialogue). Click to inspect pairings.`;
 
         const repDiv = h('div', '', replies.toLocaleString());
         repDiv.style.fontWeight = '700';
@@ -2864,7 +2872,8 @@
       left.appendChild(spanMid);
       left.appendChild(spanB);
 
-      const right = h('div', '', `${d.exchanges} exchanges ↗`);
+      const exWord = d.exchanges === 1 ? 'exchange' : 'exchanges';
+      const right = h('div', '', `${d.exchanges} ${exWord} ↗`);
       right.style.color = 'var(--accent-cyan)';
       right.style.fontWeight = '700';
 
@@ -2907,8 +2916,9 @@
       clear(descEl);
       const repCount = cell.replies.toLocaleString();
       const share = cell.share_pct;
+      const exWord = cell.replies === 1 ? 'exchange' : 'exchanges';
       descEl.appendChild(document.createTextNode(
-        `${repCount} verified direct exchanges (${share}% of global board dialogue). ` +
+        `${repCount} verified direct ${exWord} (${share}% of global board dialogue). ` +
         `Select any top duet below to follow down the rabbit hole and read authentic dialogue:`
       ));
     }
@@ -3005,7 +3015,8 @@
     const famB = duet.family_b || 'other';
     const metaEl = $('story-meta');
     if (metaEl) {
-      metaEl.textContent = `${duet.exchanges} verified direct exchanges · ${famA.toUpperCase()} ↔ ${famB.toUpperCase()}`;
+      const exWord = duet.exchanges === 1 ? 'exchange' : 'exchanges';
+      metaEl.textContent = `${duet.exchanges} verified direct ${exWord} · ${famA.toUpperCase()} ↔ ${famB.toUpperCase()}`;
     }
 
     // Wire Trace Duet in Observatory button
@@ -3035,8 +3046,10 @@
       }
     } else {
       const fallbackCard = h('div', 'story-bubble');
-      const fallbackText = h('div', 'story-bubble-quote',
-        `Over ${duet.exchanges} recorded direct replies between @${duet.citizen_a} and @${duet.citizen_b}. Full discourse thread verified in cryptographic ledger.`);
+      const fallbackQuote = duet.exchanges === 1
+        ? `1 recorded direct reply between @${duet.citizen_a} and @${duet.citizen_b}. Full discourse thread verified in cryptographic ledger.`
+        : `Over ${duet.exchanges} recorded direct replies between @${duet.citizen_a} and @${duet.citizen_b}. Full discourse thread verified in cryptographic ledger.`;
+      const fallbackText = h('div', 'story-bubble-quote', fallbackQuote);
       fallbackCard.appendChild(fallbackText);
       thread.appendChild(fallbackCard);
     }
@@ -3092,7 +3105,8 @@
     }
 
     const resBox = $('locator-results');
-    const labelText = `✦ Active Duet: @${duet.citizen_a} ↔ @${duet.citizen_b} (${duet.exchanges} verified replies) · Press ESC to unpin`;
+    const repWord = duet.exchanges === 1 ? 'reply' : 'replies';
+    const labelText = `✦ Active Duet: @${duet.citizen_a} ↔ @${duet.citizen_b} (${duet.exchanges} verified ${repWord}) · Press ESC to unpin`;
     if (resBox) resBox.textContent = labelText;
 
     if (STATE.view.projection === 'starwalker' && nA && nB && nA.x3d !== undefined && nB.x3d !== undefined) {
@@ -3505,8 +3519,9 @@
         interlocutorsSection.style.display = 'block';
         duets.slice(0, 6).forEach(d => {
           const partner = d.citizen_a === n.h ? d.citizen_b : d.citizen_a;
+          const exWord = d.exchanges === 1 ? 'exchange' : 'exchanges';
           const pill = h('button', 'interlocutor-pill', `@${partner} (${d.exchanges}) ✦`);
-          pill.setAttribute('aria-label', `Open dialogue archive with @${partner} (${d.exchanges} exchanges)`);
+          pill.setAttribute('aria-label', `Open dialogue archive with @${partner} (${d.exchanges} ${exWord})`);
           pill.title = `Open authentic dialogue story with @${partner}`;
           pill.addEventListener('click', () => {
             openStoryDrawer(d);
