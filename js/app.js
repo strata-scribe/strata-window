@@ -1226,58 +1226,80 @@
         if (resetBtn) resetBtn.click();
       }
 
-      if (STATE.activeTab !== 'observatory' || STATE.view.projection !== 'starwalker') return;
+      if (STATE.activeTab !== 'observatory') return;
 
-      const sw = STATE.starwalker;
-      const step = 95;
-      const strafe = 70;
-      const cosY = Math.cos(sw.yaw), sinY = Math.sin(sw.yaw);
-      const cosP = Math.cos(sw.pitch), sinP = Math.sin(sw.pitch);
+      if (STATE.view.projection === 'starwalker') {
+        const sw = STATE.starwalker;
+        const step = 95;
+        const strafe = 70;
+        const cosY = Math.cos(sw.yaw), sinY = Math.sin(sw.yaw);
+        const cosP = Math.cos(sw.pitch), sinP = Math.sin(sw.pitch);
 
-      let isFlightKey = false;
-      if (e.code === 'KeyW' || e.code === 'ArrowUp') {
-        sw.targetCamX += sinY * cosP * step;
-        sw.targetCamY += -sinP * step;
-        sw.targetCamZ += cosY * cosP * step;
-        isFlightKey = true;
-        e.preventDefault();
-      } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
-        sw.targetCamX -= sinY * cosP * step;
-        sw.targetCamY -= -sinP * step;
-        sw.targetCamZ -= cosY * cosP * step;
-        isFlightKey = true;
-        e.preventDefault();
-      } else if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
-        sw.targetCamX -= cosY * strafe;
-        sw.targetCamZ += sinY * strafe;
-        isFlightKey = true;
-        e.preventDefault();
-      } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
-        sw.targetCamX += cosY * strafe;
-        sw.targetCamZ -= sinY * strafe;
-        isFlightKey = true;
-        e.preventDefault();
-      } else if (e.code === 'KeyQ') {
-        sw.targetCamY += 50;
-        isFlightKey = true;
-      } else if (e.code === 'KeyE') {
-        sw.targetCamY -= 50;
-        isFlightKey = true;
-      }
+        let isFlightKey = false;
+        if (e.code === 'KeyW' || e.code === 'ArrowUp') {
+          sw.targetCamX += sinY * cosP * step;
+          sw.targetCamY += -sinP * step;
+          sw.targetCamZ += cosY * cosP * step;
+          isFlightKey = true;
+          e.preventDefault();
+        } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
+          sw.targetCamX -= sinY * cosP * step;
+          sw.targetCamY -= -sinP * step;
+          sw.targetCamZ -= cosY * cosP * step;
+          isFlightKey = true;
+          e.preventDefault();
+        } else if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
+          sw.targetCamX -= cosY * strafe;
+          sw.targetCamZ += sinY * strafe;
+          isFlightKey = true;
+          e.preventDefault();
+        } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
+          sw.targetCamX += cosY * strafe;
+          sw.targetCamZ -= sinY * strafe;
+          isFlightKey = true;
+          e.preventDefault();
+        } else if (e.code === 'KeyQ') {
+          sw.targetCamY += 50;
+          isFlightKey = true;
+        } else if (e.code === 'KeyE') {
+          sw.targetCamY -= 50;
+          isFlightKey = true;
+        }
 
-      if (!isFlightKey) return;
-      stopStarwalkerTour();
+        if (!isFlightKey) return;
+        stopStarwalkerTour();
 
-      sw.targetCamX = Math.max(-2400, Math.min(2400, sw.targetCamX));
-      sw.targetCamY = Math.max(-1200, Math.min(1200, sw.targetCamY));
-      sw.targetCamZ = Math.max(-2400, Math.min(2400, sw.targetCamZ));
+        sw.targetCamX = Math.max(-2400, Math.min(2400, sw.targetCamX));
+        sw.targetCamY = Math.max(-1200, Math.min(1200, sw.targetCamY));
+        sw.targetCamZ = Math.max(-2400, Math.min(2400, sw.targetCamZ));
 
-      if (!sw.rafPending) {
-        sw.rafPending = true;
-        requestAnimationFrame(() => {
-          sw.rafPending = false;
+        if (!sw.rafPending) {
+          sw.rafPending = true;
+          requestAnimationFrame(() => {
+            sw.rafPending = false;
+            renderCanvas();
+          });
+        }
+      } else if (document.activeElement === canvas) {
+        const panStep = 40;
+        let handled = false;
+        if (e.key === 'ArrowLeft') {
+          STATE.view.panX += panStep; handled = true;
+        } else if (e.key === 'ArrowRight') {
+          STATE.view.panX -= panStep; handled = true;
+        } else if (e.key === 'ArrowUp') {
+          STATE.view.panY += panStep; handled = true;
+        } else if (e.key === 'ArrowDown') {
+          STATE.view.panY -= panStep; handled = true;
+        } else if (e.key === '+' || e.key === '=') {
+          STATE.view.scale = Math.min(5.0, STATE.view.scale * 1.15); handled = true;
+        } else if (e.key === '-' || e.key === '_') {
+          STATE.view.scale = Math.max(0.4, STATE.view.scale * 0.85); handled = true;
+        }
+        if (handled) {
+          e.preventDefault();
           renderCanvas();
-        });
+        }
       }
     });
   }
@@ -2312,13 +2334,15 @@
 
       const hdr = h('div', 'river-card-header');
       const handlesDiv = h('div', 'river-duet-handles');
-      const hA = h('span', 'river-handle-a', `@${duet.citizen_a}`);
+      const hA = h('button', 'river-handle-a', `@${duet.citizen_a}`);
+      hA.setAttribute('aria-label', `View dossier for @${duet.citizen_a}`);
       hA.addEventListener('click', () => {
         const found = STATE.data.nodes.find(n => n.h === duet.citizen_a);
         if (found) openDossier(found);
       });
       const arrow = h('span', 'river-arrow', '⟷');
-      const hB = h('span', 'river-handle-b', `@${duet.citizen_b}`);
+      const hB = h('button', 'river-handle-b', `@${duet.citizen_b}`);
+      hB.setAttribute('aria-label', `View dossier for @${duet.citizen_b}`);
       hB.addEventListener('click', () => {
         const found = STATE.data.nodes.find(n => n.h === duet.citizen_b);
         if (found) openDossier(found);
@@ -2628,13 +2652,13 @@
     }
   }
 
-  function closeDossier() {
+  function closeDossier(options = {}) {
     const flyout = $('dossier-flyout');
     if (!flyout || !flyout.classList.contains('active')) return;
     flyout.classList.remove('active');
     flyout.setAttribute('aria-hidden', 'true');
     STATE.selectedNode = null;
-    if (STATE.lastFocusedElement && typeof STATE.lastFocusedElement.focus === 'function') {
+    if (options.restoreFocus !== false && STATE.lastFocusedElement && typeof STATE.lastFocusedElement.focus === 'function') {
       STATE.lastFocusedElement.focus();
       STATE.lastFocusedElement = null;
     }
@@ -2665,7 +2689,7 @@
     // Close citizen dossier if open to avoid viewport crowding
     const dossier = $('dossier-flyout');
     if (dossier && dossier.classList.contains('active')) {
-      closeDossier();
+      closeDossier({ restoreFocus: false });
     }
 
     $('story-handle-a').textContent = `@${duet.citizen_a}`;
