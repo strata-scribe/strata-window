@@ -52,8 +52,10 @@ body {
 
 /* Navigation Header */
 header {
-  background: var(--bg-panel);
-  border-bottom: 1px solid var(--border-muted);
+  background: rgba(13, 17, 26, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   height: 48px;
   padding: 0 1.25rem;
   display: flex;
@@ -196,8 +198,10 @@ main {
 /* Sidebar Panel */
 aside.sidebar {
   width: 280px;
-  background: var(--bg-panel);
-  border-right: 1px solid var(--border-muted);
+  background: rgba(13, 17, 26, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -293,6 +297,40 @@ aside.sidebar {
 .viewport-pane.active {
   display: flex;
   flex-direction: column;
+  view-transition-name: active-pane;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .viewport-pane.active {
+    animation: paneFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  ::view-transition-old(active-pane) {
+    animation: 140ms cubic-bezier(0.4, 0, 1, 1) both paneFadeOut;
+  }
+  ::view-transition-new(active-pane) {
+    animation: 180ms cubic-bezier(0, 0, 0.2, 1) both paneFadeIn;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewport-pane.active {
+    animation: none !important;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+@keyframes paneFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes paneFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 /* Observatory Canvas */
@@ -310,8 +348,10 @@ aside.sidebar {
 
 /* Integrated Docked Scrubber Bar */
 .scrubber-dock {
-  background: var(--bg-panel);
-  border-top: 1px solid var(--border-muted);
+  background: rgba(13, 17, 26, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   height: 44px;
   padding: 0 1.25rem;
   display: flex;
@@ -469,16 +509,24 @@ aside.sidebar {
 }
 
 .commons-card {
-  background: var(--bg-panel);
+  background: rgba(13, 17, 26, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-muted);
-  border-radius: 4px;
+  border-radius: 6px;
   padding: 0.85rem;
   cursor: pointer;
-  transition: border-color 0.15s;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .commons-card:hover {
-  border-color: var(--text-med);
+  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(20, 27, 39, 0.85);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  transform: translateY(-1px);
 }
 
 .commons-handle {
@@ -490,16 +538,57 @@ aside.sidebar {
 
 .commons-meta {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   color: var(--text-low);
-  margin-bottom: 0.4rem;
 }
 
 .commons-text {
   font-size: 0.78rem;
-  color: var(--text-med);
+  color: var(--text-high);
   border-left: 2px solid var(--border-muted);
   padding-left: 0.5rem;
+  line-height: 1.45;
+}
+
+/* Thematic Inscription Badges */
+.commons-theme-badge {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 0.12rem 0.4rem;
+  border-radius: 3px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.theme-metaphysics {
+  color: #c084fc;
+  background: rgba(192, 132, 252, 0.12);
+  border: 1px solid rgba(192, 132, 252, 0.35);
+}
+
+.theme-first_encounters {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.theme-protocol {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.theme-cryptographic {
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+}
+
+.theme-solitary {
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
 /* Crosstalk Pane */
@@ -569,13 +658,15 @@ aside.sidebar {
 }
 
 .crosstalk-inspector {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-active);
+  background: rgba(13, 17, 26, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.28);
   border-radius: 6px;
   padding: 0.9rem 1.1rem;
   margin-top: -1rem;
   margin-bottom: 1.75rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 /* Projection Overlay in Observatory */
@@ -587,11 +678,13 @@ aside.sidebar {
   align-items: center;
   gap: 0.35rem;
   z-index: 15;
-  background: rgba(13, 17, 26, 0.88);
-  backdrop-filter: blur(8px);
+  background: rgba(13, 17, 26, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   padding: 0.3rem 0.45rem;
-  border: 1px solid var(--border-muted);
+  border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .proj-btn {
@@ -613,14 +706,15 @@ aside.sidebar {
   width: 420px;
   max-height: calc(100vh - 80px);
   overflow-y: auto;
-  background: rgba(13, 17, 26, 0.98);
-  backdrop-filter: blur(14px);
-  border: 1px solid var(--border-focus);
+  background: rgba(13, 17, 26, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.3);
   border-radius: 6px;
   padding: 1.25rem;
   z-index: 60;
   display: none;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .story-flyout.active {
@@ -781,14 +875,15 @@ aside.sidebar {
   width: 380px;
   max-height: calc(100vh - 80px);
   overflow-y: auto;
-  background: rgba(13, 17, 26, 0.96);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border-focus);
+  background: rgba(13, 17, 26, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.3);
   border-radius: 6px;
   padding: 1.15rem;
   z-index: 50;
   display: none;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .dossier-flyout.active {
@@ -959,12 +1054,13 @@ aside.sidebar {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
-  background: rgba(13, 17, 26, 0.85);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--border-muted);
+  background: rgba(13, 17, 26, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 4px;
   padding: 0.35rem 0.6rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .constellation-label {
@@ -1018,12 +1114,14 @@ aside.sidebar {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.75rem;
-  background: rgba(13, 17, 26, 0.85);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--border-muted);
+  background: rgba(13, 17, 26, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 4px;
   padding: 0.4rem 0.75rem;
   pointer-events: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .flight-telemetry {
@@ -1406,20 +1504,19 @@ aside.sidebar {
   font-weight: 700;
 }
 
-.river-handle-a {
-  color: var(--text-pure);
-  cursor: pointer;
-}
-
-.river-handle-a:hover {
-  color: var(--accent-cyan);
-}
-
+.river-handle-a,
 .river-handle-b {
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  padding: 0;
   color: var(--text-pure);
   cursor: pointer;
 }
 
+.river-handle-a:hover,
 .river-handle-b:hover {
   color: var(--accent-cyan);
 }
@@ -1545,6 +1642,9 @@ a:focus-visible,
 .landmark-chip:focus-visible,
 .mullion-voice-chip:focus-visible,
 .interlocutor-pill:focus-visible,
+.legend-row:focus-visible,
+.matrix-grid td:focus-visible,
+#observatory-canvas:focus-visible,
 .sync-badge:focus-visible,
 footer a:focus-visible {
   outline: 3px solid var(--accent-amber);

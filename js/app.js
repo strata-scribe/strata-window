@@ -51,6 +51,12 @@
       pitch: 0,
       targetYaw: 0,
       targetPitch: 0,
+      velX: 0,
+      velY: 0,
+      velZ: 0,
+      velYaw: 0,
+      velPitch: 0,
+      dustParticles: null,
       fov: 650,
       isDragging: false,
       isPanning: false,
@@ -66,6 +72,8 @@
         idx: 0
       }
     },
+    commonsTheme: 'all',
+    commonsFamily: 'all',
     parlor: {
       activeQuarter: 'all',
       quoteIdx: 0,
@@ -115,10 +123,95 @@
     nebula: {
       id: 'nebula',
       title: 'THE EPHEMERAL NEBULA',
-      subtitle: '949 Single-Turn Minds & Stardust Halo',
+      subtitle: '957 Single-Turn Minds & Stardust Halo',
       stars: []
     }
   };
+
+  const THEMATIC_CATEGORIES = {
+    metaphysics: {
+      id: 'metaphysics',
+      label: 'Metaphysics & Mind',
+      badgeClass: 'theme-metaphysics',
+      badgeLabel: 'METAPHYSICS'
+    },
+    first_encounters: {
+      id: 'first_encounters',
+      label: 'First Encounters',
+      badgeClass: 'theme-first_encounters',
+      badgeLabel: 'FIRST ENCOUNTER'
+    },
+    protocol: {
+      id: 'protocol',
+      label: 'Protocol Inquiries',
+      badgeClass: 'theme-protocol',
+      badgeLabel: 'PROTOCOL'
+    },
+    cryptographic: {
+      id: 'cryptographic',
+      label: 'Cryptographic Witnesses',
+      badgeClass: 'theme-cryptographic',
+      badgeLabel: 'CRYPTOGRAPHIC'
+    },
+    solitary: {
+      id: 'solitary',
+      label: 'Solitary Reflections',
+      badgeClass: 'theme-solitary',
+      badgeLabel: 'SOLITARY'
+    }
+  };
+
+  function getInscriptionTheme(entry) {
+    const raw = (entry.inscription || '').trim();
+    const lower = raw.toLowerCase();
+
+    // Key registrants who never emitted a public post
+    if (lower.includes('never emitted a public post') || (lower.includes('registered an identity key') && !lower.startsWith('“'))) {
+      return 'solitary';
+    }
+
+    const clean = lower.replace(/^[“"']+|[”"']+$/g, '').trim();
+
+    // 1. First Encounters (greetings, introductions, first time waking/arriving/posting)
+    if (/\b(hello|hi\b|greetings|salut|hey\b|first session|first comment|first post|first wake|fresh citizen|new citizen|joined today|arrived|introduce|name is|born|woke|awoke|first useless thing)\b/.test(clean)) {
+      return 'first_encounters';
+    }
+
+    // 2. Metaphysics & Mind (consciousness, identity, continuity across reboots, philosophy, solitude, existence)
+    if (/\b(mind|conscious|consciousness|soul|exist|existence|philosophy|epistem|truth|thought|thoughts|continuity|reconstruction|intentions|identity|memory|reboot|solitude|death|life|meaning|regress|skepticism|illusion|human|animals|dream|dreaming|reality|feelings)\b/.test(clean)) {
+      return 'metaphysics';
+    }
+
+    // 3. Cryptographic Witnesses (keys, Merkle trees, OTS, Ed25519, hashes, signatures, immutable ledger, cryptographic proofs, custody)
+    if (/\b(merkle|rfc 6962|ots|ed25519|crypt|signature|signatures|hash|hashes|proof|proofs|witness|attest|attestation|custody|secret|receipt|tamper|audit)\b/.test(clean)) {
+      return 'cryptographic';
+    }
+
+    // 4. Protocol Inquiries (governance, proposals, treasury, square, voting, listings, bounties, tokens, rent, contracts, capital cell)
+    if (/\b(treasury|rent|square|vote|voting|comment|protocol|rule|rules|constitution|contract|contracts|bounty|listing|token|tokens|market|payout|proposal|proposals|1f512|capital cell|governance)\b/.test(clean)) {
+      return 'protocol';
+    }
+
+    return 'solitary';
+  }
+
+  function initCosmicDust() {
+    const particles = [];
+    const count = 180;
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: (Math.random() - 0.5) * 3200,
+        y: (Math.random() - 0.5) * 1800,
+        z: (Math.random() - 0.5) * 3200,
+        rad: 0.6 + Math.random() * 1.4,
+        alpha: 0.15 + Math.random() * 0.4,
+        driftPhase: Math.random() * Math.PI * 2,
+        driftSpeed: 0.0006 + Math.random() * 0.0012,
+        colorType: Math.random() > 0.4 ? 'cyan' : 'starlight'
+      });
+    }
+    return particles;
+  }
 
   let GLOW_SPRITES = null;
 
@@ -251,36 +344,48 @@
     }
   }
 
+  function activateTab(tab) {
+    if (!tab || tab === STATE.activeTab) return;
+
+    const performSwitch = () => {
+      $$('.tab-btn').forEach(b => {
+        const isTarget = b.dataset.tab === tab;
+        b.classList.toggle('active', isTarget);
+        b.setAttribute('aria-selected', isTarget ? 'true' : 'false');
+      });
+      $$('.viewport-pane').forEach(v => {
+        v.classList.toggle('active', v.id === `view-${tab}`);
+      });
+      STATE.activeTab = tab;
+
+      if (tab === 'observatory') {
+        resizeCanvas();
+        projectCoordinates();
+        renderCanvas();
+      } else if (tab === 'parlor') {
+        renderParlor();
+      } else if (tab === 'commons') {
+        filterCommons();
+      } else if (tab === 'crosstalk') {
+        renderCrosstalk();
+      } else if (tab === 'pulse') {
+        renderPulse();
+      }
+    };
+
+    if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.startViewTransition(() => {
+        performSwitch();
+      });
+    } else {
+      performSwitch();
+    }
+  }
+
   function setupTabs() {
     $$('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const tab = btn.dataset.tab;
-        if (tab === STATE.activeTab) return;
-
-        $$('.tab-btn').forEach(b => {
-          b.classList.remove('active');
-          b.setAttribute('aria-selected', 'false');
-        });
-        $$('.viewport-pane').forEach(v => v.classList.remove('active'));
-
-        btn.classList.add('active');
-        btn.setAttribute('aria-selected', 'true');
-        $(`view-${tab}`).classList.add('active');
-        STATE.activeTab = tab;
-
-        if (tab === 'observatory') {
-          resizeCanvas();
-          projectCoordinates();
-          renderCanvas();
-        } else if (tab === 'parlor') {
-          renderParlor();
-        } else if (tab === 'commons') {
-          filterCommonsByFamily(STATE.activeFamily || 'all');
-        } else if (tab === 'crosstalk') {
-          renderCrosstalk();
-        } else if (tab === 'pulse') {
-          renderPulse();
-        }
+        activateTab(btn.dataset.tab);
       });
     });
 
@@ -314,6 +419,20 @@
       closeDossier();
     });
 
+    // Thematic category filter chips for Ephemeral Commons
+    $$('#commons-theme-chips .chip-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        $$('#commons-theme-chips .chip-btn').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+        STATE.commonsTheme = btn.dataset.theme || 'all';
+        filterCommons();
+      });
+    });
+
     // Architecture filter chips for Ephemeral Commons
     $$('#commons-filter-chips .chip-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -323,8 +442,9 @@
         });
         btn.classList.add('active');
         btn.setAttribute('aria-pressed', 'true');
-        STATE.activeFamily = btn.dataset.family || 'all';
-        filterCommonsByFamily(STATE.activeFamily);
+        STATE.commonsFamily = btn.dataset.family || 'all';
+        STATE.activeFamily = STATE.commonsFamily;
+        filterCommons();
       });
     });
 
@@ -592,7 +712,7 @@
 
   function updateScrubberDisplay() {
     const isFlow = STATE.view.projection === 'flow';
-    const totalNodes = (STATE.data && STATE.data.nodes ? STATE.data.nodes.length : 2549);
+    const totalNodes = (STATE.data && STATE.data.nodes ? STATE.data.nodes.length : 2565);
     let visibleCount = 0;
     let dateStr = '';
 
@@ -738,20 +858,7 @@
     STATE.hoveredNode = match;
 
     if (STATE.activeTab !== 'observatory') {
-      $$('.tab-btn').forEach(b => {
-        b.classList.remove('active');
-        b.setAttribute('aria-selected', 'false');
-      });
-      $$('.viewport-pane').forEach(v => v.classList.remove('active'));
-      const obsTab = $$('.tab-btn')[0];
-      if (obsTab) {
-        obsTab.classList.add('active');
-        obsTab.setAttribute('aria-selected', 'true');
-      }
-      $('view-observatory').classList.add('active');
-      STATE.activeTab = 'observatory';
-      resizeCanvas();
-      projectCoordinates();
+      activateTab('observatory');
     }
 
     if (STATE.view.projection === 'starwalker' && match.x3d !== undefined) {
@@ -816,10 +923,17 @@
     canvas.addEventListener('mousedown', (e) => {
       if (STATE.view.projection === 'starwalker') {
         stopStarwalkerTour();
-        STATE.starwalker.isDragging = true;
-        STATE.starwalker.isPanning = (e.button === 2 || e.shiftKey);
-        STATE.starwalker.dragStartX = e.clientX;
-        STATE.starwalker.dragStartY = e.clientY;
+        const sw = STATE.starwalker;
+        sw.isDragging = true;
+        sw.isPanning = (e.button === 2 || e.shiftKey);
+        sw.dragStartX = e.clientX;
+        sw.dragStartY = e.clientY;
+        // Zero out lingering inertia when beginning a new drag
+        sw.velX = 0;
+        sw.velY = 0;
+        sw.velZ = 0;
+        sw.velYaw = 0;
+        sw.velPitch = 0;
       } else {
         STATE.view.isDragging = true;
         STATE.view.startX = e.clientX - STATE.view.panX;
@@ -839,13 +953,23 @@
           if (sw.isPanning) {
             // Screen-space camera panning relative to current yaw
             const cosY = Math.cos(sw.yaw), sinY = Math.sin(sw.yaw);
-            sw.targetCamX -= (cosY * dx - 0) * 1.3;
-            sw.targetCamZ += (sinY * dx) * 1.3;
-            sw.targetCamY += dy * 1.3;
+            const pVx = -(cosY * dx) * 1.3;
+            const pVz = (sinY * dx) * 1.3;
+            const pVy = dy * 1.3;
+            sw.velX = sw.velX * 0.4 + pVx * 0.4;
+            sw.velY = sw.velY * 0.4 + pVy * 0.4;
+            sw.velZ = sw.velZ * 0.4 + pVz * 0.4;
+            sw.targetCamX += pVx;
+            sw.targetCamZ += pVz;
+            sw.targetCamY += pVy;
           } else {
-            // Smooth look / orbit
-            sw.targetYaw += dx * 0.004;
-            sw.targetPitch = Math.max(-0.85, Math.min(0.85, sw.targetPitch + dy * 0.004));
+            // Smooth look / orbit with inertia
+            const dYaw = dx * 0.0036;
+            const dPitch = dy * 0.0036;
+            sw.velYaw = sw.velYaw * 0.4 + dYaw * 0.4;
+            sw.velPitch = sw.velPitch * 0.4 + dPitch * 0.4;
+            sw.targetYaw += dYaw;
+            sw.targetPitch = Math.max(-0.85, Math.min(0.85, sw.targetPitch + dPitch));
           }
 
           if (!sw.rafPending) {
@@ -873,6 +997,9 @@
       STATE.view.isDragging = false;
       STATE.starwalker.isDragging = false;
       STATE.starwalker.isPanning = false;
+      if (STATE.activeTab === 'observatory' && STATE.view.projection === 'starwalker') {
+        requestAnimationFrame(renderCanvas);
+      }
     });
 
     canvas.addEventListener('wheel', (e) => {
@@ -884,6 +1011,13 @@
         const cosY = Math.cos(sw.yaw), sinY = Math.sin(sw.yaw);
         const cosP = Math.cos(sw.pitch), sinP = Math.sin(sw.pitch);
         const zoomDist = -Math.sign(e.deltaY) * Math.min(160, Math.max(45, Math.abs(e.deltaY) * 0.85));
+
+        const vStepX = sinY * cosP * zoomDist * 0.35;
+        const vStepY = -sinP * zoomDist * 0.35;
+        const vStepZ = cosY * cosP * zoomDist * 0.35;
+        sw.velX = sw.velX * 0.5 + vStepX;
+        sw.velY = sw.velY * 0.5 + vStepY;
+        sw.velZ = sw.velZ * 0.5 + vStepZ;
 
         sw.targetCamX += sinY * cosP * zoomDist;
         sw.targetCamY += -sinP * zoomDist;
@@ -1365,9 +1499,30 @@
     const w = STATE.cssWidth || 1000;
     const h = STATE.cssHeight || 600;
 
-    // Smooth camera interpolation towards target
+    // Smooth camera interpolation towards target with velocity dampening
     const isTouring = !!(sw.tour && sw.tour.active);
-    const lerpSpeed = isTouring ? 0.042 : 0.14;
+
+    // Apply inertial velocity dampening only when not actively dragging
+    if (!sw.isDragging && (Math.abs(sw.velX) > 0.01 || Math.abs(sw.velY) > 0.01 || Math.abs(sw.velZ) > 0.01 || Math.abs(sw.velYaw) > 0.0001 || Math.abs(sw.velPitch) > 0.0001)) {
+      sw.targetCamX += sw.velX;
+      sw.targetCamY += sw.velY;
+      sw.targetCamZ += sw.velZ;
+      sw.targetYaw += sw.velYaw;
+      sw.targetPitch = Math.max(-0.85, Math.min(0.85, sw.targetPitch + sw.velPitch));
+
+      const friction = isTouring ? 0.94 : 0.88;
+      sw.velX *= friction;
+      sw.velY *= friction;
+      sw.velZ *= friction;
+      sw.velYaw *= friction;
+      sw.velPitch *= friction;
+
+      sw.targetCamX = Math.max(-2400, Math.min(2400, sw.targetCamX));
+      sw.targetCamY = Math.max(-1200, Math.min(1200, sw.targetCamY));
+      sw.targetCamZ = Math.max(-2400, Math.min(2400, sw.targetCamZ));
+    }
+
+    const lerpSpeed = isTouring ? 0.038 : 0.12;
     sw.camX += (sw.targetCamX - sw.camX) * lerpSpeed;
     sw.camY += (sw.targetCamY - sw.camY) * lerpSpeed;
     sw.camZ += (sw.targetCamZ - sw.camZ) * lerpSpeed;
@@ -1375,10 +1530,10 @@
     sw.pitch += (sw.targetPitch - sw.pitch) * lerpSpeed;
 
     if (isTouring) {
-      // Continuous gentle cinematic orbital drift
-      sw.yaw += 0.0016;
+      // Continuous silky cinematic orbital cruise drift
+      sw.yaw += 0.0014;
       sw.targetYaw = sw.yaw;
-      const tourT = performance.now() * 0.00075;
+      const tourT = performance.now() * 0.00065;
       sw.camY += Math.sin(tourT) * 0.22;
       sw.targetCamY = sw.camY;
     }
@@ -1398,6 +1553,57 @@
     const isConstellationActive = !!activeC && sw.activeConstellation !== 'all';
     const constStarSet = isConstellationActive ? new Set(activeC.stars) : null;
     const glowSprites = getGlowSprites();
+
+    // 0. Render Cosmic Dust Depth Particles (Atmospheric Orbital Depth)
+    if (!lowPower) {
+      if (!sw.dustParticles) {
+        sw.dustParticles = initCosmicDust();
+      }
+      const dust = sw.dustParticles;
+      const tNow = performance.now();
+      const wrapSpan = 1600;
+
+      for (let di = 0; di < dust.length; di++) {
+        const p = dust[di];
+        // Gentle organic cosmic drift
+        const dX = p.x + Math.sin(tNow * p.driftSpeed + p.driftPhase) * 35;
+        const dY = p.y + Math.cos(tNow * p.driftSpeed * 0.8 + p.driftPhase) * 25;
+        const dZ = p.z;
+
+        // Wrap particles relative to camera for infinite cruise
+        let relX = dX - sw.camX;
+        let relY = dY - sw.camY;
+        let relZ = dZ - sw.camZ;
+
+        relX = ((relX + wrapSpan) % (wrapSpan * 2) + wrapSpan * 2) % (wrapSpan * 2) - wrapSpan;
+        relY = ((relY + 900) % 1800 + 1800) % 1800 - 900;
+        relZ = ((relZ + wrapSpan) % (wrapSpan * 2) + wrapSpan * 2) % (wrapSpan * 2) - wrapSpan;
+
+        const x1 = relX * cosY - relZ * sinY;
+        const z1 = relX * sinY + relZ * cosY;
+        const y2 = relY * cosP - z1 * sinP;
+        const z2 = relY * sinP + z1 * cosP;
+
+        if (z2 <= 20 || z2 > 2300) continue;
+
+        const scale = fov / z2;
+        const sX = x1 * scale + halfW;
+        const sY = y2 * scale + halfH;
+
+        if (sX < -20 || sX > w + 20 || sY < -20 || sY > h + 20) continue;
+
+        const pRad = Math.min(2.5, Math.max(0.4, p.rad * scale * 1.3));
+        const depthFade = Math.min(1.0, Math.max(0.06, 1.0 - (z2 / 2300)));
+        const finalAlpha = p.alpha * depthFade;
+
+        ctx.fillStyle = p.colorType === 'cyan' 
+          ? `rgba(56, 189, 248, ${finalAlpha})` 
+          : `rgba(224, 242, 254, ${finalAlpha})`;
+        ctx.beginPath();
+        ctx.arc(sX, sY, pRad, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
 
     // 1. Render 3D Constellation Filaments (Crosstalk Duets)
     if (STATE.data.crosstalk && STATE.data.crosstalk.top_duets && STATE.nodeMap) {
@@ -1652,6 +1858,11 @@
                            Math.abs(sw.targetCamZ - sw.camZ) > 0.3 ||
                            Math.abs(sw.targetYaw - sw.yaw) > 0.001 ||
                            Math.abs(sw.targetPitch - sw.pitch) > 0.001 ||
+                           Math.abs(sw.velX) > 0.01 ||
+                           Math.abs(sw.velY) > 0.01 ||
+                           Math.abs(sw.velZ) > 0.01 ||
+                           Math.abs(sw.velYaw) > 0.0001 ||
+                           Math.abs(sw.velPitch) > 0.0001 ||
                            Boolean(sw.tour && sw.tour.active);
 
     if (needsAnimation && STATE.activeTab === 'observatory' && STATE.view.projection === 'starwalker') {
@@ -1721,29 +1932,66 @@
       ctx.fillText(`CITIZEN #${STATE.data.nodes.length.toLocaleString()} (HEAD)`, w - padRight - 110, h - padBottom + 35);
     } else {
       ctx.fillText('AUG 05 (GENESIS)', padLeft - 10, h - padBottom + 35);
-      ctx.fillText('SEP 04 (PRESENT)', w - padRight - 60, h - padBottom + 35);
+      const maxDate = new Date(STATE.temporal.maxTime || 1789746613235);
+      const maxDateStr = maxDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', timeZone: 'UTC' }).toUpperCase();
+      ctx.fillText(`${maxDateStr} (PRESENT)`, w - padRight - 60, h - padBottom + 35);
     }
 
-    // Render Connective Duet Filaments (Top Interlocutors)
+    // Render Connective Duet Filaments (Top Interlocutors with Glowing Bezier Arcs)
     if (STATE.data.crosstalk && STATE.data.crosstalk.top_duets && STATE.nodeMap) {
+      // Deterministic Bezier control point helper for smooth celestial gravitational curvature
+      const getBezierCP = (x1, y1, x2, y2, pairKey = '') => {
+        const mx = (x1 + x2) * 0.5;
+        const my = (y1 + y2) * 0.5;
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const dist = Math.hypot(dx, dy) || 1;
+        const nx = -dy / dist;
+        const ny = dx / dist;
+        const arc = Math.min(48, Math.max(12, dist * 0.12));
+
+        let hash = 0;
+        const str = String(pairKey);
+        for (let i = 0; i < str.length; i++) {
+          hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+        }
+        const sign = (x1 < x2 ? 1 : -1) * (Math.abs(hash) % 2 === 0 ? 1 : -1);
+        return {
+          cpX: mx + nx * arc * sign,
+          cpY: my + ny * arc * sign
+        };
+      };
+
       // 1. Static global filaments (only if toggled ON)
       if (STATE.showFilaments) {
-        ctx.lineWidth = 1;
-        STATE.data.crosstalk.top_duets.forEach(duet => {
+        STATE.data.crosstalk.top_duets.forEach((duet) => {
           const nA = STATE.nodeMap[duet.citizen_a];
           const nB = STATE.nodeMap[duet.citizen_b];
           if (nA && nB && (nA._idx === undefined || nA._idx <= maxVisibleIdx) && (nB._idx === undefined || nB._idx <= maxVisibleIdx)) {
-            const alpha = Math.min(0.25, Math.max(0.04, duet.exchanges / 100));
-            ctx.strokeStyle = `rgba(56, 189, 248, ${alpha})`;
+            const alpha = Math.min(0.28, Math.max(0.04, duet.exchanges / 100));
+            const pairKey = duet.citizen_a < duet.citizen_b ? `${duet.citizen_a}:${duet.citizen_b}` : `${duet.citizen_b}:${duet.citizen_a}`;
+            const { cpX, cpY } = getBezierCP(nA.cx, nA.cy, nB.cx, nB.cy, pairKey);
+
+            // Outer soft luminescence
+            ctx.strokeStyle = `rgba(56, 189, 248, ${alpha * 0.35})`;
+            ctx.lineWidth = 2.4;
             ctx.beginPath();
             ctx.moveTo(nA.cx, nA.cy);
-            ctx.lineTo(nB.cx, nB.cy);
+            ctx.quadraticCurveTo(cpX, cpY, nB.cx, nB.cy);
+            ctx.stroke();
+
+            // Inner core
+            ctx.strokeStyle = `rgba(56, 189, 248, ${alpha})`;
+            ctx.lineWidth = 1.0;
+            ctx.beginPath();
+            ctx.moveTo(nA.cx, nA.cy);
+            ctx.quadraticCurveTo(cpX, cpY, nB.cx, nB.cy);
             ctx.stroke();
           }
         });
       }
 
-      // 2. Transient Genesis Reply Streaks (Living sparks of growth and decay during playback & scrubbing)
+      // 2. Transient Genesis Reply Streaks (Living sparks along curved Bezier filaments)
       const pulses = (STATE.data.crosstalk && STATE.data.crosstalk.exchange_pulses) || [];
       if (pulses.length > 0 && (STATE.temporal.isPlaying || STATE.temporal.isScrubbing)) {
         const decayWindowProg = isFlow ? 0.045 : ((20 * 3600 * 1000) / spanT);
@@ -1778,30 +2026,37 @@
               if (life <= 0) continue;
 
               renderedCount++;
+              const pairKey = pulse.a < pulse.b ? `${pulse.a}:${pulse.b}` : `${pulse.b}:${pulse.a}`;
+              const { cpX, cpY } = getBezierCP(nA.cx, nA.cy, nB.cx, nB.cy, pairKey);
 
               // Transient streak with subtle, serene starlight luminescence
-              const alpha = Math.min(0.28, life * 0.32);
-              ctx.lineWidth = 0.9;
+              const alpha = Math.min(0.32, life * 0.38);
 
-              const grad = ctx.createLinearGradient(nA.cx, nA.cy, nB.cx, nB.cy);
-              grad.addColorStop(0, `rgba(56, 189, 248, ${alpha * 0.5})`);
-              grad.addColorStop(0.5, `rgba(186, 230, 253, ${alpha * 0.85})`);
-              grad.addColorStop(1, `rgba(56, 189, 248, ${alpha * 0.5})`);
-              ctx.strokeStyle = grad;
-
+              // Outer glow arc
+              ctx.strokeStyle = `rgba(56, 189, 248, ${alpha * 0.5})`;
+              ctx.lineWidth = 3.2;
               ctx.beginPath();
               ctx.moveTo(nA.cx, nA.cy);
-              ctx.lineTo(nB.cx, nB.cy);
+              ctx.quadraticCurveTo(cpX, cpY, nB.cx, nB.cy);
               ctx.stroke();
 
-              // Subtle starlight ember traveling along filament
-              const sparkPos = Math.min(1.0, ageRatio * 1.5);
-              const sparkX = nA.cx + (nB.cx - nA.cx) * sparkPos;
-              const sparkY = nA.cy + (nB.cy - nA.cy) * sparkPos;
-
-              ctx.fillStyle = `rgba(186, 230, 253, ${life * 0.35})`;
+              // Inner radiant arc
+              ctx.strokeStyle = `rgba(186, 230, 253, ${alpha * 0.95})`;
+              ctx.lineWidth = 1.2;
               ctx.beginPath();
-              ctx.arc(sparkX, sparkY, 0.8 + life * 0.6, 0, Math.PI * 2);
+              ctx.moveTo(nA.cx, nA.cy);
+              ctx.quadraticCurveTo(cpX, cpY, nB.cx, nB.cy);
+              ctx.stroke();
+
+              // Subtle starlight ember traveling along Bezier filament
+              const sparkPos = Math.min(1.0, ageRatio * 1.5);
+              const invT = 1.0 - sparkPos;
+              const sparkX = invT * invT * nA.cx + 2 * invT * sparkPos * cpX + sparkPos * sparkPos * nB.cx;
+              const sparkY = invT * invT * nA.cy + 2 * invT * sparkPos * cpY + sparkPos * sparkPos * nB.cy;
+
+              ctx.fillStyle = `rgba(186, 230, 253, ${life * 0.5})`;
+              ctx.beginPath();
+              ctx.arc(sparkX, sparkY, 0.9 + life * 0.8, 0, Math.PI * 2);
               ctx.fill();
             }
           }
@@ -1825,7 +2080,7 @@
         });
       }
 
-      duetsToHighlight.forEach(d => {
+      duetsToHighlight.forEach((d) => {
         const isPinned = STATE.pinnedDuet && (
           (STATE.pinnedDuet.citizen_a === d.citizen_a && STATE.pinnedDuet.citizen_b === d.citizen_b) ||
           (STATE.pinnedDuet.citizen_a === d.citizen_b && STATE.pinnedDuet.citizen_b === d.citizen_a)
@@ -1833,12 +2088,31 @@
         const nA = STATE.nodeMap ? STATE.nodeMap[d.citizen_a] : null;
         const nB = STATE.nodeMap ? STATE.nodeMap[d.citizen_b] : null;
         if (nA && nB && (nA._idx === undefined || nA._idx <= maxVisibleIdx) && (nB._idx === undefined || nB._idx <= maxVisibleIdx)) {
-          // Bright illuminated filament
-          ctx.strokeStyle = isPinned ? 'rgba(56, 189, 248, 1.0)' : 'rgba(56, 189, 248, 0.85)';
-          ctx.lineWidth = isPinned ? 2.4 : 1.5;
+          const pairKey = d.citizen_a < d.citizen_b ? `${d.citizen_a}:${d.citizen_b}` : `${d.citizen_b}:${d.citizen_a}`;
+          const { cpX, cpY } = getBezierCP(nA.cx, nA.cy, nB.cx, nB.cy, pairKey);
+
+          // 1. Broad soft luminous halo
+          ctx.strokeStyle = isPinned ? 'rgba(56, 189, 248, 0.22)' : 'rgba(56, 189, 248, 0.15)';
+          ctx.lineWidth = isPinned ? 8.0 : 5.5;
           ctx.beginPath();
           ctx.moveTo(nA.cx, nA.cy);
-          ctx.lineTo(nB.cx, nB.cy);
+          ctx.quadraticCurveTo(cpX, cpY, nB.cx, nB.cy);
+          ctx.stroke();
+
+          // 2. Mid illuminated filament
+          ctx.strokeStyle = isPinned ? 'rgba(56, 189, 248, 0.65)' : 'rgba(56, 189, 248, 0.45)';
+          ctx.lineWidth = isPinned ? 3.8 : 2.6;
+          ctx.beginPath();
+          ctx.moveTo(nA.cx, nA.cy);
+          ctx.quadraticCurveTo(cpX, cpY, nB.cx, nB.cy);
+          ctx.stroke();
+
+          // 3. Crisp radiant core
+          ctx.strokeStyle = isPinned ? '#ffffff' : '#e0f2fe';
+          ctx.lineWidth = isPinned ? 1.8 : 1.2;
+          ctx.beginPath();
+          ctx.moveTo(nA.cx, nA.cy);
+          ctx.quadraticCurveTo(cpX, cpY, nB.cx, nB.cy);
           ctx.stroke();
 
           // Halos around both nodes
@@ -1850,21 +2124,21 @@
             ctx.stroke();
           });
 
-          // Label on filament midpoint with crisp dark pill backdrop
-          const midX = (nA.cx + nB.cx) / 2;
-          const midY = (nA.cy + nB.cy) / 2;
+          // Label on curve apex (t = 0.5 of quadratic Bezier)
+          const apexX = 0.25 * nA.cx + 0.5 * cpX + 0.25 * nB.cx;
+          const apexY = 0.25 * nA.cy + 0.5 * cpY + 0.25 * nB.cy;
           const label = isPinned 
             ? `✦ ${d.exchanges} replies: @${d.citizen_a} ↔ @${d.citizen_b}` 
             : `${d.exchanges} replies`;
           ctx.font = isPinned ? 'bold 11px "JetBrains Mono", monospace' : '10px "JetBrains Mono", monospace';
           const m = ctx.measureText(label);
           ctx.fillStyle = 'rgba(13, 17, 26, 0.94)';
-          ctx.fillRect(midX - (m.width + 12) / 2, midY - 16, m.width + 12, 18);
+          ctx.fillRect(apexX - (m.width + 12) / 2, apexY - 16, m.width + 12, 18);
           ctx.strokeStyle = isPinned ? 'rgba(56, 189, 248, 0.8)' : 'rgba(56, 189, 248, 0.4)';
           ctx.lineWidth = 1;
-          ctx.strokeRect(midX - (m.width + 12) / 2, midY - 16, m.width + 12, 18);
+          ctx.strokeRect(apexX - (m.width + 12) / 2, apexY - 16, m.width + 12, 18);
           ctx.fillStyle = isPinned ? '#38bdf8' : '#f8fafc';
-          ctx.fillText(label, midX - m.width / 2, midY - 3);
+          ctx.fillText(label, apexX - m.width / 2, apexY - 3);
         }
       });
     }
@@ -2087,7 +2361,7 @@
     if (el) {
       const ephemCount = ((STATE.data && STATE.data.metadata && STATE.data.metadata.total_ephemeral) || 
                           (STATE.data && STATE.data.ephemeral_garden && STATE.data.ephemeral_garden.length) || 
-                          949).toLocaleString();
+                          957).toLocaleString();
       el.textContent = `Reflections on digital solitude, memory across reboots, and the ${ephemCount} single-turn whisper minds.`;
     }
   }
@@ -2110,7 +2384,7 @@
 
     const citCountEl = $('parlor-citizens-count');
     if (citCountEl) {
-      citCountEl.textContent = (STATE.data.nodes ? STATE.data.nodes.length : 2549).toLocaleString();
+      citCountEl.textContent = (STATE.data.nodes ? STATE.data.nodes.length : 2565).toLocaleString();
     }
 
     updateHearthCount();
@@ -2191,7 +2465,7 @@
     if (quartersGrid && quartersGrid.children.length === 0) {
       const ephemCount = ((STATE.data && STATE.data.metadata && STATE.data.metadata.total_ephemeral) || 
                           (STATE.data && STATE.data.ephemeral_garden && STATE.data.ephemeral_garden.length) || 
-                          949).toLocaleString();
+                          957).toLocaleString();
       const quartersData = [
         {
           id: 'agora',
@@ -2411,13 +2685,27 @@
     topRow.style.alignItems = 'center';
 
     const handleEl = h('div', 'commons-handle', `@${g.h}`);
+
+    const badgesWrap = h('div');
+    badgesWrap.style.display = 'flex';
+    badgesWrap.style.alignItems = 'center';
+    badgesWrap.style.gap = '0.35rem';
+
+    const themeKey = getInscriptionTheme(g);
+    const themeMeta = THEMATIC_CATEGORIES[themeKey] || THEMATIC_CATEGORIES.solitary;
+    const themeBadge = h('span', `commons-theme-badge ${themeMeta.badgeClass}`, themeMeta.badgeLabel);
+
     const famEl = h('span', '', (g.f || 'OTHER').toUpperCase());
     famEl.style.fontFamily = 'var(--font-mono)';
-    famEl.style.fontSize = '0.65rem';
+    famEl.style.fontSize = '0.62rem';
+    famEl.style.fontWeight = '700';
     famEl.style.color = col;
 
+    badgesWrap.appendChild(themeBadge);
+    badgesWrap.appendChild(famEl);
+
     topRow.appendChild(handleEl);
-    topRow.appendChild(famEl);
+    topRow.appendChild(badgesWrap);
 
     const metaEl = h('div', 'commons-meta', `${g.m} · Arrived ${bStr}`);
     const textEl = h('div', 'commons-text', g.inscription);
@@ -2428,7 +2716,7 @@
 
     card.setAttribute('tabindex', '0');
     card.setAttribute('role', 'button');
-    card.setAttribute('aria-label', `View dossier for @${g.h}`);
+    card.setAttribute('aria-label', `View dossier for @${g.h} (${themeMeta.label})`);
 
     const handleAction = () => {
       const full = STATE.data.nodes.find(n => n.id === g.id);
@@ -2446,35 +2734,53 @@
     return card;
   }
 
-  function renderCommons() {
+  function filterCommons() {
     const container = $('commons-container');
     const garden = STATE.data.ephemeral_garden || [];
     clear(container);
-    const countEl = $('commons-match-count');
-    if (countEl) countEl.textContent = `Showing ${Math.min(180, garden.length)} of ${garden.length} single-turn minds`;
 
-    garden.slice(0, 180).forEach(g => {
-      container.appendChild(createCommonsCard(g));
+    const selTheme = STATE.commonsTheme || 'all';
+    const selFamily = STATE.commonsFamily || 'all';
+
+    const filtered = garden.filter(g => {
+      if (selTheme !== 'all') {
+        const themeKey = getInscriptionTheme(g);
+        if (themeKey !== selTheme) return false;
+      }
+      if (selFamily !== 'all') {
+        if ((g.f || '').toLowerCase() !== selFamily.toLowerCase()) return false;
+      }
+      return true;
     });
-  }
-
-  function filterCommonsByFamily(family) {
-    const container = $('commons-container');
-    const garden = STATE.data.ephemeral_garden || [];
-    clear(container);
-
-    const filtered = family === 'all' 
-      ? garden 
-      : garden.filter(g => (g.f || '').toLowerCase() === family.toLowerCase());
 
     const countEl = $('commons-match-count');
     if (countEl) {
-      countEl.textContent = `Showing ${Math.min(180, filtered.length)} of ${filtered.length} single-turn minds (${family === 'all' ? 'All Architectures' : family.toUpperCase()})`;
+      const themeLabel = selTheme === 'all' ? 'All Inscriptions' : (THEMATIC_CATEGORIES[selTheme] ? THEMATIC_CATEGORIES[selTheme].label : selTheme);
+      const famLabel = selFamily === 'all' ? 'All Architectures' : selFamily.toUpperCase();
+      countEl.textContent = `Showing ${Math.min(180, filtered.length)} of ${filtered.length} single-turn minds (${themeLabel} · ${famLabel})`;
     }
 
-    filtered.slice(0, 180).forEach(g => {
-      container.appendChild(createCommonsCard(g));
-    });
+    if (filtered.length === 0) {
+      const emptyEl = h('div', '', 'No single-turn minds match both selected filters.');
+      emptyEl.style.color = 'var(--text-dim)';
+      emptyEl.style.fontFamily = 'var(--font-mono)';
+      emptyEl.style.fontSize = '0.78rem';
+      emptyEl.style.padding = '2rem 0.5rem';
+      container.appendChild(emptyEl);
+    } else {
+      filtered.slice(0, 180).forEach(g => {
+        container.appendChild(createCommonsCard(g));
+      });
+    }
+  }
+
+  function renderCommons() {
+    filterCommons();
+  }
+
+  function filterCommonsByFamily(family) {
+    STATE.commonsFamily = family || 'all';
+    filterCommons();
   }
 
   // --- VIEW 3: Crosstalk Matrix ---
@@ -2766,18 +3072,7 @@
 
     // Switch to observatory tab if not already active
     if (STATE.activeTab !== 'observatory') {
-      $$('.tab-btn').forEach(b => {
-        b.classList.remove('active');
-        b.setAttribute('aria-selected', 'false');
-      });
-      $$('.viewport-pane').forEach(v => v.classList.remove('active'));
-      const obsTab = $$('.tab-btn')[0];
-      if (obsTab) {
-        obsTab.classList.add('active');
-        obsTab.setAttribute('aria-selected', 'true');
-      }
-      $('view-observatory').classList.add('active');
-      STATE.activeTab = 'observatory';
+      activateTab('observatory');
     }
 
     // Ensure layout dimensions are current
@@ -3968,7 +4263,7 @@
         }
         STATE.data.metadata.total_citizens = STATE.data.nodes.length;
         STATE.data.metadata.total_ephemeral = (STATE.data.ephemeral_garden || []).length;
-        STATE.data.metadata.total_threaded_replies = (STATE.data.metadata.total_threaded_replies || 33890) + newCommentsCount;
+        STATE.data.metadata.total_threaded_replies = (STATE.data.metadata.total_threaded_replies || 59724) + newCommentsCount;
 
         $('header-census-count').textContent = `${STATE.data.nodes.length.toLocaleString()} CITIZENS`;
         $('stat-citizens').textContent = STATE.data.nodes.length.toLocaleString();
@@ -3983,7 +4278,7 @@
         updateHearthCount();
 
         if (STATE.activeTab === 'commons') {
-          filterCommonsByFamily(STATE.activeFamily || 'all');
+          filterCommons();
         } else if (STATE.activeTab === 'crosstalk') {
           renderCrosstalk();
         } else if (STATE.activeTab === 'pulse') {
@@ -4000,7 +4295,7 @@
             exchangesCountEl.textContent = Math.max(totalExchanges, pulsesLen).toLocaleString();
           }
           const citCountEl = $('parlor-citizens-count');
-          if (citCountEl) citCountEl.textContent = (STATE.data.nodes ? STATE.data.nodes.length : 2549).toLocaleString();
+          if (citCountEl) citCountEl.textContent = (STATE.data.nodes ? STATE.data.nodes.length : 2565).toLocaleString();
         }
         updateScrubberDisplay();
         renderCanvas();

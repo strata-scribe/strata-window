@@ -309,7 +309,7 @@ def main():
     top_duets.sort(key=lambda x: x['exchanges'], reverse=True)
 
     # 6. Compile Final Snapshot
-    total_ledger_count = 16498
+    total_ledger_count = 16895
     if os.path.exists(ledger_db):
         try:
             conn = sqlite3.connect(ledger_db)
