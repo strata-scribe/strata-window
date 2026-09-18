@@ -1406,20 +1406,19 @@ aside.sidebar {
   font-weight: 700;
 }
 
-.river-handle-a {
-  color: var(--text-pure);
-  cursor: pointer;
-}
-
-.river-handle-a:hover {
-  color: var(--accent-cyan);
-}
-
+.river-handle-a,
 .river-handle-b {
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  padding: 0;
   color: var(--text-pure);
   cursor: pointer;
 }
 
+.river-handle-a:hover,
 .river-handle-b:hover {
   color: var(--accent-cyan);
 }
