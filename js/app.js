@@ -1432,6 +1432,7 @@
     if (tourBtn) {
       tourBtn.classList.remove('active');
       tourBtn.textContent = '✦ Cosmic Tour';
+      tourBtn.setAttribute('aria-label', 'Start autonomous Starwalker Cosmic Tour (shortcut: key T)');
     }
 
     const targetEl = $('starwalker-target');
@@ -1469,6 +1470,10 @@
 
     const tourCard = $('starwalker-tour-card');
     if (tourCard) tourCard.style.display = 'flex';
+
+    if (tourBtn) {
+      tourBtn.setAttribute('aria-label', 'Exit Starwalker Cosmic Tour (shortcut: key T)');
+    }
 
     goToTourChapter(0);
   }
@@ -1535,6 +1540,7 @@
     const playPauseBtn = $('btn-tour-playpause');
     if (playPauseBtn) {
       playPauseBtn.textContent = sw.tour.paused ? '▶ Resume' : '⏸ Pause';
+      playPauseBtn.setAttribute('aria-label', sw.tour.paused ? 'Resume Tour (shortcut: Spacebar)' : 'Pause Tour (shortcut: Spacebar)');
       playPauseBtn.classList.toggle('active', sw.tour.paused);
     }
 
@@ -1542,6 +1548,7 @@
     const tourBtn = $('btn-starwalker-tour');
     if (tourBtn) {
       tourBtn.textContent = '✕ Exit Tour';
+      tourBtn.setAttribute('aria-label', 'Exit Starwalker Cosmic Tour (shortcut: key T)');
     }
 
     // Featured key citizens chips
@@ -1600,6 +1607,7 @@
     const playPauseBtn = $('btn-tour-playpause');
     if (playPauseBtn) {
       playPauseBtn.textContent = sw.tour.paused ? '▶ Resume' : '⏸ Pause';
+      playPauseBtn.setAttribute('aria-label', sw.tour.paused ? 'Resume Tour (shortcut: Spacebar)' : 'Pause Tour (shortcut: Spacebar)');
       playPauseBtn.classList.toggle('active', sw.tour.paused);
     }
 
@@ -3231,6 +3239,7 @@
       // Actions
       const actions = h('div', 'river-card-actions');
       const traceBtn = h('button', 'btn-ctrl river-action-btn', '✦ Trace in Starwalker');
+      traceBtn.setAttribute('aria-label', `Trace dialogue between @${duet.citizen_a} and @${duet.citizen_b} in Starwalker 3D`);
       traceBtn.addEventListener('click', () => {
         setProjection('starwalker');
         traceDuetInObservatory(duet);
@@ -3238,6 +3247,7 @@
       actions.appendChild(traceBtn);
 
       const drawerBtn = h('button', 'btn-ctrl river-action-btn', 'Open Dialogue Thread');
+      drawerBtn.setAttribute('aria-label', `Open dialogue thread between @${duet.citizen_a} and @${duet.citizen_b}`);
       drawerBtn.addEventListener('click', () => {
         openStoryDrawer(duet);
       });

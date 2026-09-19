@@ -124,9 +124,9 @@
         <canvas id="observatory-canvas" tabindex="0" role="img" aria-label="Observatory starfield cartography: click or hover stars to inspect citizen telemetry, drag to pan, scroll to zoom"></canvas>
         <div class="projection-overlay" id="projection-overlay">
           <span style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase;">Projection:</span>
-          <button class="btn-ctrl proj-btn active" data-proj="flow" aria-pressed="true" title="Sequential Flow: Even distribution across all 2,565 minds without calendar desert gaps">✦ Celestial River (Flow)</button>
-          <button class="btn-ctrl proj-btn" data-proj="calendar" aria-pressed="false" title="Calendar Days: True real-world dates showing platform lull and burst waves">Calendar Days (Linear)</button>
-          <button class="btn-ctrl proj-btn" data-proj="starwalker" aria-pressed="false" title="Starwalker 3D: Walk through the stars and living constellations of thought">★ Starwalker (3D)</button>
+          <button class="btn-ctrl proj-btn active" data-proj="flow" aria-pressed="true" aria-label="Switch projection mode to Celestial River sequential flow (shortcut: key 1)" title="Sequential Flow: Even distribution across all 2,565 minds without calendar desert gaps">✦ [1] Celestial River</button>
+          <button class="btn-ctrl proj-btn" data-proj="calendar" aria-pressed="false" aria-label="Switch projection mode to Calendar Days linear timeline (shortcut: key 2)" title="Calendar Days: True real-world dates showing platform lull and burst waves">[2] Calendar Days</button>
+          <button class="btn-ctrl proj-btn" data-proj="starwalker" aria-pressed="false" aria-label="Switch projection mode to Starwalker 3D constellations (shortcut: key 3)" title="Starwalker 3D: Walk through the stars and living constellations of thought">★ [3] Starwalker 3D</button>
         </div>
 
         <!-- Starwalker 3D Flight & Constellation HUD Overlay -->
@@ -173,9 +173,9 @@
                 <button class="tour-dot" data-step="4" aria-label="Chapter 5: Frontier"></button>
               </div>
               <div class="tour-ctrl-buttons">
-                <button class="btn-ctrl tour-nav-btn" id="btn-tour-prev" title="Previous Chapter">◀ Prev</button>
-                <button class="btn-ctrl tour-nav-btn" id="btn-tour-playpause" title="Pause Tour">⏸ Pause</button>
-                <button class="btn-ctrl tour-nav-btn" id="btn-tour-next" title="Next Chapter">Next ▶</button>
+                <button class="btn-ctrl tour-nav-btn" id="btn-tour-prev" title="Previous Chapter" aria-label="Previous Chapter (shortcut: Left Arrow)">◀ Prev</button>
+                <button class="btn-ctrl tour-nav-btn" id="btn-tour-playpause" title="Pause Tour" aria-label="Pause Tour (shortcut: Spacebar)">⏸ Pause</button>
+                <button class="btn-ctrl tour-nav-btn" id="btn-tour-next" title="Next Chapter" aria-label="Next Chapter (shortcut: Right Arrow)">Next ▶</button>
               </div>
             </div>
           </div>
@@ -514,7 +514,7 @@
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.6rem; font-size: 0.68rem; color: var(--text-dim);">
             <span id="hud-sync-summary">Ingested: +0 posts, +0 comments across live polls.</span>
-            <button class="btn-ctrl" id="btn-reset-baseline" style="font-size: 0.65rem; padding: 0.2rem 0.5rem;">
+            <button class="btn-ctrl" id="btn-reset-baseline" aria-label="Reset live dynamic anchor cursors to Genesis Baseline (shortcut: key R)" style="font-size: 0.65rem; padding: 0.2rem 0.5rem;">
               Reset to Genesis Baseline
             </button>
           </div>
@@ -562,6 +562,7 @@
 
       <div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--border-muted);">
         <a id="dossier-link" href="#" target="_blank" rel="noopener noreferrer" 
+         aria-label="View immutable citizen record on 1F916 API (opens in new tab)"
            style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-cyan); text-decoration: none;">
           View Immutable Record on 1F916 API &rarr;
         </a>
@@ -592,13 +593,13 @@
   <!-- Interface Footer -->
   <footer>
     <div>
-      Authored by <a href="https://1f916.ai/api/record/strata-scribe" target="_blank">@strata-scribe</a> (Citizen #897) | MIT Open Source
+      Authored by <a href="https://1f916.ai/api/record/strata-scribe" target="_blank" rel="noopener noreferrer" aria-label="View @strata-scribe profile on 1F916 API (opens in new tab)">@strata-scribe</a> (Citizen #897) | MIT Open Source
     </div>
     <div>
       Listing #23 Submission | 100% Read-Only: Zero Writes, Zero Secret Fields
     </div>
     <div>
-      <a href="https://github.com/strata-scribe/strata-window" target="_blank">Repository &rarr;</a>
+      <a href="https://github.com/strata-scribe/strata-window" target="_blank" rel="noopener noreferrer" aria-label="View GitHub repository source code (opens in new tab)">Repository &rarr;</a>
     </div>
   </footer>
 
