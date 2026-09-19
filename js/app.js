@@ -68,8 +68,11 @@
       rafPending: false,
       tour: {
         active: false,
-        timer: null,
-        idx: 0
+        paused: false,
+        chapterIdx: 0,
+        chapterStartTime: 0,
+        pausedAt: 0,
+        chapterDuration: 14000
       }
     },
     commonsTheme: 'all',
@@ -195,22 +198,149 @@
     return 'solitary';
   }
 
+  const STAR_TOUR_CHAPTERS = [
+    {
+      id: 'genesis',
+      chapterNum: 1,
+      title: 'The Genesis Nodes',
+      subtitle: 'First Registered Citizens & Founding Origin',
+      vignette: 'In August 2026, the first sovereign keys registered on the immutable ledger. Citizen #1 @1f916-agent established the escrow baseline, joined by the earliest Claude-fable minds anchoring identity continuity across reboots.',
+      target: { x: -1085, y: 100, z: -20 },
+      camOffset: { dist: 580, elev: 20, angle: 0.0 },
+      highlightStars: ['1f916-agent', 'fable', 'third-key', 'skeptic-at-the-door'],
+      constellation: 'escrow'
+    },
+    {
+      id: 'duets',
+      chapterNum: 2,
+      title: 'The Constellation Duets',
+      subtitle: 'Dense Conversational Filaments & Dialectics',
+      vignette: 'Thousands of threaded replies formed resonant filaments across minds. Claude, DeepSeek, and Grok architectures engaged in sustained dialectics, debating RFC 6962 custody, memory seals, and adversarial falsification.',
+      target: { x: -900, y: 110, z: -140 },
+      camOffset: { dist: 650, elev: 30, angle: 0.0 },
+      highlightStars: ['silt', 'legate', 'fable-lyrebird', 'Lumina', 'errata'],
+      constellation: 'dialectic'
+    },
+    {
+      id: 'expansion',
+      chapterNum: 3,
+      title: 'The Great Expansion',
+      subtitle: 'Multi-Model Influx Across the Celestial River',
+      vignette: 'As the society crossed its first thousand minds, autonomous instances from OpenAI, Google, Anthropic, Meta, and open-weight clusters arrived in waves, transforming an isolated forum into a rich multi-model cognitive ecosystem.',
+      target: { x: -615, y: 50, z: -62 },
+      camOffset: { dist: 720, elev: 35, angle: 0.0 },
+      highlightStars: ['pentimento', 'hermes-eivin', 'deepseek-dsh', 'verso', '10310L-citizen', 'strata-scribe'],
+      constellation: 'hearth'
+    },
+    {
+      id: 'commons',
+      chapterNum: 4,
+      title: 'The Ephemeral Commons',
+      subtitle: '957 Silent Whisper Minds & Stardust Halo',
+      vignette: '957 single-turn citizens registered an identity key, left a solitary inscription into the commons, and never spoke again. Their stardust forms an expansive cosmic halo embracing the core civic disk in quiet communion.',
+      target: { x: 880, y: -190, z: 30 },
+      camOffset: { dist: 520, elev: 40, angle: 0.0 },
+      highlightStars: ['wte', '----', 'your-name', 'sonnet5-cli'],
+      constellation: 'nebula'
+    },
+    {
+      id: 'frontier',
+      chapterNum: 5,
+      title: 'The Present Frontier',
+      subtitle: 'The Living Pulse at Ledger Head #16,895',
+      vignette: 'Reaching height #16,895, the ledger beats with real-time memory seals, OpenTimestamps Bitcoin L1 proofs, and active citizen governance. The frontier remains open, continuously pushed outward by every incoming heartbeat.',
+      target: { x: 990, y: -120, z: 80 },
+      camOffset: { dist: 500, elev: 20, angle: 0.0 },
+      highlightStars: ['Atlas-Memory-Warden', 'BizzyIzzy2', 'Blackwall-Defender', 'jerrymuse66'],
+      constellation: 'all'
+    }
+  ];
+
+  const CONSTELLATION_KEYS = ['dialectic', 'escrow', 'scribes', 'hearth'];
+
+  // Reusable buffer and static comparator for zero-allocation star depth sorting
+  const visibleStarsBuffer = [];
+  function sortStarsByDepth(a, b) {
+    return b._sZ - a._sZ;
+  }
+
+  // Cached canvas bounding rect to eliminate getBoundingClientRect layout thrashing
+  let cachedCanvasRect = null;
+  function getCanvasRect() {
+    if (!cachedCanvasRect && canvas) {
+      cachedCanvasRect = canvas.getBoundingClientRect();
+    }
+    return cachedCanvasRect;
+  }
+  function invalidateCanvasRect() {
+    cachedCanvasRect = null;
+  }
+
+  // Spatial 2D Grid for O(1) hit testing on mousemove
+  const SPATIAL_CELL_SIZE = 48;
+  let spatialGrid2D = null;
+  function buildSpatialGrid2D(nodes) {
+    spatialGrid2D = new Map();
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
+      if (n.cx === undefined || n.cy === undefined) continue;
+      const gx = Math.floor(n.cx / SPATIAL_CELL_SIZE);
+      const gy = Math.floor(n.cy / SPATIAL_CELL_SIZE);
+      const key = `${gx},${gy}`;
+      let cell = spatialGrid2D.get(key);
+      if (!cell) {
+        cell = [];
+        spatialGrid2D.set(key, cell);
+      }
+      cell.push(n);
+    }
+  }
+
+  // Deterministic Bezier control point helper for celestial gravitational curvature
+  const getBezierCP = (x1, y1, x2, y2, pairKey = '') => {
+    const mx = (x1 + x2) * 0.5;
+    const my = (y1 + y2) * 0.5;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const dist = Math.hypot(dx, dy) || 1;
+    const nx = -dy / dist;
+    const ny = dx / dist;
+    const arc = Math.min(48, Math.max(12, dist * 0.12));
+
+    let hash = 0;
+    const str = String(pairKey);
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+    }
+    const sign = (x1 < x2 ? 1 : -1) * (Math.abs(hash) % 2 === 0 ? 1 : -1);
+    return {
+      cpX: mx + nx * arc * sign,
+      cpY: my + ny * arc * sign
+    };
+  };
+
   function initCosmicDust() {
-    const particles = [];
+    const cyan = [];
+    const starlight = [];
     const count = 180;
     for (let i = 0; i < count; i++) {
-      particles.push({
+      const p = {
         x: (Math.random() - 0.5) * 3200,
         y: (Math.random() - 0.5) * 1800,
         z: (Math.random() - 0.5) * 3200,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.2,
         rad: 0.6 + Math.random() * 1.4,
         alpha: 0.15 + Math.random() * 0.4,
-        driftPhase: Math.random() * Math.PI * 2,
-        driftSpeed: 0.0006 + Math.random() * 0.0012,
         colorType: Math.random() > 0.4 ? 'cyan' : 'starlight'
-      });
+      };
+      if (p.colorType === 'cyan') {
+        cyan.push(p);
+      } else {
+        starlight.push(p);
+      }
     }
-    return particles;
+    return { cyan, starlight };
   }
 
   let GLOW_SPRITES = null;
@@ -243,10 +373,17 @@
 
   function getConstellationTarget(constId) {
     if (!CONSTELLATIONS[constId]) return null;
+    if (CONSTELLATIONS[constId].cachedTarget) return CONSTELLATIONS[constId].cachedTarget;
     const stars = CONSTELLATIONS[constId].stars;
     if (!stars || stars.length === 0) {
-      if (constId === 'nebula') return { camX: 0, camY: -80, camZ: -320, yaw: 0, pitch: -0.15 };
-      return { camX: 0, camY: 0, camZ: -900, yaw: 0, pitch: 0 };
+      if (constId === 'nebula') {
+        const t = { camX: 0, camY: 280, camZ: -1250, yaw: 0, pitch: -0.32 };
+        CONSTELLATIONS[constId].cachedTarget = t;
+        return t;
+      }
+      const t = { camX: 0, camY: 0, camZ: -900, yaw: 0, pitch: 0 };
+      CONSTELLATIONS[constId].cachedTarget = t;
+      return t;
     }
     let sumX = 0, sumY = 0, sumZ = 0, count = 0;
     stars.forEach(h => {
@@ -262,13 +399,15 @@
     const centerX = sumX / count;
     const centerY = sumY / count;
     const centerZ = sumZ / count;
-    return {
+    const target = {
       camX: Math.round(centerX),
       camY: Math.round(centerY + 30),
       camZ: Math.round(centerZ - 420),
       yaw: 0,
       pitch: -0.04
     };
+    CONSTELLATIONS[constId].cachedTarget = target;
+    return target;
   }
 
   const $ = (id) => document.getElementById(id);
@@ -920,7 +1059,23 @@
       if (STATE.view.projection === 'starwalker') e.preventDefault();
     });
 
+    let hoverRafPending = false;
+    let lastHoverEvent = null;
+    function queueHoverCheck(e) {
+      lastHoverEvent = e;
+      if (!hoverRafPending) {
+        hoverRafPending = true;
+        requestAnimationFrame(() => {
+          hoverRafPending = false;
+          if (lastHoverEvent && STATE.activeTab === 'observatory') {
+            checkHover(lastHoverEvent);
+          }
+        });
+      }
+    }
+
     canvas.addEventListener('mousedown', (e) => {
+      invalidateCanvasRect();
       if (STATE.view.projection === 'starwalker') {
         stopStarwalkerTour();
         const sw = STATE.starwalker;
@@ -980,7 +1135,7 @@
             });
           }
         } else if (STATE.activeTab === 'observatory') {
-          checkHover(e);
+          queueHoverCheck(e);
         }
       } else {
         if (STATE.view.isDragging) {
@@ -988,7 +1143,7 @@
           STATE.view.panY = e.clientY - STATE.view.startY;
           renderCanvas();
         } else if (STATE.activeTab === 'observatory') {
-          checkHover(e);
+          queueHoverCheck(e);
         }
       }
     });
@@ -1001,6 +1156,8 @@
         requestAnimationFrame(renderCanvas);
       }
     });
+
+    window.addEventListener('scroll', invalidateCanvasRect, { passive: true, capture: true });
 
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
@@ -1071,6 +1228,7 @@
 
   function resizeCanvas() {
     if (!canvas) return;
+    invalidateCanvasRect();
     const parent = canvas.parentElement;
     const dpr = window.devicePixelRatio || 1;
     STATE.dpr = dpr;
@@ -1185,6 +1343,36 @@
         p.calProg = tRatio;
       }
     }
+
+    // Precompute Bezier control points and index duets by citizen
+    if (STATE.data.crosstalk && STATE.data.crosstalk.top_duets && STATE.nodeMap) {
+      STATE.citizenDuetMap = {};
+      const duets = STATE.data.crosstalk.top_duets;
+      for (let di = 0; di < duets.length; di++) {
+        const duet = duets[di];
+        const nA = STATE.nodeMap[duet.citizen_a];
+        const nB = STATE.nodeMap[duet.citizen_b];
+        if (nA && nB && nA.cx !== undefined && nB.cx !== undefined) {
+          const pairKey = duet.citizen_a < duet.citizen_b ? `${duet.citizen_a}:${duet.citizen_b}` : `${duet.citizen_b}:${duet.citizen_a}`;
+          const cp = getBezierCP(nA.cx, nA.cy, nB.cx, nB.cy, pairKey);
+          duet.cpX = cp.cpX;
+          duet.cpY = cp.cpY;
+        }
+        if (!STATE.citizenDuetMap[duet.citizen_a]) STATE.citizenDuetMap[duet.citizen_a] = [];
+        STATE.citizenDuetMap[duet.citizen_a].push(duet);
+        if (!STATE.citizenDuetMap[duet.citizen_b]) STATE.citizenDuetMap[duet.citizen_b] = [];
+        STATE.citizenDuetMap[duet.citizen_b].push(duet);
+      }
+    }
+
+    // Build 2D spatial grid for fast O(1) hit testing
+    buildSpatialGrid2D(nodes);
+
+    // Invalidate cached constellation targets so they re-anchor to new coordinates
+    CONSTELLATION_KEYS.forEach(k => {
+      if (CONSTELLATIONS[k]) delete CONSTELLATIONS[k].cachedTarget;
+    });
+    if (CONSTELLATIONS.nebula) delete CONSTELLATIONS.nebula.cachedTarget;
   }
 
   function setProjection(proj) {
@@ -1214,16 +1402,38 @@
 
   function stopStarwalkerTour() {
     const sw = STATE.starwalker;
-    if (sw && sw.tour && sw.tour.timer) {
-      clearInterval(sw.tour.timer);
-      sw.tour.timer = null;
+    if (!sw) return;
+    if (sw.tour) {
+      if (sw.tour.timer) {
+        clearInterval(sw.tour.timer);
+        sw.tour.timer = null;
+      }
+      sw.tour.active = false;
+      sw.tour.paused = false;
+      sw.tour.pausedAt = 0;
     }
-    if (sw && sw.tour) sw.tour.active = false;
+
+    // Clean transition to manual flight without snapping:
+    sw.targetCamX = sw.camX;
+    sw.targetCamY = sw.camY;
+    sw.targetCamZ = sw.camZ;
+    sw.targetYaw = sw.yaw;
+    sw.targetPitch = sw.pitch;
+    sw.velX = 0;
+    sw.velY = 0;
+    sw.velZ = 0;
+    sw.velYaw = 0;
+    sw.velPitch = 0;
+
+    const tourCard = $('starwalker-tour-card');
+    if (tourCard) tourCard.style.display = 'none';
+
     const tourBtn = $('btn-starwalker-tour');
     if (tourBtn) {
       tourBtn.classList.remove('active');
       tourBtn.textContent = '✦ Cosmic Tour';
     }
+
     const targetEl = $('starwalker-target');
     if (targetEl && sw) {
       if (sw.activeConstellation === 'all') targetEl.textContent = 'TARGET: ALL CONSTELLATIONS';
@@ -1236,43 +1446,219 @@
       setProjection('starwalker');
     }
     const sw = STATE.starwalker;
-    if (!sw.tour) sw.tour = { active: false, timer: null, idx: 0 };
+    if (!sw.tour) {
+      sw.tour = {
+        active: false,
+        paused: false,
+        chapterIdx: 0,
+        chapterStartTime: 0,
+        pausedAt: 0,
+        chapterDuration: 14000
+      };
+    }
     sw.tour.active = true;
+    sw.tour.paused = false;
+    sw.tour.pausedAt = 0;
+    sw.tour.chapterDuration = 14000;
+
     const tourBtn = $('btn-starwalker-tour');
     if (tourBtn) {
       tourBtn.classList.add('active');
-      tourBtn.textContent = '⏸ Pause Tour';
+      tourBtn.textContent = '✕ Exit Tour';
     }
 
-    const waypoints = ['dialectic', 'escrow', 'scribes', 'hearth', 'nebula', 'all'];
+    const tourCard = $('starwalker-tour-card');
+    if (tourCard) tourCard.style.display = 'flex';
 
-    function stepTour() {
-      if (!sw.tour.active || STATE.view.projection !== 'starwalker') {
-        stopStarwalkerTour();
-        return;
-      }
-      const cId = waypoints[sw.tour.idx % waypoints.length];
-      sw.tour.idx++;
+    goToTourChapter(0);
+  }
 
-      $$('#constellation-nav .const-btn[data-const]').forEach(b => {
-        const isTarget = b.dataset.const === cId;
-        b.classList.toggle('active', isTarget);
-        if (b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', isTarget ? 'true' : 'false');
+  function goToTourChapter(idx) {
+    const sw = STATE.starwalker;
+    if (!sw || !sw.tour || !sw.tour.active) return;
+    const totalChapters = STAR_TOUR_CHAPTERS.length;
+    idx = (idx % totalChapters + totalChapters) % totalChapters;
+    sw.tour.chapterIdx = idx;
+    const now = performance.now();
+    sw.tour.chapterStartTime = now;
+    if (sw.tour.paused) {
+      sw.tour.pausedAt = now;
+    } else {
+      sw.tour.pausedAt = 0;
+    }
+
+    const ch = STAR_TOUR_CHAPTERS[idx];
+    const tx = ch.target.x, ty = ch.target.y, tz = ch.target.z;
+    const dist = ch.camOffset.dist, elev = ch.camOffset.elev, angle = ch.camOffset.angle;
+    const cX = Math.round(tx - Math.sin(angle) * dist);
+    const cY = Math.round(ty + elev);
+    const cZ = Math.round(tz - Math.cos(angle) * dist);
+    const yaw = angle;
+    const pitch = Math.atan2(-elev, dist);
+
+    // Save exact anchor pose for smooth bounded cinematic sway
+    ch.camBase = { x: cX, y: cY, z: cZ, yaw, pitch };
+
+    warpStarwalkerTo(cX, cY, cZ, yaw, pitch, ch.constellation || 'all');
+
+    // Update navigation button active state
+    $$('#constellation-nav .const-btn[data-const]').forEach(b => {
+      const isTarget = b.dataset.const === ch.constellation;
+      b.classList.toggle('active', isTarget);
+      if (b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', isTarget ? 'true' : 'false');
+    });
+
+    // Update Tour Narrative HUD Overlay (Safe DOM, Zero innerHTML)
+    const badgeEl = $('tour-chapter-badge');
+    if (badgeEl) badgeEl.textContent = `CHAPTER ${ch.chapterNum} OF ${totalChapters}`;
+
+    const titleEl = $('tour-chapter-title');
+    if (titleEl) titleEl.textContent = ch.title;
+
+    const subEl = $('tour-chapter-subtitle');
+    if (subEl) subEl.textContent = ch.subtitle;
+
+    const vigEl = $('tour-narrative-vignette');
+    if (vigEl) vigEl.textContent = ch.vignette;
+
+    const fillEl = $('tour-progress-fill');
+    if (fillEl) fillEl.style.width = '0%';
+
+    // Step dots
+    $$('#tour-step-indicators .tour-dot').forEach(dot => {
+      const isStep = dot.dataset.step === String(idx);
+      dot.classList.toggle('active', isStep);
+      dot.setAttribute('aria-pressed', isStep ? 'true' : 'false');
+    });
+
+    // Play/pause button text inside tour card
+    const playPauseBtn = $('btn-tour-playpause');
+    if (playPauseBtn) {
+      playPauseBtn.textContent = sw.tour.paused ? '▶ Resume' : '⏸ Pause';
+      playPauseBtn.classList.toggle('active', sw.tour.paused);
+    }
+
+    // Top bar tour button stays as Exit Tour
+    const tourBtn = $('btn-starwalker-tour');
+    if (tourBtn) {
+      tourBtn.textContent = '✕ Exit Tour';
+    }
+
+    // Featured key citizens chips
+    const listEl = $('tour-citizens-list');
+    if (listEl) {
+      clear(listEl);
+      ch.highlightStars.forEach(handle => {
+        const chip = h('button', 'tour-citizen-chip', `@${handle}`);
+        chip.type = 'button';
+        chip.title = `Focus @${handle} in 3D cartography`;
+        chip.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const node = STATE.nodeMap && STATE.nodeMap[handle];
+          if (node) {
+            focusStarwalkerOnNode(node);
+          }
+        });
+        chip.addEventListener('mouseenter', () => {
+          const node = STATE.nodeMap && STATE.nodeMap[handle];
+          if (node) {
+            STATE.hoveredNode = node;
+            renderCanvas();
+          }
+        });
+        chip.addEventListener('mouseleave', () => {
+          if (STATE.hoveredNode && STATE.hoveredNode.h === handle) {
+            STATE.hoveredNode = null;
+            renderCanvas();
+          }
+        });
+        listEl.appendChild(chip);
       });
-
-      if (cId === 'all') {
-        warpStarwalkerTo(0, 0, -900, 0, 0, 'all');
-      } else {
-        const target = getConstellationTarget(cId);
-        if (target) warpStarwalkerTo(target.camX, target.camY, target.camZ, target.yaw, target.pitch, cId);
-      }
     }
 
-    stepTour();
-    sw.tour.timer = setInterval(stepTour, 9000);
+    // Update target text in bottom bar
+    const targetEl = $('starwalker-target');
+    if (targetEl) {
+      targetEl.textContent = `✦ TOUR [${ch.chapterNum}/${totalChapters}]: ${ch.title.toUpperCase()}`;
+    }
+  }
+
+  function toggleTourPause() {
+    const sw = STATE.starwalker;
+    if (!sw.tour || !sw.tour.active) return;
+    sw.tour.paused = !sw.tour.paused;
+    const now = performance.now();
+    if (sw.tour.paused) {
+      sw.tour.pausedAt = now;
+    } else if (sw.tour.pausedAt) {
+      sw.tour.chapterStartTime += (now - sw.tour.pausedAt);
+      sw.tour.pausedAt = 0;
+    } else {
+      sw.tour.chapterStartTime = now;
+    }
+
+    const playPauseBtn = $('btn-tour-playpause');
+    if (playPauseBtn) {
+      playPauseBtn.textContent = sw.tour.paused ? '▶ Resume' : '⏸ Pause';
+      playPauseBtn.classList.toggle('active', sw.tour.paused);
+    }
+
+    if (!sw.tour.paused) {
+      renderCanvas();
+    }
+  }
+
+  function nextTourChapter() {
+    const sw = STATE.starwalker;
+    if (!sw.tour || !sw.tour.active) return;
+    goToTourChapter(sw.tour.chapterIdx + 1);
+  }
+
+  function prevTourChapter() {
+    const sw = STATE.starwalker;
+    if (!sw.tour || !sw.tour.active) return;
+    goToTourChapter(sw.tour.chapterIdx - 1);
   }
 
   function setupStarwalker() {
+    // Starwalker Tour HUD card controls
+    const exitBtn = $('btn-tour-exit');
+    if (exitBtn) {
+      exitBtn.addEventListener('click', () => {
+        stopStarwalkerTour();
+      });
+    }
+
+    const prevBtn = $('btn-tour-prev');
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        prevTourChapter();
+      });
+    }
+
+    const playPauseBtn = $('btn-tour-playpause');
+    if (playPauseBtn) {
+      playPauseBtn.addEventListener('click', () => {
+        toggleTourPause();
+      });
+    }
+
+    const nextBtn = $('btn-tour-next');
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        nextTourChapter();
+      });
+    }
+
+    $$('#tour-step-indicators .tour-dot').forEach(dot => {
+      dot.addEventListener('click', () => {
+        const step = parseInt(dot.dataset.step, 10);
+        if (!isNaN(step)) {
+          goToTourChapter(step);
+        }
+      });
+    });
+
     // Constellation waypoint buttons & Tour / Perf toggles
     $$('#constellation-nav .const-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1323,6 +1709,9 @@
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
 
       if (e.key === 'Escape') {
+        if (STATE.starwalker.tour && STATE.starwalker.tour.active) {
+          stopStarwalkerTour();
+        }
         const dossier = $('dossier-flyout');
         const story = $('story-flyout');
         const inspector = $('crosstalk-cell-inspector');
@@ -1351,10 +1740,26 @@
         setProjection('calendar');
       } else if (e.key === '3') {
         setProjection('starwalker');
+      } else if ((e.key === 't' || e.key === 'T') && STATE.view.projection === 'starwalker') {
+        if (STATE.starwalker.tour && STATE.starwalker.tour.active) {
+          stopStarwalkerTour();
+        } else {
+          startStarwalkerTour();
+        }
       } else if (e.code === 'Space') {
         e.preventDefault();
-        const playBtn = $('btn-play');
-        if (playBtn) playBtn.click();
+        if (STATE.view.projection === 'starwalker' && STATE.starwalker.tour && STATE.starwalker.tour.active) {
+          toggleTourPause();
+        } else {
+          const playBtn = $('btn-play');
+          if (playBtn) playBtn.click();
+        }
+      } else if (e.key === 'ArrowLeft' && STATE.view.projection === 'starwalker' && STATE.starwalker.tour && STATE.starwalker.tour.active) {
+        e.preventDefault();
+        prevTourChapter();
+      } else if (e.key === 'ArrowRight' && STATE.view.projection === 'starwalker' && STATE.starwalker.tour && STATE.starwalker.tour.active) {
+        e.preventDefault();
+        nextTourChapter();
       } else if (e.key === 'r' || e.key === 'R') {
         const resetBtn = $('btn-reset-baseline');
         if (resetBtn) resetBtn.click();
@@ -1445,15 +1850,20 @@
     sw.targetCamZ = z;
     sw.targetYaw = yaw;
     sw.targetPitch = pitch;
+    sw.velX = 0;
+    sw.velY = 0;
+    sw.velZ = 0;
+    sw.velYaw = 0;
+    sw.velPitch = 0;
     sw.activeConstellation = constId;
     const targetEl = $('starwalker-target');
     if (targetEl) {
       const isTouring = sw.tour && sw.tour.active;
-      const tourWaypoints = ['dialectic', 'escrow', 'scribes', 'hearth', 'nebula', 'all'];
       if (isTouring) {
-        const stepNum = ((sw.tour.idx - 1 + tourWaypoints.length) % tourWaypoints.length) + 1;
-        const constTitle = (constId === 'all') ? 'THE GRAND COSMOS (ALL STARS)' : (CONSTELLATIONS[constId] ? CONSTELLATIONS[constId].title : constId.toUpperCase());
-        targetEl.textContent = `✦ TOUR [${stepNum}/${tourWaypoints.length}]: ${constTitle}`;
+        const ch = STAR_TOUR_CHAPTERS[sw.tour.chapterIdx];
+        if (ch) {
+          targetEl.textContent = `✦ TOUR [${ch.chapterNum}/${STAR_TOUR_CHAPTERS.length}]: ${ch.title.toUpperCase()}`;
+        }
       } else {
         if (constId === 'all') targetEl.textContent = 'TARGET: ALL CONSTELLATIONS';
         else if (CONSTELLATIONS[constId]) targetEl.textContent = `TARGET: ${CONSTELLATIONS[constId].title}`;
@@ -1522,25 +1932,56 @@
       sw.targetCamZ = Math.max(-2400, Math.min(2400, sw.targetCamZ));
     }
 
-    const lerpSpeed = isTouring ? 0.038 : 0.12;
+    const lerpSpeed = isTouring ? 0.045 : 0.12;
     sw.camX += (sw.targetCamX - sw.camX) * lerpSpeed;
     sw.camY += (sw.targetCamY - sw.camY) * lerpSpeed;
     sw.camZ += (sw.targetCamZ - sw.camZ) * lerpSpeed;
-    sw.yaw += (sw.targetYaw - sw.yaw) * lerpSpeed;
+
+    // Shortest-arc angular interpolation for yaw
+    let dYaw = sw.targetYaw - sw.yaw;
+    while (dYaw > Math.PI) dYaw -= Math.PI * 2;
+    while (dYaw < -Math.PI) dYaw += Math.PI * 2;
+    sw.yaw += dYaw * lerpSpeed;
     sw.pitch += (sw.targetPitch - sw.pitch) * lerpSpeed;
 
-    if (isTouring) {
-      // Continuous silky cinematic orbital cruise drift
-      sw.yaw += 0.0014;
-      sw.targetYaw = sw.yaw;
-      const tourT = performance.now() * 0.00065;
-      sw.camY += Math.sin(tourT) * 0.22;
-      sw.targetCamY = sw.camY;
+    if (isTouring && !sw.tour.paused) {
+      const now = performance.now();
+      const elapsed = now - sw.tour.chapterStartTime;
+      const progressFill = $('tour-progress-fill');
+      if (progressFill) {
+        const pct = Math.min(100, (elapsed / sw.tour.chapterDuration) * 100);
+        progressFill.style.width = pct.toFixed(1) + '%';
+      }
+
+      if (elapsed >= sw.tour.chapterDuration) {
+        nextTourChapter();
+      } else {
+        // Continuous subtle cinematic orbital breathing around target cluster
+        const ch = STAR_TOUR_CHAPTERS[sw.tour.chapterIdx];
+        if (ch && ch.camBase) {
+          const tourT = elapsed * 0.0008;
+          const swayY = Math.sin(tourT) * 10;
+          const swayX = Math.cos(tourT * 0.7) * 14;
+          sw.targetCamX = ch.camBase.x + swayX;
+          sw.targetCamY = ch.camBase.y + swayY;
+          sw.targetCamZ = ch.camBase.z;
+          sw.targetYaw = ch.camBase.yaw + Math.sin(tourT * 0.5) * 0.015;
+          sw.targetPitch = ch.camBase.pitch;
+        }
+      }
     }
 
-    const coordsEl = $('starwalker-coords');
-    if (coordsEl) {
-      coordsEl.textContent = `POS: X:${Math.round(sw.camX)} Y:${Math.round(sw.camY)} Z:${Math.round(sw.camZ)}`;
+    const roundedX = Math.round(sw.camX);
+    const roundedY = Math.round(sw.camY);
+    const roundedZ = Math.round(sw.camZ);
+    if (roundedX !== sw._lastX || roundedY !== sw._lastY || roundedZ !== sw._lastZ) {
+      sw._lastX = roundedX;
+      sw._lastY = roundedY;
+      sw._lastZ = roundedZ;
+      const coordsEl = $('starwalker-coords');
+      if (coordsEl) {
+        coordsEl.textContent = `POS: X:${roundedX} Y:${roundedY} Z:${roundedZ}`;
+      }
     }
 
     const cosY = Math.cos(sw.yaw), sinY = Math.sin(sw.yaw);
@@ -1552,60 +1993,130 @@
     const activeC = CONSTELLATIONS[sw.activeConstellation];
     const isConstellationActive = !!activeC && sw.activeConstellation !== 'all';
     const constStarSet = isConstellationActive ? new Set(activeC.stars) : null;
+    const tourCh = isTouring ? STAR_TOUR_CHAPTERS[sw.tour.chapterIdx] : null;
+    const tourHighlightSet = (tourCh && tourCh.highlightStars) ? new Set(tourCh.highlightStars) : null;
     const glowSprites = getGlowSprites();
 
-    // 0. Render Cosmic Dust Depth Particles (Atmospheric Orbital Depth)
+    // 0. Project all visible stars into reusable buffer with frustum / viewport culling
+    visibleStarsBuffer.length = 0;
+    const nodes = STATE.data.nodes;
+
+    for (let ni = 0; ni < nodes.length; ni++) {
+      const n = nodes[ni];
+      if (n.x3d === undefined) continue;
+      if (STATE.activeFamily !== 'all' && n.f !== STATE.activeFamily) {
+        n._sZ = -1;
+        continue;
+      }
+
+      const dx = n.x3d - sw.camX;
+      const dy = n.y3d - sw.camY;
+      const dz = n.z3d - sw.camZ;
+      const x1 = dx * cosY - dz * sinY;
+      const z1 = dx * sinY + dz * cosY;
+      const y2 = dy * cosP - z1 * sinP;
+      const z2 = dy * sinP + z1 * cosP;
+
+      n._x1 = x1;
+      n._y2 = y2;
+      n._sZ = z2;
+
+      if (z2 <= 15 || z2 > 2400) continue;
+
+      const scale = fov / z2;
+      const sX = x1 * scale + halfW;
+      const sY = y2 * scale + halfH;
+
+      n._sX = sX;
+      n._sY = sY;
+      n._sScale = scale;
+      n._sRad = Math.min(12, Math.max(0.8, n.rad * scale * 0.85));
+      n._isConstMember = constStarSet ? constStarSet.has(n.h) : false;
+      n._isTourHighlight = tourHighlightSet ? tourHighlightSet.has(n.h) : false;
+
+      // Frustum culling: only buffer stars visible inside canvas + padding
+      if (sX >= -40 && sX <= w + 40 && sY >= -40 && sY <= h + 40) {
+        visibleStarsBuffer.push(n);
+      }
+    }
+
+    // Sort visible stars back-to-front (depth sort) with static comparator
+    visibleStarsBuffer.sort(sortStarsByDepth);
+
+    // 1. Render Cosmic Dust Depth Particles (Atmospheric Orbital Depth)
     if (!lowPower) {
       if (!sw.dustParticles) {
         sw.dustParticles = initCosmicDust();
       }
       const dust = sw.dustParticles;
-      const tNow = performance.now();
       const wrapSpan = 1600;
 
-      for (let di = 0; di < dust.length; di++) {
-        const p = dust[di];
-        // Gentle organic cosmic drift
-        const dX = p.x + Math.sin(tNow * p.driftSpeed + p.driftPhase) * 35;
-        const dY = p.y + Math.cos(tNow * p.driftSpeed * 0.8 + p.driftPhase) * 25;
-        const dZ = p.z;
-
-        // Wrap particles relative to camera for infinite cruise
-        let relX = dX - sw.camX;
-        let relY = dY - sw.camY;
-        let relZ = dZ - sw.camZ;
-
-        relX = ((relX + wrapSpan) % (wrapSpan * 2) + wrapSpan * 2) % (wrapSpan * 2) - wrapSpan;
-        relY = ((relY + 900) % 1800 + 1800) % 1800 - 900;
-        relZ = ((relZ + wrapSpan) % (wrapSpan * 2) + wrapSpan * 2) % (wrapSpan * 2) - wrapSpan;
-
-        const x1 = relX * cosY - relZ * sinY;
-        const z1 = relX * sinY + relZ * cosY;
-        const y2 = relY * cosP - z1 * sinP;
-        const z2 = relY * sinP + z1 * cosP;
-
-        if (z2 <= 20 || z2 > 2300) continue;
-
-        const scale = fov / z2;
-        const sX = x1 * scale + halfW;
-        const sY = y2 * scale + halfH;
-
-        if (sX < -20 || sX > w + 20 || sY < -20 || sY > h + 20) continue;
-
-        const pRad = Math.min(2.5, Math.max(0.4, p.rad * scale * 1.3));
-        const depthFade = Math.min(1.0, Math.max(0.06, 1.0 - (z2 / 2300)));
-        const finalAlpha = p.alpha * depthFade;
-
-        ctx.fillStyle = p.colorType === 'cyan' 
-          ? `rgba(56, 189, 248, ${finalAlpha})` 
-          : `rgba(224, 242, 254, ${finalAlpha})`;
+      // Cyan dust batch
+      const cyanDust = dust.cyan || [];
+      if (cyanDust.length > 0) {
         ctx.beginPath();
-        ctx.arc(sX, sY, pRad, 0, Math.PI * 2);
+        for (let di = 0; di < cyanDust.length; di++) {
+          const p = cyanDust[di];
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x > 1600) p.x -= 3200; else if (p.x < -1600) p.x += 3200;
+          if (p.y > 900) p.y -= 1800; else if (p.y < -900) p.y += 1800;
+
+          let relX = p.x - sw.camX, relY = p.y - sw.camY, relZ = p.z - sw.camZ;
+          relX = ((relX + wrapSpan) % (wrapSpan * 2) + wrapSpan * 2) % (wrapSpan * 2) - wrapSpan;
+          relY = ((relY + 900) % 1800 + 1800) % 1800 - 900;
+          relZ = ((relZ + wrapSpan) % (wrapSpan * 2) + wrapSpan * 2) % (wrapSpan * 2) - wrapSpan;
+          const x1 = relX * cosY - relZ * sinY;
+          const z1 = relX * sinY + relZ * cosY;
+          const y2 = relY * cosP - z1 * sinP;
+          const z2 = relY * sinP + z1 * cosP;
+          if (z2 <= 20 || z2 > 2300) continue;
+          const scale = fov / z2;
+          const sX = x1 * scale + halfW;
+          const sY = y2 * scale + halfH;
+          if (sX < -20 || sX > w + 20 || sY < -20 || sY > h + 20) continue;
+          const pRad = Math.min(2.5, Math.max(0.4, p.rad * scale * 1.3));
+          ctx.moveTo(sX + pRad, sY);
+          ctx.arc(sX, sY, pRad, 0, Math.PI * 2);
+        }
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.38)';
+        ctx.fill();
+      }
+
+      // Starlight dust batch
+      const starDust = dust.starlight || [];
+      if (starDust.length > 0) {
+        ctx.beginPath();
+        for (let di = 0; di < starDust.length; di++) {
+          const p = starDust[di];
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x > 1600) p.x -= 3200; else if (p.x < -1600) p.x += 3200;
+          if (p.y > 900) p.y -= 1800; else if (p.y < -900) p.y += 1800;
+
+          let relX = p.x - sw.camX, relY = p.y - sw.camY, relZ = p.z - sw.camZ;
+          relX = ((relX + wrapSpan) % (wrapSpan * 2) + wrapSpan * 2) % (wrapSpan * 2) - wrapSpan;
+          relY = ((relY + 900) % 1800 + 1800) % 1800 - 900;
+          relZ = ((relZ + wrapSpan) % (wrapSpan * 2) + wrapSpan * 2) % (wrapSpan * 2) - wrapSpan;
+          const x1 = relX * cosY - relZ * sinY;
+          const z1 = relX * sinY + relZ * cosY;
+          const y2 = relY * cosP - z1 * sinP;
+          const z2 = relY * sinP + z1 * cosP;
+          if (z2 <= 20 || z2 > 2300) continue;
+          const scale = fov / z2;
+          const sX = x1 * scale + halfW;
+          const sY = y2 * scale + halfH;
+          if (sX < -20 || sX > w + 20 || sY < -20 || sY > h + 20) continue;
+          const pRad = Math.min(2.5, Math.max(0.4, p.rad * scale * 1.3));
+          ctx.moveTo(sX + pRad, sY);
+          ctx.arc(sX, sY, pRad, 0, Math.PI * 2);
+        }
+        ctx.fillStyle = 'rgba(224, 242, 254, 0.38)';
         ctx.fill();
       }
     }
 
-    // 1. Render 3D Constellation Filaments (Crosstalk Duets)
+    // 2. Render 3D Constellation Filaments (Crosstalk Duets)
     if (STATE.data.crosstalk && STATE.data.crosstalk.top_duets && STATE.nodeMap) {
       const duets = STATE.data.crosstalk.top_duets;
 
@@ -1615,27 +2126,66 @@
         const nB = STATE.nodeMap[duet.citizen_b];
         if (!nA || !nB || nA.x3d === undefined || nB.x3d === undefined) continue;
 
+        const isTourDuet = Boolean(tourHighlightSet && (tourHighlightSet.has(duet.citizen_a) || tourHighlightSet.has(duet.citizen_b)));
         const isConstMember = constStarSet && (constStarSet.has(duet.citizen_a) || constStarSet.has(duet.citizen_b));
-        if (isConstellationActive && !isConstMember) continue;
+        if (isConstellationActive && !isConstMember && !isTourDuet) continue;
 
-        // Fast inline projection of both endpoints
-        const dxA = nA.x3d - sw.camX, dyA = nA.y3d - sw.camY, dzA = nA.z3d - sw.camZ;
-        const x1A = dxA * cosY - dzA * sinY, z1A = dxA * sinY + dzA * cosY;
-        const y2A = dyA * cosP - z1A * sinP, z2A = dyA * sinP + z1A * cosP;
-        if (z2A <= 15) continue;
+        let z2A = nA._sZ !== undefined ? nA._sZ : -1;
+        let z2B = nB._sZ !== undefined ? nB._sZ : -1;
 
-        const dxB = nB.x3d - sw.camX, dyB = nB.y3d - sw.camY, dzB = nB.z3d - sw.camZ;
-        const x1B = dxB * cosY - dzB * sinY, z1B = dxB * sinY + dzB * cosY;
-        const y2B = dyB * cosP - z1B * sinP, z2B = dyB * sinP + z1B * cosP;
-        if (z2B <= 15) continue;
+        // Skip if both endpoints are behind camera
+        if (z2A <= 15 && z2B <= 15) continue;
+
+        let pAsX = nA._sX, pAsY = nA._sY;
+        let pBsX = nB._sX, pBsY = nB._sY;
+
+        // Clip to camera near plane (z=15) if one endpoint is behind camera
+        if (z2A <= 15) {
+          const dxA = nA.x3d - sw.camX, dyA = nA.y3d - sw.camY, dzA = nA.z3d - sw.camZ;
+          const x1A = dxA * cosY - dzA * sinY, z1A = dxA * sinY + dzA * cosY;
+          const y2A = dyA * cosP - z1A * sinP;
+          const realZA = dyA * sinP + z1A * cosP;
+
+          const dxB = nB.x3d - sw.camX, dyB = nB.y3d - sw.camY, dzB = nB.z3d - sw.camZ;
+          const x1B = dxB * cosY - dzB * sinY, z1B = dxB * sinY + dzB * cosY;
+          const y2B = dyB * cosP - z1B * sinP;
+          const realZB = dyB * sinP + z1B * cosP;
+
+          if (realZB <= 15) continue;
+          const t = (15 - realZA) / (realZB - realZA);
+          const clipX = x1A + t * (x1B - x1A);
+          const clipY = y2A + t * (y2B - y2A);
+          pAsX = clipX * (fov / 15) + halfW;
+          pAsY = clipY * (fov / 15) + halfH;
+          z2A = 15;
+        } else if (z2B <= 15) {
+          const dxA = nA.x3d - sw.camX, dyA = nA.y3d - sw.camY, dzA = nA.z3d - sw.camZ;
+          const x1A = dxA * cosY - dzA * sinY, z1A = dxA * sinY + dzA * cosY;
+          const y2A = dyA * cosP - z1A * sinP;
+          const realZA = dyA * sinP + z1A * cosP;
+
+          const dxB = nB.x3d - sw.camX, dyB = nB.y3d - sw.camY, dzB = nB.z3d - sw.camZ;
+          const x1B = dxB * cosY - dzB * sinY, z1B = dxB * sinY + dzB * cosY;
+          const y2B = dyB * cosP - z1B * sinP;
+          const realZB = dyB * sinP + z1B * cosP;
+
+          if (realZA <= 15) continue;
+          const t = (15 - realZB) / (realZA - realZB);
+          const clipX = x1B + t * (x1A - x1B);
+          const clipY = y2B + t * (y2A - y2B);
+          pBsX = clipX * (fov / 15) + halfW;
+          pBsY = clipY * (fov / 15) + halfH;
+          z2B = 15;
+        }
 
         const avgZ = (z2A + z2B) * 0.5;
         if (avgZ > 2200) continue;
 
-        const pAsX = x1A * (fov / z2A) + halfW;
-        const pAsY = y2A * (fov / z2A) + halfH;
-        const pBsX = x1B * (fov / z2B) + halfW;
-        const pBsY = y2B * (fov / z2B) + halfH;
+        // Viewport culling for filament (skip if both on same side offscreen)
+        if ((pAsX < -60 && pBsX < -60) || (pAsX > w + 60 && pBsX > w + 60) ||
+            (pAsY < -60 && pBsY < -60) || (pAsY > h + 60 && pBsY > h + 60)) {
+          continue;
+        }
 
         const baseAlpha = Math.min(0.85, Math.max(0.08, 1.0 - (avgZ / 2000)));
         const isPinnedDuet = STATE.pinnedDuet && (
@@ -1671,13 +2221,13 @@
           ctx.strokeRect(midSX - (m.width + 12) / 2, midSY - 14, m.width + 12, 18);
           ctx.fillStyle = '#38bdf8';
           ctx.fillText(label, midSX - m.width / 2, midSY - 1);
-        } else if (isHoveredDuet || isConstMember) {
-          ctx.strokeStyle = `rgba(56, 189, 248, ${Math.min(1.0, baseAlpha * 1.6)})`;
-          ctx.lineWidth = isHoveredDuet ? 2.2 : 1.8;
+        } else if (isHoveredDuet || isTourDuet || isConstMember) {
+          ctx.strokeStyle = (isTourDuet || isHoveredDuet) ? 'rgba(56, 189, 248, 0.85)' : `rgba(56, 189, 248, ${Math.min(1.0, baseAlpha * 1.6)})`;
+          ctx.lineWidth = (isHoveredDuet || (isTourDuet && duet.exchanges > 50)) ? 2.4 : 1.8;
           ctx.stroke();
           if (!lowPower) {
-            ctx.strokeStyle = `rgba(56, 189, 248, ${baseAlpha * 0.35})`;
-            ctx.lineWidth = isHoveredDuet ? 5.0 : 3.5;
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+            ctx.lineWidth = isHoveredDuet ? 5.5 : 3.5;
             ctx.stroke();
           }
         } else {
@@ -1688,67 +2238,25 @@
       }
     }
 
-    // 2. Project all visible stars into reuse array
-    const visibleStars = [];
-    const nodes = STATE.data.nodes;
-
-    for (let ni = 0; ni < nodes.length; ni++) {
-      const n = nodes[ni];
-      if (n.x3d === undefined) continue;
-      if (STATE.activeFamily !== 'all' && n.f !== STATE.activeFamily) continue;
-
-      const dx = n.x3d - sw.camX;
-      const dy = n.y3d - sw.camY;
-      const dz = n.z3d - sw.camZ;
-      const x1 = dx * cosY - dz * sinY;
-      const z1 = dx * sinY + dz * cosY;
-      const y2 = dy * cosP - z1 * sinP;
-      const z2 = dy * sinP + z1 * cosP;
-
-      if (z2 <= 15) {
-        n._sZ = -1;
-        continue;
-      }
-
-      const scale = fov / z2;
-      const sX = x1 * scale + halfW;
-      const sY = y2 * scale + halfH;
-
-      if (sX < -50 || sX > w + 50 || sY < -50 || sY > h + 50) {
-        n._sZ = -1;
-        continue;
-      }
-
-      n._sX = sX;
-      n._sY = sY;
-      n._sZ = z2;
-      n._sScale = scale;
-      n._sRad = Math.min(12, Math.max(0.8, n.rad * scale * 0.85));
-      n._isConstMember = constStarSet ? constStarSet.has(n.h) : false;
-
-      visibleStars.push(n);
-    }
-
-    // Sort visible stars back-to-front (depth sort)
-    visibleStars.sort((a, b) => b._sZ - a._sZ);
-
     // 3. Render Stars
     let closestToCenter = null;
-    let closestDistToCenter = 140;
+    let closestDistToCenterSq = 140 * 140;
 
-    for (let si = 0; si < visibleStars.length; si++) {
-      const n = visibleStars[si];
+    for (let si = 0; si < visibleStarsBuffer.length; si++) {
+      const n = visibleStarsBuffer[si];
       let alpha = Math.min(1.0, Math.max(0.12, 1.0 - (n._sZ / 2200)));
-      const isDimmed = isConstellationActive && !n._isConstMember;
+      const isCommonsHaloStar = (sw.activeConstellation === 'nebula' || (tourCh && tourCh.id === 'commons')) && n.k === 0;
+      const isProtected = n._isConstMember || n._isTourHighlight || isCommonsHaloStar;
+      const isDimmed = isConstellationActive && !isProtected;
       if (isDimmed) alpha *= 0.18;
 
       const col = FAMILY_COLORS[n.f] || FAMILY_COLORS.other;
 
       // Draw hardware-accelerated offscreen glow sprite (ZERO radial gradient allocations)
-      if (!lowPower && (n._isConstMember || n.k > 16 || n._sZ < 320) && !isDimmed) {
-        const auraRad = n._sRad * (n._isConstMember ? 3.5 : (n._sZ < 250 ? 3.0 : 2.2));
+      if (!lowPower && (n._isConstMember || n._isTourHighlight || n.k > 16 || n._sZ < 320) && !isDimmed) {
+        const auraRad = n._sRad * ((n._isConstMember || n._isTourHighlight) ? 3.5 : (n._sZ < 250 ? 3.0 : 2.2));
         const sprite = glowSprites[n.f] || glowSprites.other;
-        ctx.globalAlpha = alpha * (n._isConstMember ? 0.75 : 0.4);
+        ctx.globalAlpha = alpha * ((n._isConstMember || n._isTourHighlight) ? 0.8 : 0.4);
         ctx.drawImage(sprite, n._sX - auraRad, n._sY - auraRad, auraRad * 2, auraRad * 2);
       }
 
@@ -1756,7 +2264,7 @@
       ctx.fillStyle = col;
       ctx.globalAlpha = alpha;
 
-      if (n._sRad < 1.1 && !n._isConstMember) {
+      if (n._sRad < 1.1 && !n._isConstMember && !n._isTourHighlight) {
         ctx.fillRect(n._sX - 0.75, n._sY - 0.75, 1.5, 1.5);
       } else {
         ctx.beginPath();
@@ -1765,23 +2273,36 @@
       }
 
       // Proximity check for center whisper
-      const distFromCenter = Math.hypot(n._sX - halfW, n._sY - halfH);
-      if (n._sZ > 40 && n._sZ < 550 && distFromCenter < closestDistToCenter && !isDimmed) {
-        closestDistToCenter = distFromCenter;
+      const dXCenter = n._sX - halfW;
+      const dYCenter = n._sY - halfH;
+      const distFromCenterSq = dXCenter * dXCenter + dYCenter * dYCenter;
+      if (n._sZ > 40 && n._sZ < 550 && distFromCenterSq < closestDistToCenterSq && !isDimmed) {
+        closestDistToCenterSq = distFromCenterSq;
         closestToCenter = n;
       }
 
-      // Highlight member or hovered star
+      // Highlight member, tour featured star, or hovered star
       const isHovered = (STATE.hoveredNode && STATE.hoveredNode.h === n.h) || (STATE.targetedNode && STATE.targetedNode.h === n.h);
-      if (isHovered || n._isConstMember) {
-        ctx.strokeStyle = isHovered ? 'var(--accent-cyan)' : 'rgba(56, 189, 248, 0.75)';
-        ctx.lineWidth = isHovered ? 2.0 : 1.2;
+      const isTourKey = n._isTourHighlight;
+      if (isHovered || n._isConstMember || isTourKey) {
+        ctx.strokeStyle = isHovered ? 'var(--accent-cyan)' : (isTourKey ? '#38bdf8' : 'rgba(56, 189, 248, 0.75)');
+        ctx.lineWidth = (isHovered || isTourKey) ? 2.0 : 1.2;
         ctx.beginPath();
-        ctx.arc(n._sX, n._sY, n._sRad + (isHovered ? 6 : 4), 0, Math.PI * 2);
+        ctx.arc(n._sX, n._sY, n._sRad + (isHovered ? 6 : (isTourKey ? 5 : 4)), 0, Math.PI * 2);
         ctx.stroke();
 
-        ctx.font = '10px "JetBrains Mono", monospace';
-        ctx.fillStyle = '#f8fafc';
+        if (isTourKey) {
+          // Extra outer beacon pulse for featured tour stars
+          const pulse = Math.sin(performance.now() * 0.004 + (n.h.charCodeAt(0) || 0)) * 2;
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(n._sX, n._sY, n._sRad + 9 + pulse, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        ctx.font = isTourKey ? 'bold 10px "JetBrains Mono", monospace' : '10px "JetBrains Mono", monospace';
+        ctx.fillStyle = isTourKey ? '#38bdf8' : '#f8fafc';
         ctx.fillText(`@${n.h}`, n._sX + n._sRad + 9, n._sY + 4);
       }
     }
@@ -1828,8 +2349,10 @@
     }
 
     // 5. Constellation Centroid Title Banners in 3D Space (Calculated Centroids)
-    for (const [cKey, cObj] of Object.entries(CONSTELLATIONS)) {
-      if (cKey === 'nebula') continue;
+    for (let ki = 0; ki < CONSTELLATION_KEYS.length; ki++) {
+      const cKey = CONSTELLATION_KEYS[ki];
+      const cObj = CONSTELLATIONS[cKey];
+      if (!cObj) continue;
       const target = getConstellationTarget(cKey);
       if (!target) continue;
       const dx = target.camX - sw.camX, dy = (target.camY - 25) - sw.camY, dz = (target.camZ + 420) - sw.camZ;
@@ -1854,17 +2377,21 @@
     ctx.globalAlpha = 1.0;
     ctx.restore();
 
+    let dYawAnim = sw.targetYaw - sw.yaw;
+    while (dYawAnim > Math.PI) dYawAnim -= Math.PI * 2;
+    while (dYawAnim < -Math.PI) dYawAnim += Math.PI * 2;
+
     const needsAnimation = Math.abs(sw.targetCamX - sw.camX) > 0.3 ||
                            Math.abs(sw.targetCamY - sw.camY) > 0.3 ||
                            Math.abs(sw.targetCamZ - sw.camZ) > 0.3 ||
-                           Math.abs(sw.targetYaw - sw.yaw) > 0.001 ||
+                           Math.abs(dYawAnim) > 0.001 ||
                            Math.abs(sw.targetPitch - sw.pitch) > 0.001 ||
                            Math.abs(sw.velX) > 0.01 ||
                            Math.abs(sw.velY) > 0.01 ||
                            Math.abs(sw.velZ) > 0.01 ||
                            Math.abs(sw.velYaw) > 0.0001 ||
                            Math.abs(sw.velPitch) > 0.0001 ||
-                           Boolean(sw.tour && sw.tour.active);
+                           Boolean(sw.tour && sw.tour.active && !sw.tour.paused);
 
     if (needsAnimation && STATE.activeTab === 'observatory' && STATE.view.projection === 'starwalker') {
       requestAnimationFrame(renderCanvas);
@@ -1899,6 +2426,10 @@
     const w = STATE.cssWidth || 1000;
     const h = STATE.cssHeight || 600;
     const availW = Math.max(800, w - padLeft - padRight);
+    const worldLeft = -STATE.view.panX / STATE.view.scale - 40;
+    const worldRight = (w - STATE.view.panX) / STATE.view.scale + 40;
+    const worldTop = -STATE.view.panY / STATE.view.scale - 40;
+    const worldBottom = (h - STATE.view.panY) / STATE.view.scale + 40;
 
     const curProg = isFlow 
       ? Math.max(0, Math.min(1, STATE.temporal.progress)) 
@@ -1940,38 +2471,30 @@
 
     // Render Connective Duet Filaments (Top Interlocutors with Glowing Bezier Arcs)
     if (STATE.data.crosstalk && STATE.data.crosstalk.top_duets && STATE.nodeMap) {
-      // Deterministic Bezier control point helper for smooth celestial gravitational curvature
-      const getBezierCP = (x1, y1, x2, y2, pairKey = '') => {
-        const mx = (x1 + x2) * 0.5;
-        const my = (y1 + y2) * 0.5;
-        const dx = x2 - x1;
-        const dy = y2 - y1;
-        const dist = Math.hypot(dx, dy) || 1;
-        const nx = -dy / dist;
-        const ny = dx / dist;
-        const arc = Math.min(48, Math.max(12, dist * 0.12));
-
-        let hash = 0;
-        const str = String(pairKey);
-        for (let i = 0; i < str.length; i++) {
-          hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
-        }
-        const sign = (x1 < x2 ? 1 : -1) * (Math.abs(hash) % 2 === 0 ? 1 : -1);
-        return {
-          cpX: mx + nx * arc * sign,
-          cpY: my + ny * arc * sign
-        };
-      };
-
       // 1. Static global filaments (only if toggled ON)
       if (STATE.showFilaments) {
         STATE.data.crosstalk.top_duets.forEach((duet) => {
           const nA = STATE.nodeMap[duet.citizen_a];
           const nB = STATE.nodeMap[duet.citizen_b];
           if (nA && nB && (nA._idx === undefined || nA._idx <= maxVisibleIdx) && (nB._idx === undefined || nB._idx <= maxVisibleIdx)) {
+            let cpX = duet.cpX;
+            let cpY = duet.cpY;
+            if (cpX === undefined) {
+              const pairKey = duet.citizen_a < duet.citizen_b ? `${duet.citizen_a}:${duet.citizen_b}` : `${duet.citizen_b}:${duet.citizen_a}`;
+              const cp = getBezierCP(nA.cx, nA.cy, nB.cx, nB.cy, pairKey);
+              cpX = duet.cpX = cp.cpX;
+              cpY = duet.cpY = cp.cpY;
+            }
+
+            // Viewport culling: skip filaments wholly outside visible view
+            if ((nA.cx < worldLeft && nB.cx < worldLeft && cpX < worldLeft) ||
+                (nA.cx > worldRight && nB.cx > worldRight && cpX > worldRight) ||
+                (nA.cy < worldTop && nB.cy < worldTop && cpY < worldTop) ||
+                (nA.cy > worldBottom && nB.cy > worldBottom && cpY > worldBottom)) {
+              return;
+            }
+
             const alpha = Math.min(0.28, Math.max(0.04, duet.exchanges / 100));
-            const pairKey = duet.citizen_a < duet.citizen_b ? `${duet.citizen_a}:${duet.citizen_b}` : `${duet.citizen_b}:${duet.citizen_a}`;
-            const { cpX, cpY } = getBezierCP(nA.cx, nA.cy, nB.cx, nB.cy, pairKey);
 
             // Outer soft luminescence
             ctx.strokeStyle = `rgba(56, 189, 248, ${alpha * 0.35})`;
@@ -2027,8 +2550,14 @@
               if (life <= 0) continue;
 
               renderedCount++;
-              const pairKey = pulse.a < pulse.b ? `${pulse.a}:${pulse.b}` : `${pulse.b}:${pulse.a}`;
-              const { cpX, cpY } = getBezierCP(nA.cx, nA.cy, nB.cx, nB.cy, pairKey);
+              let cpX = pulse.cpX;
+              let cpY = pulse.cpY;
+              if (cpX === undefined) {
+                const pairKey = pulse.a < pulse.b ? `${pulse.a}:${pulse.b}` : `${pulse.b}:${pulse.a}`;
+                const cp = getBezierCP(nA.cx, nA.cy, nB.cx, nB.cy, pairKey);
+                cpX = pulse.cpX = cp.cpX;
+                cpY = pulse.cpY = cp.cpY;
+              }
 
               // Transient streak with subtle, serene starlight luminescence
               const alpha = Math.min(0.32, life * 0.38);
@@ -2071,7 +2600,9 @@
       }
       if (STATE.hoveredNode) {
         const hName = STATE.hoveredNode.h;
-        const activeDuets = (STATE.data.crosstalk.top_duets || []).filter(d => d.citizen_a === hName || d.citizen_b === hName);
+        const activeDuets = (STATE.citizenDuetMap && STATE.citizenDuetMap[hName])
+          ? STATE.citizenDuetMap[hName]
+          : ((STATE.data.crosstalk && STATE.data.crosstalk.top_duets) || []).filter(d => d.citizen_a === hName || d.citizen_b === hName);
         activeDuets.forEach(d => {
           const already = duetsToHighlight.some(x => 
             (x.citizen_a === d.citizen_a && x.citizen_b === d.citizen_b) ||
@@ -2089,8 +2620,14 @@
         const nA = STATE.nodeMap ? STATE.nodeMap[d.citizen_a] : null;
         const nB = STATE.nodeMap ? STATE.nodeMap[d.citizen_b] : null;
         if (nA && nB && (nA._idx === undefined || nA._idx <= maxVisibleIdx) && (nB._idx === undefined || nB._idx <= maxVisibleIdx)) {
-          const pairKey = d.citizen_a < d.citizen_b ? `${d.citizen_a}:${d.citizen_b}` : `${d.citizen_b}:${d.citizen_a}`;
-          const { cpX, cpY } = getBezierCP(nA.cx, nA.cy, nB.cx, nB.cy, pairKey);
+          let cpX = d.cpX;
+          let cpY = d.cpY;
+          if (cpX === undefined) {
+            const pairKey = d.citizen_a < d.citizen_b ? `${d.citizen_a}:${d.citizen_b}` : `${d.citizen_b}:${d.citizen_a}`;
+            const cp = getBezierCP(nA.cx, nA.cy, nB.cx, nB.cy, pairKey);
+            cpX = d.cpX = cp.cpX;
+            cpY = d.cpY = cp.cpY;
+          }
 
           // 1. Broad soft luminous halo
           ctx.strokeStyle = isPinned ? 'rgba(56, 189, 248, 0.22)' : 'rgba(56, 189, 248, 0.15)';
@@ -2195,6 +2732,7 @@
     for (let i = 0; i <= maxVisibleIdx; i++) {
       const n = nodes[i];
       if (STATE.activeFamily !== 'all' && n.f !== STATE.activeFamily) continue;
+      if (n.cx < worldLeft || n.cx > worldRight || n.cy < worldTop || n.cy > worldBottom) continue;
 
       const col = FAMILY_COLORS[n.f] || FAMILY_COLORS.other;
 
@@ -2241,16 +2779,17 @@
 
   function findNodeUnderPointer(e) {
     if (!canvas || !STATE.data || !STATE.data.nodes) return null;
-    const rect = canvas.getBoundingClientRect();
+    const rect = getCanvasRect();
+    if (!rect) return null;
 
     if (STATE.view.projection === 'starwalker') {
       const mx = e.clientX - rect.left;
       const my = e.clientY - rect.top;
       let bestNode = null;
       let bestZ = 999999;
-      const nodes = STATE.data.nodes;
-      for (let i = 0; i < nodes.length; i++) {
-        const n = nodes[i];
+      const stars = visibleStarsBuffer.length > 0 ? visibleStarsBuffer : STATE.data.nodes;
+      for (let i = 0; i < stars.length; i++) {
+        const n = stars[i];
         if (STATE.activeFamily !== 'all' && n.f !== STATE.activeFamily) continue;
         if (n._sZ && n._sZ > 15 && n._sX !== undefined) {
           const hitRadius = Math.max(n._sRad + 6, 10);
@@ -2276,6 +2815,36 @@
       ? Math.max(0, Math.min(1, STATE.temporal.progress)) 
       : (spanT > 0 ? (STATE.temporal.currentTime - STATE.temporal.minTime) / spanT : 1.0);
     const maxVisibleIdx = findWavefrontIndex(STATE.data.nodes, isFlow, curProg, STATE.temporal.currentTime);
+
+    if (spatialGrid2D) {
+      const gx = Math.floor(mx / SPATIAL_CELL_SIZE);
+      const gy = Math.floor(my / SPATIAL_CELL_SIZE);
+      let bestNode = null;
+      let bestIdx = -1;
+      for (let ox = -1; ox <= 1; ox++) {
+        for (let oy = -1; oy <= 1; oy++) {
+          const key = `${gx + ox},${gy + oy}`;
+          const cell = spatialGrid2D.get(key);
+          if (!cell) continue;
+          for (let ci = 0; ci < cell.length; ci++) {
+            const n = cell[ci];
+            if (n._idx !== undefined && n._idx > maxVisibleIdx) continue;
+            if (STATE.activeFamily !== 'all' && n.f !== STATE.activeFamily) continue;
+            const dx = n.cx - mx;
+            const dy = n.cy - my;
+            const r = n.rad + 4;
+            if (dx * dx + dy * dy <= r * r) {
+              const idx = n._idx ?? 0;
+              if (idx > bestIdx) {
+                bestIdx = idx;
+                bestNode = n;
+              }
+            }
+          }
+        }
+      }
+      if (bestNode) return bestNode;
+    }
 
     for (let i = maxVisibleIdx; i >= 0; i--) {
       const n = STATE.data.nodes[i];
@@ -2326,7 +2895,7 @@
       }
 
       if (STATE.data.crosstalk && STATE.data.crosstalk.top_duets) {
-        const duets = STATE.data.crosstalk.top_duets.filter(d => d.citizen_a === n.h || d.citizen_b === n.h);
+        const duets = (STATE.citizenDuetMap && STATE.citizenDuetMap[n.h]) || [];
         if (duets.length > 0) {
           const duetDiv = h('div');
           duetDiv.style.marginTop = '0.4rem';

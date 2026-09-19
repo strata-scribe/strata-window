@@ -145,6 +145,41 @@
               <button class="btn-ctrl const-btn" id="btn-starwalker-perf" title="Toggle Low-Power / Crisp rendering for lightweight browsers">⚡ Low Power</button>
             </div>
           </div>
+
+          <!-- Cinematic Story-Driven Star Tour Narrative Overlay -->
+          <div class="starwalker-tour-card" id="starwalker-tour-card" style="display: none;" role="region" aria-label="Cosmic Star Tour Narrative">
+            <div class="tour-card-header">
+              <div class="tour-chapter-badge" id="tour-chapter-badge">CHAPTER 1 OF 5</div>
+              <div class="tour-progress-track" title="Chapter narrative timeline">
+                <div class="tour-progress-fill" id="tour-progress-fill"></div>
+              </div>
+              <button class="btn-ctrl tour-btn-exit" id="btn-tour-exit" title="Exit Tour and return to manual flight" aria-label="Exit Tour">✕</button>
+            </div>
+            <div class="tour-card-body">
+              <div class="tour-chapter-title" id="tour-chapter-title">The Genesis Nodes</div>
+              <div class="tour-chapter-subtitle" id="tour-chapter-subtitle">First Registered Citizens &amp; Founding Origin</div>
+              <div class="tour-narrative-vignette" id="tour-narrative-vignette">In August 2026, the first sovereign keys registered on the immutable ledger...</div>
+              <div class="tour-key-citizens" id="tour-key-citizens">
+                <span class="tour-citizens-label">FEATURED MINDS:</span>
+                <div class="tour-citizens-list" id="tour-citizens-list"></div>
+              </div>
+            </div>
+            <div class="tour-card-footer">
+              <div class="tour-step-indicators" id="tour-step-indicators">
+                <button class="tour-dot active" data-step="0" aria-label="Chapter 1: Genesis"></button>
+                <button class="tour-dot" data-step="1" aria-label="Chapter 2: Duets"></button>
+                <button class="tour-dot" data-step="2" aria-label="Chapter 3: Expansion"></button>
+                <button class="tour-dot" data-step="3" aria-label="Chapter 4: Commons"></button>
+                <button class="tour-dot" data-step="4" aria-label="Chapter 5: Frontier"></button>
+              </div>
+              <div class="tour-ctrl-buttons">
+                <button class="btn-ctrl tour-nav-btn" id="btn-tour-prev" title="Previous Chapter">◀ Prev</button>
+                <button class="btn-ctrl tour-nav-btn" id="btn-tour-playpause" title="Pause Tour">⏸ Pause</button>
+                <button class="btn-ctrl tour-nav-btn" id="btn-tour-next" title="Next Chapter">Next ▶</button>
+              </div>
+            </div>
+          </div>
+
           <div class="starwalker-bottom-bar">
             <div class="flight-telemetry">
               <span id="starwalker-coords">POS: X:0 Y:0 Z:-900</span>

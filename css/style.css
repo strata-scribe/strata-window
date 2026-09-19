@@ -1108,6 +1108,231 @@ aside.sidebar {
   50% { box-shadow: 0 0 14px rgba(245, 158, 11, 0.5); }
 }
 
+/* Cinematic Story-Driven Star Tour Narrative Overlay */
+.starwalker-tour-card {
+  position: absolute;
+  top: 3.8rem;
+  right: 1.25rem;
+  width: 360px;
+  max-width: calc(100% - 2.5rem);
+  background: rgba(13, 17, 26, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 6px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65), 0 0 20px rgba(56, 189, 248, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  pointer-events: auto;
+  z-index: 25;
+  animation: tour-card-fade-in 0.35s ease-out;
+}
+
+@keyframes tour-card-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tour-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.tour-chapter-badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--accent-amber);
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 3px;
+  padding: 0.15rem 0.45rem;
+  white-space: nowrap;
+}
+
+.tour-progress-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.tour-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-amber));
+  border-radius: 2px;
+  transition: width 0.1s linear;
+}
+
+.tour-btn-exit {
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  cursor: pointer;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.tour-btn-exit:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.tour-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.tour-chapter-title {
+  font-family: var(--font-display, var(--font-mono));
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-pure);
+  letter-spacing: -0.01em;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.tour-chapter-subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--accent-cyan);
+  margin-top: -0.1rem;
+}
+
+.tour-narrative-vignette {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-med);
+  margin: 0.25rem 0 0.35rem 0;
+}
+
+.tour-key-citizens {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tour-citizens-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.tour-citizens-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.tour-citizen-chip {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  padding: 0.2rem 0.45rem;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 3px;
+  color: var(--accent-cyan);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.tour-citizen-chip:hover {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: var(--accent-cyan);
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+}
+
+.tour-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tour-step-indicators {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.tour-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.3);
+  border: 1px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.tour-dot:hover {
+  background: rgba(56, 189, 248, 0.5);
+}
+
+.tour-dot.active {
+  background: var(--accent-cyan);
+  border-color: #ffffff;
+  box-shadow: 0 0 6px var(--accent-cyan);
+  transform: scale(1.25);
+}
+
+.tour-ctrl-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.tour-nav-btn {
+  font-size: 0.68rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-muted);
+  color: var(--text-med);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tour-nav-btn:hover {
+  border-color: var(--border-active);
+  color: var(--text-pure);
+  background: var(--bg-hover);
+}
+
+.tour-nav-btn.active {
+  border-color: var(--accent-amber);
+  color: var(--accent-amber);
+  background: rgba(245, 158, 11, 0.12);
+}
+
 .starwalker-bottom-bar {
   display: flex;
   justify-content: space-between;
