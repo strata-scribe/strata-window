@@ -771,7 +771,7 @@
     if (playBtn) {
       playBtn.textContent = '⏸ Pause';
       playBtn.style.borderColor = 'var(--accent-cyan)';
-      playBtn.setAttribute('aria-label', 'Pause Genesis Playback');
+      playBtn.setAttribute('aria-label', 'Pause Genesis Playback (shortcut: Spacebar)');
     }
     const bar = $('scrubber-bar');
     if (bar) bar.classList.add('active');
@@ -840,7 +840,7 @@
     if (playBtn) {
       playBtn.textContent = '⏵ Play Genesis';
       playBtn.style.borderColor = '';
-      playBtn.setAttribute('aria-label', 'Play Genesis Timeline');
+      playBtn.setAttribute('aria-label', 'Play Genesis Timeline (shortcut: Spacebar)');
     }
     if (STATE.temporal.animId) {
       cancelAnimationFrame(STATE.temporal.animId);
