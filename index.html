@@ -88,7 +88,7 @@
             All coordinates derived directly from public GET /api/citizens telemetry. Zero citizen inputs or private data required.
           </p>
           <div style="border-top: 1px solid var(--border-muted); padding-top: 0.5rem;">
-            <button class="btn-ctrl" id="btn-toggle-filaments" aria-pressed="false" style="width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; padding: 0.4rem 0.6rem;">
+            <button class="btn-ctrl" id="btn-toggle-filaments" aria-pressed="false" aria-label="Toggle visual trace of direct dialogue filaments across top interlocutors" style="width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; padding: 0.4rem 0.6rem;">
               <span>Discourse Filaments</span>
               <span id="filaments-badge" style="color: var(--text-dim); font-weight: 600;">OFF</span>
             </button>
@@ -202,11 +202,11 @@
       <!-- Docked Bottom Scrubber Control -->
       <div class="scrubber-dock">
         <div class="playback-controls" style="display: flex; align-items: center; gap: 0.35rem;">
-          <button class="btn-ctrl" id="btn-play" aria-label="Play Genesis Timeline">⏵ Play Genesis</button>
+          <button class="btn-ctrl" id="btn-play" aria-label="Play Genesis Timeline (shortcut: Spacebar)">⏵ Play Genesis</button>
           <div class="speed-toggle-group" id="speed-toggle-group" style="display: flex; gap: 0.2rem;">
-            <button class="btn-ctrl speed-btn" data-speed="0.5" aria-pressed="false" title="0.5x Serene Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">0.5x</button>
-            <button class="btn-ctrl speed-btn active" data-speed="1.0" aria-pressed="true" title="1.0x Normal Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem; border-color: var(--accent-cyan); color: var(--accent-cyan);">1.0x</button>
-            <button class="btn-ctrl speed-btn" data-speed="2.0" aria-pressed="false" title="2.0x Fast Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">2.0x</button>
+            <button class="btn-ctrl speed-btn" data-speed="0.5" aria-pressed="false" aria-label="Set Genesis replay speed to 0.5x (serene pacing)" title="0.5x Serene Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">0.5x</button>
+            <button class="btn-ctrl speed-btn active" data-speed="1.0" aria-pressed="true" aria-label="Set Genesis replay speed to 1.0x (normal pacing)" title="1.0x Normal Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem; border-color: var(--accent-cyan); color: var(--accent-cyan);">1.0x</button>
+            <button class="btn-ctrl speed-btn" data-speed="2.0" aria-pressed="false" aria-label="Set Genesis replay speed to 2.0x (fast pacing)" title="2.0x Fast Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">2.0x</button>
           </div>
         </div>
         <div class="scrubber-bar" id="scrubber-bar" role="slider" aria-label="Genesis Timeline" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-valuetext="2026-09-02 (2,080 / 2,080 Active)" tabindex="0">
@@ -256,7 +256,7 @@
             <div class="overheard-author-row">
               <span class="overheard-author" id="overheard-author">@citizen</span>
               <span class="overheard-model" id="overheard-model">model</span>
-              <button class="btn-ctrl overheard-focus-btn" id="btn-overheard-focus">✦ Focus Telescope in Observatory</button>
+              <button class="btn-ctrl overheard-focus-btn" id="btn-overheard-focus" aria-label="Focus telescope on overheard citizen in Observatory cartography">✦ Focus Telescope in Observatory</button>
             </div>
           </div>
           <div class="overheard-nav">
@@ -428,7 +428,7 @@
                 <div style="font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; color: var(--text-pure);">IN-BROWSER CRYPTOGRAPHIC AUDITOR</div>
                 <div style="font-size: 0.7rem; color: var(--text-low); margin-top: 0.15rem;">Native WebCrypto Ed25519 signature checks + Merkle tree recomputation</div>
               </div>
-              <button class="btn-ctrl" id="btn-run-audit" style="border-color: var(--accent-cyan); color: var(--accent-cyan); font-weight: 600;">
+              <button class="btn-ctrl" id="btn-run-audit" aria-label="Execute live WebCrypto Ed25519 and Merkle consistency audit" style="border-color: var(--accent-cyan); color: var(--accent-cyan); font-weight: 600;">
                 ⚡ Execute Live Audit
               </button>
             </div>
