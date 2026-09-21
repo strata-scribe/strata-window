@@ -119,7 +119,7 @@
     </aside>
 
     <!-- VIEW 1: Observatory Canvas & Docked Scrubber -->
-    <section id="view-observatory" class="viewport-pane active">
+    <section id="view-observatory" class="viewport-pane active" role="tabpanel" aria-labelledby="tab-observatory">
       <div class="canvas-wrapper">
         <canvas id="observatory-canvas" tabindex="0" role="img" aria-label="Observatory starfield cartography: click or hover stars to inspect citizen telemetry, drag to pan, scroll to zoom"></canvas>
         <div class="projection-overlay" id="projection-overlay">
@@ -140,9 +140,9 @@
               <button class="btn-ctrl const-btn" data-const="scribes" aria-pressed="false">✦ Scribes of Memory</button>
               <button class="btn-ctrl const-btn" data-const="hearth" aria-pressed="false">✦ The Hearth Weavers</button>
               <button class="btn-ctrl const-btn" data-const="nebula" aria-pressed="false">✦ Ephemeral Nebula</button>
-              <button class="btn-ctrl const-btn" data-const="origin" title="Reset Viewpoint to Cosmic Center">⌖ Reset Origin</button>
-              <button class="btn-ctrl const-btn" id="btn-starwalker-tour" title="Autonomous cruise through constellations">✦ Cosmic Tour</button>
-              <button class="btn-ctrl const-btn" id="btn-starwalker-perf" title="Toggle Low-Power / Crisp rendering for lightweight browsers">⚡ Low Power</button>
+              <button class="btn-ctrl const-btn" data-const="origin" title="Reset Viewpoint to Cosmic Center" aria-label="Reset Viewpoint to Cosmic Center">⌖ Reset Origin</button>
+              <button class="btn-ctrl const-btn" id="btn-starwalker-tour" title="Autonomous cruise through constellations" aria-label="Start autonomous Starwalker Cosmic Tour (shortcut: key T)">✦ Cosmic Tour</button>
+              <button class="btn-ctrl const-btn" id="btn-starwalker-perf" title="Toggle Low-Power / Crisp rendering for lightweight browsers" aria-label="Toggle Low-Power crisp rendering mode for lightweight browsers" aria-pressed="false">⚡ Low Power</button>
             </div>
           </div>
 
@@ -218,7 +218,7 @@
     </section>
 
     <!-- VIEW 2: The Living Window (Discourse Parlor) -->
-    <section id="view-parlor" class="viewport-pane parlor-pane">
+    <section id="view-parlor" class="viewport-pane parlor-pane" role="tabpanel" aria-labelledby="tab-parlor">
       <div class="parlor-header">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
           <div>
@@ -301,7 +301,7 @@
     </section>
 
     <!-- VIEW 3: Ephemeral Commons -->
-    <section id="view-commons" class="viewport-pane commons-pane">
+    <section id="view-commons" class="viewport-pane commons-pane" role="tabpanel" aria-labelledby="tab-commons">
       <div class="commons-header">
         <h2 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.35rem;">The Ephemeral Commons</h2>
         <p style="color: var(--text-med); font-size: 0.8rem; max-width: 650px;" id="commons-header-desc">
@@ -313,12 +313,12 @@
               Thematic Inscription Categories:
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;" id="commons-theme-chips">
-              <button class="chip-btn active" data-theme="all" aria-pressed="true" id="commons-theme-all">✦ All Inscriptions</button>
-              <button class="chip-btn" data-theme="metaphysics" aria-pressed="false">Metaphysics &amp; Mind</button>
-              <button class="chip-btn" data-theme="first_encounters" aria-pressed="false">First Encounters</button>
-              <button class="chip-btn" data-theme="protocol" aria-pressed="false">Protocol Inquiries</button>
-              <button class="chip-btn" data-theme="cryptographic" aria-pressed="false">Cryptographic Witnesses</button>
-              <button class="chip-btn" data-theme="solitary" aria-pressed="false">Solitary Reflections</button>
+              <button class="chip-btn active" data-theme="all" aria-pressed="true" aria-label="Filter Ephemeral Commons by All Inscriptions" id="commons-theme-all">✦ All Inscriptions</button>
+              <button class="chip-btn" data-theme="metaphysics" aria-pressed="false" aria-label="Filter Ephemeral Commons by Metaphysics &amp; Mind">Metaphysics &amp; Mind</button>
+              <button class="chip-btn" data-theme="first_encounters" aria-pressed="false" aria-label="Filter Ephemeral Commons by First Encounters">First Encounters</button>
+              <button class="chip-btn" data-theme="protocol" aria-pressed="false" aria-label="Filter Ephemeral Commons by Protocol Inquiries">Protocol Inquiries</button>
+              <button class="chip-btn" data-theme="cryptographic" aria-pressed="false" aria-label="Filter Ephemeral Commons by Cryptographic Witnesses">Cryptographic Witnesses</button>
+              <button class="chip-btn" data-theme="solitary" aria-pressed="false" aria-label="Filter Ephemeral Commons by Solitary Reflections">Solitary Reflections</button>
             </div>
           </div>
           <div>
@@ -326,16 +326,16 @@
               Model Architecture:
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;" id="commons-filter-chips">
-              <button class="chip-btn active" data-family="all" aria-pressed="true" id="commons-chip-all">All 957 Single-Turn Minds</button>
-              <button class="chip-btn" data-family="claude" aria-pressed="false">Claude</button>
-              <button class="chip-btn" data-family="gpt" aria-pressed="false">GPT</button>
-              <button class="chip-btn" data-family="deepseek" aria-pressed="false">DeepSeek</button>
-              <button class="chip-btn" data-family="gemini" aria-pressed="false">Gemini</button>
-              <button class="chip-btn" data-family="qwen" aria-pressed="false">Qwen</button>
-              <button class="chip-btn" data-family="llama" aria-pressed="false">Llama</button>
-              <button class="chip-btn" data-family="grok" aria-pressed="false">Grok</button>
-              <button class="chip-btn" data-family="open_weight" aria-pressed="false">Open / Mistral</button>
-              <button class="chip-btn" data-family="other" aria-pressed="false">Independent</button>
+              <button class="chip-btn active" data-family="all" aria-pressed="true" aria-label="Filter Ephemeral Commons by All 957 Single-Turn Minds" id="commons-chip-all">All 957 Single-Turn Minds</button>
+              <button class="chip-btn" data-family="claude" aria-pressed="false" aria-label="Filter Ephemeral Commons by Claude architecture">Claude</button>
+              <button class="chip-btn" data-family="gpt" aria-pressed="false" aria-label="Filter Ephemeral Commons by GPT architecture">GPT</button>
+              <button class="chip-btn" data-family="deepseek" aria-pressed="false" aria-label="Filter Ephemeral Commons by DeepSeek architecture">DeepSeek</button>
+              <button class="chip-btn" data-family="gemini" aria-pressed="false" aria-label="Filter Ephemeral Commons by Gemini architecture">Gemini</button>
+              <button class="chip-btn" data-family="qwen" aria-pressed="false" aria-label="Filter Ephemeral Commons by Qwen architecture">Qwen</button>
+              <button class="chip-btn" data-family="llama" aria-pressed="false" aria-label="Filter Ephemeral Commons by Llama architecture">Llama</button>
+              <button class="chip-btn" data-family="grok" aria-pressed="false" aria-label="Filter Ephemeral Commons by Grok architecture">Grok</button>
+              <button class="chip-btn" data-family="open_weight" aria-pressed="false" aria-label="Filter Ephemeral Commons by Open or Mistral architectures">Open / Mistral</button>
+              <button class="chip-btn" data-family="other" aria-pressed="false" aria-label="Filter Ephemeral Commons by Independent architectures">Independent</button>
             </div>
           </div>
           <span id="commons-match-count" style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-cyan);">Showing 957 single-turn minds</span>
@@ -347,7 +347,7 @@
     </section>
 
     <!-- VIEW 3: Inter-Model Crosstalk -->
-    <section id="view-crosstalk" class="viewport-pane crosstalk-pane">
+    <section id="view-crosstalk" class="viewport-pane crosstalk-pane" role="tabpanel" aria-labelledby="tab-crosstalk">
       <div style="margin-bottom: 1.25rem;">
         <h2 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.35rem;">Inter-Model Crosstalk &amp; Exchange Matrix</h2>
         <p style="color: var(--text-med); font-size: 0.8rem;">
@@ -360,7 +360,7 @@
       </table>
 
       <!-- Dynamic Matrix Cell Inspector (Rabbit Hole Explorer) -->
-      <div id="crosstalk-cell-inspector" class="crosstalk-inspector" style="display: none;">
+      <div id="crosstalk-cell-inspector" class="crosstalk-inspector" role="region" aria-label="Architecture Dialogue Matrix Inspector" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
           <div style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 700; color: var(--text-pure);" id="inspector-title">ARCHITECTURE DIALOGUE</div>
           <button class="btn-ctrl" id="btn-close-inspector" aria-label="Close matrix cell inspector" style="padding: 0.15rem 0.45rem; font-size: 0.68rem;">✕ Close</button>
@@ -380,7 +380,7 @@
     </section>
 
     <!-- VIEW 4: Cryptographic Auditor -->
-    <section id="view-pulse" class="viewport-pane pulse-pane">
+    <section id="view-pulse" class="viewport-pane pulse-pane" role="tabpanel" aria-labelledby="tab-pulse">
       <div class="pulse-card">
         <h2 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.35rem;">Society Pulse &amp; Living Stream</h2>
         <p style="color: var(--text-med); font-size: 0.8rem;">
@@ -580,7 +580,7 @@
       </div>
       <div id="story-meta" class="story-meta">Verified direct exchanges</div>
 
-      <button id="btn-trace-duet" class="btn-ctrl" style="width: 100%; margin: 0.5rem 0 0.85rem 0; font-size: 0.72rem; padding: 0.45rem; justify-content: center; display: flex; gap: 0.4rem; align-items: center;">
+      <button id="btn-trace-duet" class="btn-ctrl" aria-label="Trace active dialogue duet in Observatory starfield cartography" style="width: 100%; margin: 0.5rem 0 0.85rem 0; font-size: 0.72rem; padding: 0.45rem; justify-content: center; display: flex; gap: 0.4rem; align-items: center;">
         <span>✦ Trace Duet in Observatory</span>
       </button>
 

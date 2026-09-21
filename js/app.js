@@ -1682,6 +1682,7 @@
         if (btn.id === 'btn-starwalker-perf') {
           STATE.starwalker.lowPower = !STATE.starwalker.lowPower;
           btn.classList.toggle('active', STATE.starwalker.lowPower);
+          btn.setAttribute('aria-pressed', STATE.starwalker.lowPower ? 'true' : 'false');
           btn.textContent = STATE.starwalker.lowPower ? '⚡ Low Power (Active)' : '⚡ Low Power';
           resizeCanvas();
           renderCanvas();
