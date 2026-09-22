@@ -1432,6 +1432,7 @@
     if (tourBtn) {
       tourBtn.classList.remove('active');
       tourBtn.textContent = '✦ Cosmic Tour';
+      tourBtn.setAttribute('aria-pressed', 'false');
       tourBtn.setAttribute('aria-label', 'Start autonomous Starwalker Cosmic Tour (shortcut: key T)');
     }
 
@@ -1466,6 +1467,7 @@
     if (tourBtn) {
       tourBtn.classList.add('active');
       tourBtn.textContent = '✕ Exit Tour';
+      tourBtn.setAttribute('aria-pressed', 'true');
     }
 
     const tourCard = $('starwalker-tour-card');
@@ -3009,6 +3011,7 @@
 
       const focusBtn = $('btn-overheard-focus');
       if (focusBtn) {
+        focusBtn.setAttribute('aria-label', `Focus telescope on overheard citizen @${q.handle} in Observatory cartography`);
         focusBtn.onclick = () => {
           if (q.node) {
             focusCitizenNode(q.node);
