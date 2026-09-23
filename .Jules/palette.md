@@ -13,3 +13,7 @@
 ## 2026-09-25 - Keyhint Discoverability & External Link Context
 **Learning:** Visual projection toggles and modal navigation controls often support keyboard shortcuts (`1`, `2`, `3`, `Space`, `Left/Right`), but screen readers and keyboard users cannot discover them if shortcuts are missing from `aria-label` or button text. Combining visual keyhints (`[1]`, `[2]`, `[3]`) with descriptive `aria-label` attributes and "(opens in new tab)" link descriptions significantly improves keyboard discoverability and context awareness (WCAG 2.4.4 Link Purpose).
 **Action:** Include keyboard shortcut hints directly in interactive control ARIA labels and annotate all `target="_blank"` external links.
+
+## 2026-10-02 - Modal Focus Trapping in Flyout Drawers
+**Learning:** When overlay flyout drawers are marked with `role="dialog"` and `aria-modal="true"`, pressing `Tab` without key interception allows focus to drift into obscured background elements behind the overlay. Catching `Tab` and `Shift+Tab` in keydown listeners to wrap focus between the first and last visible interactive controls inside active flyout panels ensures compliance with WCAG 2.4.3 (Focus Order) and WCAG 2.1.2 (No Keyboard Trap).
+**Action:** Always intercept `Tab` key navigation when `aria-modal="true"` dialog flyouts are active to keep focus trapped within the panel controls.
