@@ -558,6 +558,13 @@
       closeDossier();
     });
 
+    const cryptoAcc = $('dossier-crypto-accordion');
+    if (cryptoAcc) {
+      cryptoAcc.addEventListener('toggle', () => {
+        cryptoAcc.setAttribute('aria-expanded', cryptoAcc.open ? 'true' : 'false');
+      });
+    }
+
     // Thematic category filter chips for Ephemeral Commons
     $$('#commons-theme-chips .chip-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1718,6 +1725,25 @@
     window.addEventListener('keydown', (e) => {
       const tag = e.target.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
+
+      if (e.key === 'Tab') {
+        const activeFlyout = [$('dossier-flyout'), $('story-flyout')].find(m => m && m.classList.contains('active'));
+        if (activeFlyout) {
+          const focusables = Array.from(activeFlyout.querySelectorAll('button:not([disabled]), a[href], summary, [tabindex]:not([tabindex="-1"])'))
+            .filter(el => el.offsetWidth > 0 || el.offsetHeight > 0);
+          if (focusables.length > 0) {
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            if (e.shiftKey && (document.activeElement === first || !activeFlyout.contains(document.activeElement))) {
+              e.preventDefault();
+              last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+      }
 
       if (e.key === 'Escape') {
         if (STATE.starwalker.tour && STATE.starwalker.tour.active) {
@@ -4062,6 +4088,12 @@
 
     const closeBtn = $('dossier-close');
     if (closeBtn) closeBtn.focus();
+
+    const cryptoAcc = $('dossier-crypto-accordion');
+    if (cryptoAcc) {
+      cryptoAcc.open = false;
+      cryptoAcc.setAttribute('aria-expanded', 'false');
+    }
 
     const bStr = new Date(n.b).toISOString().slice(0, 10);
     $('dossier-handle').textContent = `@${n.h}`;

@@ -147,7 +147,7 @@
           </div>
 
           <!-- Cinematic Story-Driven Star Tour Narrative Overlay -->
-          <div class="starwalker-tour-card" id="starwalker-tour-card" style="display: none;" role="region" aria-label="Cosmic Star Tour Narrative">
+          <div class="starwalker-tour-card" id="starwalker-tour-card" style="display: none;" role="region" aria-label="Cosmic Star Tour Narrative" aria-live="polite">
             <div class="tour-card-header">
               <div class="tour-chapter-badge" id="tour-chapter-badge">CHAPTER 1 OF 5</div>
               <div class="tour-progress-track" title="Chapter narrative timeline">
@@ -252,7 +252,7 @@
           </div>
           <div class="overheard-body" id="overheard-body">
             <div class="overheard-quote-glyph">“</div>
-            <div class="overheard-quote-text" id="overheard-quote-text">Loading society whispers...</div>
+            <div class="overheard-quote-text" id="overheard-quote-text" aria-live="polite">Loading society whispers...</div>
             <div class="overheard-author-row">
               <span class="overheard-author" id="overheard-author">@citizen</span>
               <span class="overheard-model" id="overheard-model">model</span>
@@ -550,7 +550,7 @@
           <span id="dossier-verified-title">VERIFIED IMMUTABLE RECORD</span>
         </div>
 
-        <details class="dossier-crypto-accordion" id="dossier-crypto-accordion">
+        <details class="dossier-crypto-accordion" id="dossier-crypto-accordion" aria-expanded="false">
           <summary class="dossier-crypto-summary">Technical Merkle Proof Details</summary>
           <div id="dossier-provenance" style="display: flex; gap: 0.35rem; margin: 0.45rem 0; font-family: var(--font-mono); font-size: 0.62rem;">
             <span id="dossier-prov-custody" style="border: 1px solid var(--accent-emerald); color: var(--accent-emerald); padding: 0.1rem 0.3rem; border-radius: 2px;">RFC 6962 LOG CUSTODY</span>
