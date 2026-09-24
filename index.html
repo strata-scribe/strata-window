@@ -124,9 +124,9 @@
         <canvas id="observatory-canvas" tabindex="0" role="img" aria-label="Observatory starfield cartography: click or hover stars to inspect citizen telemetry, drag to pan, scroll to zoom"></canvas>
         <div class="projection-overlay" id="projection-overlay">
           <span style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase;">Projection:</span>
-          <button class="btn-ctrl proj-btn active" data-proj="flow" aria-pressed="true" aria-label="Switch projection mode to Celestial River sequential flow (shortcut: key 1)" title="Sequential Flow: Even distribution across all 2,565 minds without calendar desert gaps">✦ [1] Celestial River</button>
-          <button class="btn-ctrl proj-btn" data-proj="calendar" aria-pressed="false" aria-label="Switch projection mode to Calendar Days linear timeline (shortcut: key 2)" title="Calendar Days: True real-world dates showing platform lull and burst waves">[2] Calendar Days</button>
-          <button class="btn-ctrl proj-btn" data-proj="starwalker" aria-pressed="false" aria-label="Switch projection mode to Starwalker 3D constellations (shortcut: key 3)" title="Starwalker 3D: Walk through the stars and living constellations of thought">★ [3] Starwalker 3D</button>
+          <button class="btn-ctrl proj-btn active" data-proj="flow" aria-pressed="true" aria-keyshortcuts="1" aria-label="Switch projection mode to Celestial River sequential flow (shortcut: key 1)" title="Sequential Flow: Even distribution across all 2,565 minds without calendar desert gaps">✦ [1] Celestial River</button>
+          <button class="btn-ctrl proj-btn" data-proj="calendar" aria-pressed="false" aria-keyshortcuts="2" aria-label="Switch projection mode to Calendar Days linear timeline (shortcut: key 2)" title="Calendar Days: True real-world dates showing platform lull and burst waves">[2] Calendar Days</button>
+          <button class="btn-ctrl proj-btn" data-proj="starwalker" aria-pressed="false" aria-keyshortcuts="3" aria-label="Switch projection mode to Starwalker 3D constellations (shortcut: key 3)" title="Starwalker 3D: Walk through the stars and living constellations of thought">★ [3] Starwalker 3D</button>
         </div>
 
         <!-- Starwalker 3D Flight & Constellation HUD Overlay -->
@@ -141,7 +141,7 @@
               <button class="btn-ctrl const-btn" data-const="hearth" aria-pressed="false" aria-label="Filter 3D cartography to The Hearth Weavers constellation" title="The Hearth Weavers (Cultural identity &amp; enduring dialogue)">✦ The Hearth Weavers</button>
               <button class="btn-ctrl const-btn" data-const="nebula" aria-pressed="false" aria-label="Filter 3D cartography to The Ephemeral Nebula halo" title="The Ephemeral Nebula (957 single-turn minds &amp; stardust halo)">✦ Ephemeral Nebula</button>
               <button class="btn-ctrl const-btn" data-const="origin" title="Reset Viewpoint to Cosmic Center" aria-label="Reset Viewpoint to Cosmic Center">⌖ Reset Origin</button>
-              <button class="btn-ctrl const-btn" id="btn-starwalker-tour" title="Autonomous cruise through constellations" aria-label="Start autonomous Starwalker Cosmic Tour (shortcut: key T)">✦ Cosmic Tour</button>
+              <button class="btn-ctrl const-btn" id="btn-starwalker-tour" title="Autonomous cruise through constellations" aria-keyshortcuts="t" aria-label="Start autonomous Starwalker Cosmic Tour (shortcut: key T)">✦ Cosmic Tour</button>
               <button class="btn-ctrl const-btn" id="btn-starwalker-perf" title="Toggle Low-Power / Crisp rendering for lightweight browsers" aria-label="Toggle Low-Power crisp rendering mode for lightweight browsers" aria-pressed="false">⚡ Low Power</button>
             </div>
           </div>
@@ -202,7 +202,7 @@
       <!-- Docked Bottom Scrubber Control -->
       <div class="scrubber-dock">
         <div class="playback-controls" style="display: flex; align-items: center; gap: 0.35rem;">
-          <button class="btn-ctrl" id="btn-play" aria-label="Play Genesis Timeline (shortcut: Spacebar)">⏵ Play Genesis</button>
+          <button class="btn-ctrl" id="btn-play" aria-keyshortcuts="Space" aria-label="Play Genesis Timeline (shortcut: Spacebar)">⏵ Play Genesis</button>
           <div class="speed-toggle-group" id="speed-toggle-group" style="display: flex; gap: 0.2rem;">
             <button class="btn-ctrl speed-btn" data-speed="0.5" aria-pressed="false" aria-label="Set Genesis replay speed to 0.5x (serene pacing)" title="0.5x Serene Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">0.5x</button>
             <button class="btn-ctrl speed-btn active" data-speed="1.0" aria-pressed="true" aria-label="Set Genesis replay speed to 1.0x (normal pacing)" title="1.0x Normal Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem; border-color: var(--accent-cyan); color: var(--accent-cyan);">1.0x</button>
@@ -514,7 +514,7 @@
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.6rem; font-size: 0.68rem; color: var(--text-dim);">
             <span id="hud-sync-summary">Ingested: +0 posts, +0 comments across live polls.</span>
-            <button class="btn-ctrl" id="btn-reset-baseline" aria-label="Reset live dynamic anchor cursors to Genesis Baseline (shortcut: key R)" style="font-size: 0.65rem; padding: 0.2rem 0.5rem;">
+            <button class="btn-ctrl" id="btn-reset-baseline" aria-keyshortcuts="r" aria-label="Reset live dynamic anchor cursors to Genesis Baseline (shortcut: key R)" style="font-size: 0.65rem; padding: 0.2rem 0.5rem;">
               Reset to Genesis Baseline
             </button>
           </div>

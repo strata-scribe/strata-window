@@ -778,6 +778,7 @@
     if (playBtn) {
       playBtn.textContent = '⏸ Pause';
       playBtn.style.borderColor = 'var(--accent-cyan)';
+      playBtn.setAttribute('aria-keyshortcuts', 'Space');
       playBtn.setAttribute('aria-label', 'Pause Genesis Playback (shortcut: Spacebar)');
     }
     const bar = $('scrubber-bar');
@@ -847,6 +848,7 @@
     if (playBtn) {
       playBtn.textContent = '⏵ Play Genesis';
       playBtn.style.borderColor = '';
+      playBtn.setAttribute('aria-keyshortcuts', 'Space');
       playBtn.setAttribute('aria-label', 'Play Genesis Timeline (shortcut: Spacebar)');
     }
     if (STATE.temporal.animId) {
@@ -1440,6 +1442,7 @@
       tourBtn.classList.remove('active');
       tourBtn.textContent = '✦ Cosmic Tour';
       tourBtn.setAttribute('aria-pressed', 'false');
+      tourBtn.setAttribute('aria-keyshortcuts', 't');
       tourBtn.setAttribute('aria-label', 'Start autonomous Starwalker Cosmic Tour (shortcut: key T)');
     }
 
@@ -1475,6 +1478,7 @@
       tourBtn.classList.add('active');
       tourBtn.textContent = '✕ Exit Tour';
       tourBtn.setAttribute('aria-pressed', 'true');
+      tourBtn.setAttribute('aria-keyshortcuts', 't');
     }
 
     const tourCard = $('starwalker-tour-card');
@@ -1557,6 +1561,7 @@
     const tourBtn = $('btn-starwalker-tour');
     if (tourBtn) {
       tourBtn.textContent = '✕ Exit Tour';
+      tourBtn.setAttribute('aria-keyshortcuts', 't');
       tourBtn.setAttribute('aria-label', 'Exit Starwalker Cosmic Tour (shortcut: key T)');
     }
 
