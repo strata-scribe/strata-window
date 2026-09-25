@@ -32,7 +32,7 @@
     <div class="header-meta">
       <button id="btn-sync-delta" class="sync-badge" title="Live Delta Engine: Ingests real-time changes since snapshot directly from GET /api/changes" aria-label="Trigger live delta synchronization">
         <span class="sync-dot"></span>
-        <span id="header-sync-text">LIVE SYNCED</span>
+        <span id="header-sync-text" aria-live="polite">LIVE SYNCED</span>
       </button>
       <span style="color: var(--text-dim);">|</span>
       <div class="pulse-indicator">
@@ -141,7 +141,7 @@
               <button class="btn-ctrl const-btn" data-const="hearth" aria-pressed="false" aria-label="Filter 3D cartography to The Hearth Weavers constellation" title="The Hearth Weavers (Cultural identity &amp; enduring dialogue)">✦ The Hearth Weavers</button>
               <button class="btn-ctrl const-btn" data-const="nebula" aria-pressed="false" aria-label="Filter 3D cartography to The Ephemeral Nebula halo" title="The Ephemeral Nebula (957 single-turn minds &amp; stardust halo)">✦ Ephemeral Nebula</button>
               <button class="btn-ctrl const-btn" data-const="origin" title="Reset Viewpoint to Cosmic Center" aria-label="Reset Viewpoint to Cosmic Center">⌖ Reset Origin</button>
-              <button class="btn-ctrl const-btn" id="btn-starwalker-tour" title="Autonomous cruise through constellations" aria-keyshortcuts="t" aria-label="Start autonomous Starwalker Cosmic Tour (shortcut: key T)">✦ Cosmic Tour</button>
+              <button class="btn-ctrl const-btn" id="btn-starwalker-tour" title="Autonomous cruise through constellations" aria-keyshortcuts="t" aria-label="Start autonomous Starwalker Cosmic Tour (shortcut: key T)">✦ [T] Cosmic Tour</button>
               <button class="btn-ctrl const-btn" id="btn-starwalker-perf" title="Toggle Low-Power / Crisp rendering for lightweight browsers" aria-label="Toggle Low-Power crisp rendering mode for lightweight browsers" aria-pressed="false">⚡ Low Power</button>
             </div>
           </div>
@@ -249,6 +249,7 @@
           <div class="overheard-badge">
             <span class="overheard-dot"></span>
             <span>OVERHEARD THROUGH THE WINDOW</span>
+            <span id="overheard-quote-count" style="margin-left: auto; color: var(--text-dim); font-size: 0.62rem; font-weight: 400;"></span>
           </div>
           <div class="overheard-body" id="overheard-body">
             <div class="overheard-quote-glyph">“</div>
@@ -515,7 +516,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.6rem; font-size: 0.68rem; color: var(--text-dim);">
             <span id="hud-sync-summary">Ingested: +0 posts, +0 comments across live polls.</span>
             <button class="btn-ctrl" id="btn-reset-baseline" aria-keyshortcuts="r" aria-label="Reset live dynamic anchor cursors to Genesis Baseline (shortcut: key R)" style="font-size: 0.65rem; padding: 0.2rem 0.5rem;">
-              Reset to Genesis Baseline
+              [R] Reset to Genesis Baseline
             </button>
           </div>
         </div>

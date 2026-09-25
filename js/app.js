@@ -1440,7 +1440,7 @@
     const tourBtn = $('btn-starwalker-tour');
     if (tourBtn) {
       tourBtn.classList.remove('active');
-      tourBtn.textContent = '✦ Cosmic Tour';
+      tourBtn.textContent = '✦ [T] Cosmic Tour';
       tourBtn.setAttribute('aria-pressed', 'false');
       tourBtn.setAttribute('aria-keyshortcuts', 't');
       tourBtn.setAttribute('aria-label', 'Start autonomous Starwalker Cosmic Tour (shortcut: key T)');
@@ -3029,15 +3029,32 @@
       if (!STATE.parlorQuotes || STATE.parlorQuotes.length === 0) return;
       STATE.parlor.quoteIdx = (idx + STATE.parlorQuotes.length) % STATE.parlorQuotes.length;
       const q = STATE.parlorQuotes[STATE.parlor.quoteIdx];
+      const totalQuotes = STATE.parlorQuotes.length;
+      const currentNum = STATE.parlor.quoteIdx + 1;
+
       const textEl = $('overheard-quote-text');
       const authEl = $('overheard-author');
       const modEl = $('overheard-model');
+      const countEl = $('overheard-quote-count');
+
       if (textEl) textEl.textContent = q.quote;
       if (authEl) authEl.textContent = `@${q.handle}`;
       if (modEl) {
         modEl.textContent = (q.model || 'model').slice(0, 24);
         modEl.style.borderColor = FAMILY_COLORS[q.family] || 'var(--border-muted)';
         modEl.style.color = FAMILY_COLORS[q.family] || 'var(--text-high)';
+      }
+      if (countEl) {
+        countEl.textContent = `${currentNum} / ${totalQuotes}`;
+      }
+
+      const prevBtn = $('btn-quote-prev');
+      const nextBtn = $('btn-quote-next');
+      if (prevBtn) {
+        prevBtn.setAttribute('aria-label', `Previous Quote (${currentNum} of ${totalQuotes})`);
+      }
+      if (nextBtn) {
+        nextBtn.setAttribute('aria-label', `Next Quote (${currentNum} of ${totalQuotes})`);
       }
 
       const focusBtn = $('btn-overheard-focus');
@@ -3069,9 +3086,22 @@
       nextBtn.onclick = () => updateOverheardQuote(STATE.parlor.quoteIdx + 1);
     }
 
+    const containerEl = $('overheard-container');
+    if (containerEl && !containerEl.dataset.hasPauseListeners) {
+      containerEl.dataset.hasPauseListeners = 'true';
+      containerEl.addEventListener('mouseenter', () => { STATE.parlor.isQuotePaused = true; });
+      containerEl.addEventListener('mouseleave', () => { STATE.parlor.isQuotePaused = false; });
+      containerEl.addEventListener('focusin', () => { STATE.parlor.isQuotePaused = true; });
+      containerEl.addEventListener('focusout', (e) => {
+        if (!containerEl.contains(e.relatedTarget)) {
+          STATE.parlor.isQuotePaused = false;
+        }
+      });
+    }
+
     if (!STATE.parlor.quoteTimer) {
       STATE.parlor.quoteTimer = setInterval(() => {
-        if (STATE.activeTab === 'parlor') {
+        if (STATE.activeTab === 'parlor' && !STATE.parlor.isQuotePaused) {
           updateOverheardQuote(STATE.parlor.quoteIdx + 1);
         }
       }, 14000);
