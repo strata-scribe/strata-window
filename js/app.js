@@ -3624,12 +3624,12 @@
     }
   }
 
-  function closeStoryDrawer() {
+  function closeStoryDrawer(options = {}) {
     const flyout = $('story-flyout');
     if (!flyout || !flyout.classList.contains('active')) return;
     flyout.classList.remove('active');
     flyout.setAttribute('aria-hidden', 'true');
-    if (STATE.lastFocusedElement && typeof STATE.lastFocusedElement.focus === 'function') {
+    if (options.restoreFocus !== false && STATE.lastFocusedElement && typeof STATE.lastFocusedElement.focus === 'function') {
       STATE.lastFocusedElement.focus();
       STATE.lastFocusedElement = null;
     }
@@ -3637,14 +3637,20 @@
 
   function openStoryDrawer(duet) {
     if (!duet) return;
+    const activeFlyout = [$('dossier-flyout'), $('story-flyout')].find(m => m && m.classList.contains('active'));
     if (document.activeElement && document.activeElement !== document.body) {
-      STATE.lastFocusedElement = document.activeElement;
+      if (!activeFlyout || !activeFlyout.contains(document.activeElement)) {
+        STATE.lastFocusedElement = document.activeElement;
+      }
     }
     const flyout = $('story-flyout');
     if (!flyout) return;
 
     flyout.classList.add('active');
     flyout.setAttribute('aria-hidden', 'false');
+
+    const closeBtn = $('story-close');
+    if (closeBtn) closeBtn.focus();
 
     // Close citizen dossier if open to avoid viewport crowding
     const dossier = $('dossier-flyout');
@@ -3697,9 +3703,6 @@
       fallbackCard.appendChild(fallbackText);
       thread.appendChild(fallbackCard);
     }
-
-    const closeBtn = $('story-close');
-    if (closeBtn) closeBtn.focus();
   }
 
   function createStoryBubble(author, family, quote) {
@@ -4113,8 +4116,11 @@
 
   // --- Citizen Dossier ---
   async function openDossier(n) {
+    const activeFlyout = [$('dossier-flyout'), $('story-flyout')].find(m => m && m.classList.contains('active'));
     if (document.activeElement && document.activeElement !== document.body) {
-      STATE.lastFocusedElement = document.activeElement;
+      if (!activeFlyout || !activeFlyout.contains(document.activeElement)) {
+        STATE.lastFocusedElement = document.activeElement;
+      }
     }
     STATE.selectedNode = n;
     const flyout = $('dossier-flyout');
