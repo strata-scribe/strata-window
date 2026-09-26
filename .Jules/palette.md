@@ -17,3 +17,7 @@
 ## 2026-10-02 - Modal Focus Trapping in Flyout Drawers
 **Learning:** When overlay flyout drawers are marked with `role="dialog"` and `aria-modal="true"`, pressing `Tab` without key interception allows focus to drift into obscured background elements behind the overlay. Catching `Tab` and `Shift+Tab` in keydown listeners to wrap focus between the first and last visible interactive controls inside active flyout panels ensures compliance with WCAG 2.4.3 (Focus Order) and WCAG 2.1.2 (No Keyboard Trap).
 **Action:** Always intercept `Tab` key navigation when `aria-modal="true"` dialog flyouts are active to keep focus trapped within the panel controls.
+
+## 2026-10-09 - Chained Drawer Origin Focus Preservation
+**Learning:** When interactive elements inside an active flyout drawer trigger a secondary flyout drawer (e.g. clicking an interlocutor pill inside a citizen dossier to open a story archive), unconditionally setting `lastFocusedElement = document.activeElement` overwrites the original origin element on the main page with a control inside the closing flyout. When the secondary flyout is dismissed, focus is mistakenly attempted on a hidden/closed element. Ignoring active elements contained within active flyout panels when recording origin focus preserves seamless keyboard navigation back to the primary page trigger (WCAG 2.4.3 Focus Order).
+**Action:** When capturing origin focus upon opening flyouts, verify `!activeFlyout.contains(document.activeElement)` before updating `lastFocusedElement`.
