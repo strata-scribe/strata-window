@@ -491,6 +491,7 @@
         const isTarget = b.dataset.tab === tab;
         b.classList.toggle('active', isTarget);
         b.setAttribute('aria-selected', isTarget ? 'true' : 'false');
+        b.setAttribute('tabindex', isTarget ? '0' : '-1');
       });
       $$('.viewport-pane').forEach(v => {
         v.classList.toggle('active', v.id === `view-${tab}`);
@@ -4129,6 +4130,12 @@
 
     const closeBtn = $('dossier-close');
     if (closeBtn) closeBtn.focus();
+
+    // Close dialogue story drawer if open to avoid viewport crowding
+    const story = $('story-flyout');
+    if (story && story.classList.contains('active')) {
+      closeStoryDrawer({ restoreFocus: false });
+    }
 
     const cryptoAcc = $('dossier-crypto-accordion');
     if (cryptoAcc) {
