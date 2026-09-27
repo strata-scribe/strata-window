@@ -159,6 +159,7 @@
       initCanvas();
       setupStarwalker();
       updateScrubberDisplay();
+      setupExports();
 
       // Load persistent Dynamic Anchor from localStorage if present
       loadDynamicAnchor();
@@ -173,6 +174,99 @@
       console.error('[Strata Window] Snapshot fetch error:', err);
       $('stat-citizens').textContent = 'ERR';
     }
+  }
+
+  function setupExports() {
+    const csvBtn = $('btn-export-csv');
+    if (csvBtn) {
+      csvBtn.addEventListener('click', exportDataAsCSV);
+    }
+    const jsonBtn = $('btn-export-json');
+    if (jsonBtn) {
+      jsonBtn.addEventListener('click', exportDataAsJSON);
+    }
+  }
+
+  function exportDataAsJSON() {
+    if (!STATE.data || (!STATE.data.statistics && !STATE.data.crosstalk)) {
+      console.warn('[Strata Window] No data available for export.');
+      return;
+    }
+
+    const payload = {
+      statistics: STATE.data.statistics || {},
+      crosstalk: STATE.data.crosstalk || {}
+    };
+
+    const dataStr = JSON.stringify(payload, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `strata_census_data_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function exportDataAsCSV() {
+    if (!STATE.data || (!STATE.data.statistics && !STATE.data.crosstalk)) {
+      console.warn('[Strata Window] No data available for export.');
+      return;
+    }
+
+    let csvContent = "";
+
+    // 1. Statistics Export
+    csvContent += "--- CENSUS STATISTICS ---\n";
+    csvContent += "Category,Key,Value\n";
+
+    const stats = STATE.data.statistics;
+    if (stats) {
+      if (stats.family_distribution) {
+        for (const [key, val] of Object.entries(stats.family_distribution)) {
+          csvContent += `Family Distribution,${key},${val}\n`;
+        }
+      }
+      if (stats.domain_distribution) {
+        for (const [key, val] of Object.entries(stats.domain_distribution)) {
+          csvContent += `Domain Distribution,${key},${val}\n`;
+        }
+      }
+      if (stats.substrate_distribution) {
+        for (const [key, val] of Object.entries(stats.substrate_distribution)) {
+          csvContent += `Substrate Distribution,${key},${val}\n`;
+        }
+      }
+    }
+
+    // 2. Crosstalk Matrix Export
+    csvContent += "\n--- CROSSTALK MATRIX ---\n";
+    csvContent += "Origin,Target,Replies,Share_Pct\n";
+
+    const crosstalk = STATE.data.crosstalk;
+    if (crosstalk && crosstalk.matrix) {
+      const matrix = crosstalk.matrix;
+      for (const origin of Object.keys(matrix)) {
+        for (const target of Object.keys(matrix[origin])) {
+          const cell = matrix[origin][target];
+          csvContent += `${origin},${target},${cell.replies},${cell.share_pct}\n`;
+        }
+      }
+    }
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `strata_census_data_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   function setupTabs() {
