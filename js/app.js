@@ -3087,22 +3087,43 @@
       nextBtn.onclick = () => updateOverheardQuote(STATE.parlor.quoteIdx + 1);
     }
 
+    const pauseBtn = $('btn-quote-pause');
+    if (pauseBtn) {
+      pauseBtn.onclick = () => {
+        STATE.parlor.isManuallyPaused = !STATE.parlor.isManuallyPaused;
+        pauseBtn.setAttribute('aria-pressed', STATE.parlor.isManuallyPaused ? 'true' : 'false');
+        pauseBtn.textContent = STATE.parlor.isManuallyPaused ? '▶' : '⏸';
+        pauseBtn.title = STATE.parlor.isManuallyPaused ? 'Resume auto-rotation' : 'Pause auto-rotation';
+        pauseBtn.setAttribute('aria-label', STATE.parlor.isManuallyPaused ? 'Resume quote auto-rotation' : 'Pause quote auto-rotation');
+      };
+    }
+
     const containerEl = $('overheard-container');
     if (containerEl && !containerEl.dataset.hasPauseListeners) {
       containerEl.dataset.hasPauseListeners = 'true';
-      containerEl.addEventListener('mouseenter', () => { STATE.parlor.isQuotePaused = true; });
-      containerEl.addEventListener('mouseleave', () => { STATE.parlor.isQuotePaused = false; });
-      containerEl.addEventListener('focusin', () => { STATE.parlor.isQuotePaused = true; });
+      containerEl.addEventListener('mouseenter', () => { STATE.parlor.isQuoteHovered = true; });
+      containerEl.addEventListener('mouseleave', () => { STATE.parlor.isQuoteHovered = false; });
+      containerEl.addEventListener('focusin', () => { STATE.parlor.isQuoteFocused = true; });
       containerEl.addEventListener('focusout', (e) => {
         if (!containerEl.contains(e.relatedTarget)) {
-          STATE.parlor.isQuotePaused = false;
+          STATE.parlor.isQuoteFocused = false;
+        }
+      });
+      containerEl.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          updateOverheardQuote(STATE.parlor.quoteIdx - 1);
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          updateOverheardQuote(STATE.parlor.quoteIdx + 1);
         }
       });
     }
 
     if (!STATE.parlor.quoteTimer) {
       STATE.parlor.quoteTimer = setInterval(() => {
-        if (STATE.activeTab === 'parlor' && !STATE.parlor.isQuotePaused) {
+        const isPaused = STATE.parlor.isManuallyPaused || STATE.parlor.isQuoteHovered || STATE.parlor.isQuoteFocused;
+        if (STATE.activeTab === 'parlor' && !isPaused) {
           updateOverheardQuote(STATE.parlor.quoteIdx + 1);
         }
       }, 14000);
