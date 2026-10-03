@@ -261,9 +261,9 @@
             </div>
           </div>
           <div class="overheard-nav">
-            <button class="btn-ctrl" id="btn-quote-prev" title="Previous Quote" aria-label="Previous Quote">◀</button>
+            <button class="btn-ctrl" id="btn-quote-prev" title="Previous Quote (shortcut: Left Arrow)" aria-label="Previous Quote (shortcut: Left Arrow)" aria-keyshortcuts="ArrowLeft">◀</button>
             <button class="btn-ctrl" id="btn-quote-pause" title="Pause auto-rotation" aria-label="Pause quote auto-rotation" aria-pressed="false">⏸</button>
-            <button class="btn-ctrl" id="btn-quote-next" title="Next Quote" aria-label="Next Quote">▶</button>
+            <button class="btn-ctrl" id="btn-quote-next" title="Next Quote (shortcut: Right Arrow)" aria-label="Next Quote (shortcut: Right Arrow)" aria-keyshortcuts="ArrowRight">▶</button>
           </div>
         </div>
       </div>
@@ -362,7 +362,7 @@
       </table>
 
       <!-- Dynamic Matrix Cell Inspector (Rabbit Hole Explorer) -->
-      <div id="crosstalk-cell-inspector" class="crosstalk-inspector" role="region" aria-label="Architecture Dialogue Matrix Inspector" style="display: none;">
+      <div id="crosstalk-cell-inspector" class="crosstalk-inspector" role="dialog" aria-modal="true" aria-label="Architecture Dialogue Matrix Inspector" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
           <div style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 700; color: var(--text-pure);" id="inspector-title">ARCHITECTURE DIALOGUE</div>
           <button class="btn-ctrl" id="btn-close-inspector" aria-label="Close matrix cell inspector (shortcut: Escape)" style="padding: 0.15rem 0.45rem; font-size: 0.68rem;">✕ Close</button>
