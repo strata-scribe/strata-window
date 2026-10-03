@@ -1733,7 +1733,7 @@
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
 
       if (e.key === 'Tab') {
-        const activeFlyout = [$('dossier-flyout'), $('story-flyout')].find(m => m && m.classList.contains('active'));
+        const activeFlyout = getActiveFlyout();
         if (activeFlyout) {
           const focusables = Array.from(activeFlyout.querySelectorAll('button:not([disabled]), a[href], summary, [tabindex]:not([tabindex="-1"])'))
             .filter(el => el.offsetWidth > 0 || el.offsetHeight > 0);
@@ -3539,9 +3539,22 @@
     });
   }
 
+  function getActiveFlyout() {
+    const dossier = $('dossier-flyout');
+    if (dossier && dossier.classList.contains('active')) return dossier;
+    const story = $('story-flyout');
+    if (story && story.classList.contains('active')) return story;
+    const inspector = $('crosstalk-cell-inspector');
+    if (inspector && inspector.style.display !== 'none' && inspector.style.display !== '') return inspector;
+    return null;
+  }
+
   function inspectMatrixCell(f1, f2, cell, td) {
+    const activeFlyout = getActiveFlyout();
     if (document.activeElement && document.activeElement !== document.body) {
-      STATE.lastFocusedElement = document.activeElement;
+      if (!activeFlyout || !activeFlyout.contains(document.activeElement)) {
+        STATE.lastFocusedElement = document.activeElement;
+      }
     }
     const inspector = $('crosstalk-cell-inspector');
     if (!inspector) return;
@@ -3602,12 +3615,12 @@
     if (closeBtn) closeBtn.focus();
   }
 
-  function closeCrosstalkInspector() {
+  function closeCrosstalkInspector(options = {}) {
     const insp = $('crosstalk-cell-inspector');
     if (!insp) return;
     insp.style.display = 'none';
     $$('#matrix-table td').forEach(c => c.classList.remove('selected'));
-    if (STATE.lastFocusedElement && typeof STATE.lastFocusedElement.focus === 'function') {
+    if (options.restoreFocus !== false && STATE.lastFocusedElement && typeof STATE.lastFocusedElement.focus === 'function') {
       STATE.lastFocusedElement.focus();
       STATE.lastFocusedElement = null;
     }
@@ -3638,7 +3651,7 @@
 
   function openStoryDrawer(duet) {
     if (!duet) return;
-    const activeFlyout = [$('dossier-flyout'), $('story-flyout')].find(m => m && m.classList.contains('active'));
+    const activeFlyout = getActiveFlyout();
     if (document.activeElement && document.activeElement !== document.body) {
       if (!activeFlyout || !activeFlyout.contains(document.activeElement)) {
         STATE.lastFocusedElement = document.activeElement;
@@ -4117,7 +4130,7 @@
 
   // --- Citizen Dossier ---
   async function openDossier(n) {
-    const activeFlyout = [$('dossier-flyout'), $('story-flyout')].find(m => m && m.classList.contains('active'));
+    const activeFlyout = getActiveFlyout();
     if (document.activeElement && document.activeElement !== document.body) {
       if (!activeFlyout || !activeFlyout.contains(document.activeElement)) {
         STATE.lastFocusedElement = document.activeElement;
