@@ -987,7 +987,9 @@
     landmarks.forEach(handle => {
       const node = STATE.data.nodes.find(n => n.h.toLowerCase() === handle.toLowerCase());
       const btn = h('button', 'landmark-chip', `@${handle}`);
-      btn.setAttribute('aria-label', `Focus telescope on landmark citizen @${handle}`);
+      const btnLabel = `Focus telescope on landmark citizen @${handle}`;
+      btn.setAttribute('aria-label', btnLabel);
+      btn.title = btnLabel;
       if (node) {
         btn.addEventListener('click', () => {
           $$('.landmark-chip').forEach(c => c.classList.remove('active'));
@@ -3051,11 +3053,17 @@
 
       const prevBtn = $('btn-quote-prev');
       const nextBtn = $('btn-quote-next');
+      const prevNum = ((STATE.parlor.quoteIdx - 1 + totalQuotes) % totalQuotes) + 1;
+      const nextNum = ((STATE.parlor.quoteIdx + 1) % totalQuotes) + 1;
       if (prevBtn) {
-        prevBtn.setAttribute('aria-label', `Previous Quote (${currentNum} of ${totalQuotes})`);
+        const prevText = `Previous Quote (${prevNum} of ${totalQuotes})`;
+        prevBtn.setAttribute('aria-label', prevText);
+        prevBtn.title = prevText;
       }
       if (nextBtn) {
-        nextBtn.setAttribute('aria-label', `Next Quote (${currentNum} of ${totalQuotes})`);
+        const nextText = `Next Quote (${nextNum} of ${totalQuotes})`;
+        nextBtn.setAttribute('aria-label', nextText);
+        nextBtn.title = nextText;
       }
 
       const focusBtn = $('btn-overheard-focus');
@@ -3096,6 +3104,15 @@
       containerEl.addEventListener('focusout', (e) => {
         if (!containerEl.contains(e.relatedTarget)) {
           STATE.parlor.isQuotePaused = false;
+        }
+      });
+      containerEl.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          updateOverheardQuote(STATE.parlor.quoteIdx - 1);
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          updateOverheardQuote(STATE.parlor.quoteIdx + 1);
         }
       });
     }
@@ -3169,7 +3186,9 @@
         const voicesList = h('div', 'mullion-voices-list');
         q.voices.forEach(v => {
           const vChip = h('button', 'mullion-voice-chip', `@${v}`);
-          vChip.setAttribute('aria-label', `View dossier for @${v}`);
+          const vLabel = `View dossier for @${v}`;
+          vChip.setAttribute('aria-label', vLabel);
+          vChip.title = vLabel;
           vChip.addEventListener('click', () => {
             const found = STATE.data.nodes.find(n => n.h === v);
             if (found) openDossier(found);
@@ -3258,6 +3277,7 @@
       const handlesDiv = h('div', 'river-duet-handles');
       const hA = h('button', 'river-handle-a', `@${duet.citizen_a}`);
       hA.setAttribute('aria-label', `View dossier for @${duet.citizen_a}`);
+      hA.title = `View dossier for @${duet.citizen_a}`;
       hA.addEventListener('click', () => {
         const found = STATE.data.nodes.find(n => n.h === duet.citizen_a);
         if (found) openDossier(found);
@@ -3265,6 +3285,7 @@
       const arrow = h('span', 'river-arrow', '⟷');
       const hB = h('button', 'river-handle-b', `@${duet.citizen_b}`);
       hB.setAttribute('aria-label', `View dossier for @${duet.citizen_b}`);
+      hB.title = `View dossier for @${duet.citizen_b}`;
       hB.addEventListener('click', () => {
         const found = STATE.data.nodes.find(n => n.h === duet.citizen_b);
         if (found) openDossier(found);
@@ -3305,7 +3326,9 @@
       // Actions
       const actions = h('div', 'river-card-actions');
       const traceBtn = h('button', 'btn-ctrl river-action-btn', '✦ Trace in Starwalker');
-      traceBtn.setAttribute('aria-label', `Trace dialogue between @${duet.citizen_a} and @${duet.citizen_b} in Starwalker 3D`);
+      const traceLabel = `Trace dialogue between @${duet.citizen_a} and @${duet.citizen_b} in Starwalker 3D`;
+      traceBtn.setAttribute('aria-label', traceLabel);
+      traceBtn.title = traceLabel;
       traceBtn.addEventListener('click', () => {
         setProjection('starwalker');
         traceDuetInObservatory(duet);
@@ -3313,7 +3336,9 @@
       actions.appendChild(traceBtn);
 
       const drawerBtn = h('button', 'btn-ctrl river-action-btn', 'Open Dialogue Thread');
-      drawerBtn.setAttribute('aria-label', `Open dialogue thread between @${duet.citizen_a} and @${duet.citizen_b}`);
+      const drawerLabel = `Open dialogue thread between @${duet.citizen_a} and @${duet.citizen_b}`;
+      drawerBtn.setAttribute('aria-label', drawerLabel);
+      drawerBtn.title = drawerLabel;
       drawerBtn.addEventListener('click', () => {
         openStoryDrawer(duet);
       });
@@ -3367,7 +3392,9 @@
 
     card.setAttribute('tabindex', '0');
     card.setAttribute('role', 'button');
-    card.setAttribute('aria-label', `View dossier for @${g.h} (${themeMeta.label})`);
+    const cardLabel = `View dossier for @${g.h} (${themeMeta.label})`;
+    card.setAttribute('aria-label', cardLabel);
+    card.title = cardLabel;
 
     const handleAction = () => {
       const full = STATE.data.nodes.find(n => n.id === g.id);
