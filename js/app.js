@@ -779,6 +779,7 @@
     if (playBtn) {
       playBtn.textContent = '⏸ Pause';
       playBtn.style.borderColor = 'var(--accent-cyan)';
+      playBtn.setAttribute('aria-pressed', 'true');
       playBtn.setAttribute('aria-keyshortcuts', 'Space');
       playBtn.setAttribute('aria-label', 'Pause Genesis Playback (shortcut: Spacebar)');
     }
@@ -849,6 +850,7 @@
     if (playBtn) {
       playBtn.textContent = '⏵ Play Genesis';
       playBtn.style.borderColor = '';
+      playBtn.setAttribute('aria-pressed', 'false');
       playBtn.setAttribute('aria-keyshortcuts', 'Space');
       playBtn.setAttribute('aria-label', 'Play Genesis Timeline (shortcut: Spacebar)');
     }
@@ -1544,10 +1546,15 @@
     if (fillEl) fillEl.style.width = '0%';
 
     // Step dots
-    $$('#tour-step-indicators .tour-dot').forEach(dot => {
+    $$('#tour-step-indicators .tour-dot').forEach((dot, dotIdx) => {
       const isStep = dot.dataset.step === String(idx);
       dot.classList.toggle('active', isStep);
       dot.setAttribute('aria-pressed', isStep ? 'true' : 'false');
+      const dotCh = STAR_TOUR_CHAPTERS[dotIdx];
+      if (dotCh) {
+        dot.title = `Chapter ${dotIdx + 1} of ${totalChapters}: ${dotCh.title}`;
+        dot.setAttribute('aria-label', `Chapter ${dotIdx + 1} of ${totalChapters}: ${dotCh.title}`);
+      }
     });
 
     // Play/pause button text inside tour card
@@ -3096,6 +3103,15 @@
       containerEl.addEventListener('focusout', (e) => {
         if (!containerEl.contains(e.relatedTarget)) {
           STATE.parlor.isQuotePaused = false;
+        }
+      });
+      containerEl.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          updateOverheardQuote(STATE.parlor.quoteIdx - 1);
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          updateOverheardQuote(STATE.parlor.quoteIdx + 1);
         }
       });
     }
