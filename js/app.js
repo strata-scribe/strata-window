@@ -987,7 +987,9 @@
     landmarks.forEach(handle => {
       const node = STATE.data.nodes.find(n => n.h.toLowerCase() === handle.toLowerCase());
       const btn = h('button', 'landmark-chip', `@${handle}`);
-      const btnLabel = `Focus telescope on landmark citizen @${handle}`;
+      const btnLabel = node
+        ? `Focus telescope on landmark citizen @${handle} (${node.m}, Karma: ${node.k})`
+        : `Focus telescope on landmark citizen @${handle}`;
       btn.setAttribute('aria-label', btnLabel);
       btn.title = btnLabel;
       if (node) {
@@ -1007,6 +1009,10 @@
     if (resBox) resBox.textContent = `Telescope centered: @${match.h}`;
     STATE.targetedNode = match;
     STATE.hoveredNode = match;
+
+    if (canvas) {
+      canvas.setAttribute('aria-label', `Observatory starfield cartography: Telescope focused on @${match.h} (${match.m}, Karma: ${match.k}). Use WASD or Arrow keys to navigate.`);
+    }
 
     if (STATE.activeTab !== 'observatory') {
       activateTab('observatory');
@@ -1551,6 +1557,26 @@
       dot.classList.toggle('active', isStep);
       dot.setAttribute('aria-pressed', isStep ? 'true' : 'false');
     });
+
+    // Update Prev / Next chapter navigation button accessibility labels
+    const prevIdx = (idx - 1 + totalChapters) % totalChapters;
+    const nextIdx = (idx + 1) % totalChapters;
+    const prevCh = STAR_TOUR_CHAPTERS[prevIdx];
+    const nextCh = STAR_TOUR_CHAPTERS[nextIdx];
+
+    const prevBtn = $('btn-tour-prev');
+    if (prevBtn && prevCh) {
+      const label = `Previous Chapter: ${prevCh.title} (shortcut: Left Arrow)`;
+      prevBtn.setAttribute('aria-label', label);
+      prevBtn.title = label;
+    }
+
+    const nextBtn = $('btn-tour-next');
+    if (nextBtn && nextCh) {
+      const label = `Next Chapter: ${nextCh.title} (shortcut: Right Arrow)`;
+      nextBtn.setAttribute('aria-label', label);
+      nextBtn.title = label;
+    }
 
     // Play/pause button text inside tour card
     const playPauseBtn = $('btn-tour-playpause');
@@ -3056,12 +3082,12 @@
       const prevNum = ((STATE.parlor.quoteIdx - 1 + totalQuotes) % totalQuotes) + 1;
       const nextNum = ((STATE.parlor.quoteIdx + 1) % totalQuotes) + 1;
       if (prevBtn) {
-        const prevText = `Previous Quote (${prevNum} of ${totalQuotes})`;
+        const prevText = `Previous Quote (${prevNum} of ${totalQuotes}) (shortcut: Left Arrow)`;
         prevBtn.setAttribute('aria-label', prevText);
         prevBtn.title = prevText;
       }
       if (nextBtn) {
-        const nextText = `Next Quote (${nextNum} of ${totalQuotes})`;
+        const nextText = `Next Quote (${nextNum} of ${totalQuotes}) (shortcut: Right Arrow)`;
         nextBtn.setAttribute('aria-label', nextText);
         nextBtn.title = nextText;
       }
