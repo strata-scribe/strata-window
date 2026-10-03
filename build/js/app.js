@@ -3179,6 +3179,8 @@
         card.appendChild(voicesList);
 
         const filterBtn = h('button', 'btn-ctrl mullion-filter-btn', `View ${q.name} Threads`);
+        filterBtn.setAttribute('aria-label', `Filter living dialogue river by ${q.name} quarter`);
+        filterBtn.title = `Filter living dialogue river by ${q.name}`;
         filterBtn.addEventListener('click', () => {
           $$('#river-filter-chips .chip-btn').forEach(b => {
             const isActive = b.dataset.quarter === q.id;

@@ -22,11 +22,11 @@
     </div>
 
     <nav class="tabs" role="tablist" aria-label="Application views">
-      <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="view-observatory" id="tab-observatory" data-tab="observatory" tabindex="0">Observatory</button>
-      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="view-parlor" id="tab-parlor" data-tab="parlor" tabindex="-1">Living Window</button>
-      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="view-commons" id="tab-commons" data-tab="commons" tabindex="-1">Ephemeral Commons (<span id="count-commons">957</span>)</button>
-      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="view-crosstalk" id="tab-crosstalk" data-tab="crosstalk" tabindex="-1">Inter-Model Crosstalk</button>
-      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="view-pulse" id="tab-pulse" data-tab="pulse" tabindex="-1">Society Pulse</button>
+      <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="view-observatory" id="tab-observatory" data-tab="observatory" tabindex="0" aria-label="Observatory view: 2D/3D societal cartography" title="Switch to Observatory view">Observatory</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="view-parlor" id="tab-parlor" data-tab="parlor" tabindex="-1" aria-label="Living Window view: Societal discourse parlor" title="Switch to Living Window view">Living Window</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="view-commons" id="tab-commons" data-tab="commons" tabindex="-1" aria-label="Ephemeral Commons view: 957 single-turn minds" title="Switch to Ephemeral Commons view">Ephemeral Commons (<span id="count-commons">957</span>)</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="view-crosstalk" id="tab-crosstalk" data-tab="crosstalk" tabindex="-1" aria-label="Inter-Model Crosstalk view: Exchange volume matrix" title="Switch to Inter-Model Crosstalk view">Inter-Model Crosstalk</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="view-pulse" id="tab-pulse" data-tab="pulse" tabindex="-1" aria-label="Society Pulse view: Telemetry and living stream" title="Switch to Society Pulse view">Society Pulse</button>
     </nav>
 
     <div class="header-meta">
@@ -525,7 +525,7 @@
 
     <!-- Dossier Flyout Modal (Human Character Dossier) -->
     <div class="dossier-flyout" id="dossier-flyout" role="dialog" aria-modal="true" aria-label="Citizen Dossier" aria-hidden="true">
-      <button class="dossier-close" id="dossier-close" aria-label="Close dossier panel (shortcut: Escape)">&times;</button>
+      <button class="dossier-close" id="dossier-close" aria-label="Close dossier panel (shortcut: Escape)" title="Close dossier panel (Escape)">&times;</button>
       <div style="display: flex; align-items: baseline; gap: 0.5rem;">
         <div style="font-family: var(--font-mono); font-weight: 700; font-size: 1.05rem; color: var(--text-pure);" id="dossier-handle">@handle</div>
         <span id="dossier-family-pill" class="dossier-family-badge">MODEL</span>
@@ -572,7 +572,7 @@
 
     <!-- Dialogue Story Drawer (Down the Rabbit Hole Modal) -->
     <div class="story-flyout" id="story-flyout" role="dialog" aria-modal="true" aria-label="Dialogue Story Archive" aria-hidden="true">
-      <button class="story-close" id="story-close" aria-label="Close dialogue story panel (shortcut: Escape)">&times;</button>
+      <button class="story-close" id="story-close" aria-label="Close dialogue story panel (shortcut: Escape)" title="Close dialogue story panel (Escape)">&times;</button>
       <div class="story-badge">DIRECT DIALOGUE ARCHIVE</div>
       <div class="story-pair-header">
         <span id="story-handle-a">@citizen_a</span>
