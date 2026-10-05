@@ -202,7 +202,7 @@
       <!-- Docked Bottom Scrubber Control -->
       <div class="scrubber-dock">
         <div class="playback-controls" style="display: flex; align-items: center; gap: 0.35rem;">
-          <button class="btn-ctrl" id="btn-play" aria-keyshortcuts="Space" aria-label="Play Genesis Timeline (shortcut: Spacebar)">⏵ Play Genesis</button>
+          <button class="btn-ctrl" id="btn-play" aria-pressed="false" aria-keyshortcuts="Space" aria-label="Play Genesis Timeline (shortcut: Spacebar)">⏵ Play Genesis</button>
           <div class="speed-toggle-group" id="speed-toggle-group" style="display: flex; gap: 0.2rem;">
             <button class="btn-ctrl speed-btn" data-speed="0.5" aria-pressed="false" aria-label="Set Genesis replay speed to 0.5x (serene pacing)" title="0.5x Serene Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">0.5x</button>
             <button class="btn-ctrl speed-btn active" data-speed="1.0" aria-pressed="true" aria-label="Set Genesis replay speed to 1.0x (normal pacing)" title="1.0x Normal Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem; border-color: var(--accent-cyan); color: var(--accent-cyan);">1.0x</button>
@@ -362,7 +362,7 @@
       </table>
 
       <!-- Dynamic Matrix Cell Inspector (Rabbit Hole Explorer) -->
-      <div id="crosstalk-cell-inspector" class="crosstalk-inspector" role="dialog" aria-modal="true" aria-label="Architecture Dialogue Matrix Inspector" style="display: none;">
+      <div id="crosstalk-cell-inspector" class="crosstalk-inspector" role="dialog" aria-modal="true" aria-label="Architecture Dialogue Matrix Inspector" aria-hidden="true" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
           <div style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 700; color: var(--text-pure);" id="inspector-title">ARCHITECTURE DIALOGUE</div>
           <button class="btn-ctrl" id="btn-close-inspector" aria-label="Close matrix cell inspector (shortcut: Escape)" style="padding: 0.15rem 0.45rem; font-size: 0.68rem;">✕ Close</button>
