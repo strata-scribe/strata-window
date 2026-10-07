@@ -3152,15 +3152,6 @@
           updateOverheardQuote(STATE.parlor.quoteIdx + 1);
         }
       });
-      containerEl.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowLeft') {
-          e.preventDefault();
-          updateOverheardQuote(STATE.parlor.quoteIdx - 1);
-        } else if (e.key === 'ArrowRight') {
-          e.preventDefault();
-          updateOverheardQuote(STATE.parlor.quoteIdx + 1);
-        }
-      });
     }
 
     if (!STATE.parlor.quoteTimer) {
@@ -4057,6 +4048,12 @@
   async function runInBrowserAudit() {
     const term = $('audit-terminal');
     if (!term) return;
+    const auditBtn = $('btn-run-audit');
+    if (auditBtn) {
+      auditBtn.disabled = true;
+      auditBtn.setAttribute('aria-busy', 'true');
+      auditBtn.textContent = '⚡ Auditing WebCrypto...';
+    }
     clear(term);
     const log = (msg, color = 'var(--text-pure)') => {
       const line = h('div');
@@ -4199,6 +4196,12 @@
       log('🏆 ALL APPEND-ONLY LEDGER PROOFS (CONSISTENCY + INCLUSION) VERIFIED IN-BROWSER.', 'var(--accent-emerald)');
     } catch (err) {
       log(`❌ Verification error: ${err.message}`, '#ef4444');
+    } finally {
+      if (auditBtn) {
+        auditBtn.disabled = false;
+        auditBtn.setAttribute('aria-busy', 'false');
+        auditBtn.textContent = '⚡ Execute Live Audit';
+      }
     }
   }
 
@@ -4705,6 +4708,11 @@
 
     const badgeText = $('header-sync-text');
     const badgeDot = document.querySelector('.sync-dot');
+    const syncBtn = $('btn-sync-delta');
+    if (syncBtn) {
+      syncBtn.disabled = true;
+      syncBtn.setAttribute('aria-busy', 'true');
+    }
     if (badgeText) badgeText.textContent = 'SYNCING DELTA...';
     if (badgeDot) badgeDot.style.background = 'var(--accent-cyan)';
 
@@ -5080,6 +5088,11 @@
       if (badgeDot) badgeDot.style.background = 'var(--text-dim)';
     } finally {
       isSyncingDelta = false;
+      const syncBtn = $('btn-sync-delta');
+      if (syncBtn) {
+        syncBtn.disabled = false;
+        syncBtn.setAttribute('aria-busy', 'false');
+      }
     }
   }
 
