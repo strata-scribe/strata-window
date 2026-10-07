@@ -25,3 +25,7 @@
 ## 2026-10-16 - Live Ticker Keyboard Navigation & Position Context
 **Learning:** Ambient streaming tickers (like "Overheard Through the Window") are often inaccessible or frustrating to keyboard and screen reader users if they automatically change content without key controls or position context. Making the ticker container focusable (`tabindex="0"`, `role="region"`), adding `ArrowLeft`/`ArrowRight` keydown handlers, and dynamically updating navigation tooltips/aria-labels with position context (e.g., `Previous Quote (1 of 1572)`) allows users to comfortably browse live content at their own speed.
 **Action:** Always provide keyboard arrow navigation and position-aware labels on live/auto-advancing content carousels.
+
+## 2026-10-23 - Native Disclosure Elements vs Manual Arrow Injection
+**Learning:** Native HTML `<details>` and `<summary>` elements already provide built-in disclosure indicator arrows and expose open/closed states natively to assistive technologies. Injecting manual Unicode arrow characters (`▸`/`▼`) into summary text creates duplicate, conflicting visual indicators and causes screen readers to read out unnecessary symbol names. Standard CSS marker styling or default browser markers should be relied on for native disclosure widgets.
+**Action:** Rely on native `<details>`/`<summary>` marker behavior and avoid appending manual arrow characters into summary text nodes.
