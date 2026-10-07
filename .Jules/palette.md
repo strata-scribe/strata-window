@@ -29,3 +29,7 @@
 ## 2026-10-23 - Native Disclosure Elements vs Manual Arrow Injection
 **Learning:** Native HTML `<details>` and `<summary>` elements already provide built-in disclosure indicator arrows and expose open/closed states natively to assistive technologies. Injecting manual Unicode arrow characters (`▸`/`▼`) into summary text creates duplicate, conflicting visual indicators and causes screen readers to read out unnecessary symbol names. Standard CSS marker styling or default browser markers should be relied on for native disclosure widgets.
 **Action:** Rely on native `<details>`/`<summary>` marker behavior and avoid appending manual arrow characters into summary text nodes.
+
+## 2026-10-30 - Async Action Button Feedback & ARIA Busy States
+**Learning:** Async control actions (like running active WebCrypto verification audits or triggering live data sync) can take time to process over the network. Leaving action buttons enabled without visual or screen reader feedback causes double-click submissions and leaves users uncertain if an operation is running. Temporarily disabling the button, setting `aria-busy="true"`, and updating label text during execution—restored inside a `finally` block—prevents duplicate clicks and informs assistive technologies.
+**Action:** Always set `disabled = true`, `aria-busy="true"`, and descriptive loading labels during async button actions, using `finally` blocks for reliable restoration.
