@@ -779,6 +779,7 @@
     if (playBtn) {
       playBtn.textContent = '⏸ Pause';
       playBtn.style.borderColor = 'var(--accent-cyan)';
+      playBtn.setAttribute('aria-pressed', 'true');
       playBtn.setAttribute('aria-keyshortcuts', 'Space');
       playBtn.setAttribute('aria-label', 'Pause Genesis Playback (shortcut: Spacebar)');
     }
@@ -849,6 +850,7 @@
     if (playBtn) {
       playBtn.textContent = '⏵ Play Genesis';
       playBtn.style.borderColor = '';
+      playBtn.setAttribute('aria-pressed', 'false');
       playBtn.setAttribute('aria-keyshortcuts', 'Space');
       playBtn.setAttribute('aria-label', 'Play Genesis Timeline (shortcut: Spacebar)');
     }
@@ -3684,7 +3686,18 @@
       }
     }
 
+    // Close other flyouts if active to keep a single active modal context
+    const dossier = $('dossier-flyout');
+    if (dossier && dossier.classList.contains('active')) {
+      closeDossier({ restoreFocus: false });
+    }
+    const story = $('story-flyout');
+    if (story && story.classList.contains('active')) {
+      closeStoryDrawer({ restoreFocus: false });
+    }
+
     inspector.style.display = 'block';
+    inspector.setAttribute('aria-hidden', 'false');
     const closeBtn = $('btn-close-inspector');
     if (closeBtn) closeBtn.focus();
   }
@@ -3693,6 +3706,7 @@
     const insp = $('crosstalk-cell-inspector');
     if (!insp) return;
     insp.style.display = 'none';
+    insp.setAttribute('aria-hidden', 'true');
     $$('#matrix-table td').forEach(c => c.classList.remove('selected'));
     if (options.restoreFocus !== false && STATE.lastFocusedElement && typeof STATE.lastFocusedElement.focus === 'function') {
       STATE.lastFocusedElement.focus();
@@ -3740,10 +3754,14 @@
     const closeBtn = $('story-close');
     if (closeBtn) closeBtn.focus();
 
-    // Close citizen dossier if open to avoid viewport crowding
+    // Close citizen dossier or crosstalk cell inspector if open to avoid viewport crowding
     const dossier = $('dossier-flyout');
     if (dossier && dossier.classList.contains('active')) {
       closeDossier({ restoreFocus: false });
+    }
+    const insp = $('crosstalk-cell-inspector');
+    if (insp && insp.style.display !== 'none') {
+      closeCrosstalkInspector({ restoreFocus: false });
     }
 
     $('story-handle-a').textContent = `@${duet.citizen_a}`;
@@ -4218,10 +4236,14 @@
     const closeBtn = $('dossier-close');
     if (closeBtn) closeBtn.focus();
 
-    // Close dialogue story drawer if open to avoid viewport crowding
+    // Close dialogue story drawer or crosstalk cell inspector if open to avoid viewport crowding
     const story = $('story-flyout');
     if (story && story.classList.contains('active')) {
       closeStoryDrawer({ restoreFocus: false });
+    }
+    const insp = $('crosstalk-cell-inspector');
+    if (insp && insp.style.display !== 'none') {
+      closeCrosstalkInspector({ restoreFocus: false });
     }
 
     const cryptoAcc = $('dossier-crypto-accordion');

@@ -25,3 +25,7 @@
 ## 2026-10-16 - Live Ticker Keyboard Navigation & Position Context
 **Learning:** Ambient streaming tickers (like "Overheard Through the Window") are often inaccessible or frustrating to keyboard and screen reader users if they automatically change content without key controls or position context. Making the ticker container focusable (`tabindex="0"`, `role="region"`), adding `ArrowLeft`/`ArrowRight` keydown handlers, and dynamically updating navigation tooltips/aria-labels with position context (e.g., `Previous Quote (1 of 1572)`) allows users to comfortably browse live content at their own speed.
 **Action:** Always provide keyboard arrow navigation and position-aware labels on live/auto-advancing content carousels.
+
+## 2026-10-23 - Modal State Synchronization & Single Active Modal Context
+**Learning:** In multi-panel interfaces with modal inspectors (`role="dialog"`, `aria-modal="true"`), failing to update `aria-hidden` attributes or allowing multiple dialog overlays to remain active simultaneously causes screen readers and keyboard focus trapping to collide. Updating `aria-hidden` on open/close and closing overlapping dialog flyouts with `restoreFocus: false` ensures a clean, single active modal context (WCAG 4.1.2 Name, Role, Value & WCAG 2.4.3 Focus Order).
+**Action:** Always sync `aria-hidden` on dialog elements during visibility transitions and close secondary modal panels when initiating new overlay views.
