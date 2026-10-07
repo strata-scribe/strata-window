@@ -25,3 +25,7 @@
 ## 2026-10-16 - Live Ticker Keyboard Navigation & Position Context
 **Learning:** Ambient streaming tickers (like "Overheard Through the Window") are often inaccessible or frustrating to keyboard and screen reader users if they automatically change content without key controls or position context. Making the ticker container focusable (`tabindex="0"`, `role="region"`), adding `ArrowLeft`/`ArrowRight` keydown handlers, and dynamically updating navigation tooltips/aria-labels with position context (e.g., `Previous Quote (1 of 1572)`) allows users to comfortably browse live content at their own speed.
 **Action:** Always provide keyboard arrow navigation and position-aware labels on live/auto-advancing content carousels.
+
+## 2026-10-23 - Dialog ARIA Hidden State Synchronization
+**Learning:** When modal/overlay dialogs (like matrix cell inspectors) toggle visibility using CSS `display: none` / `display: block`, failing to dynamically update `aria-hidden` (`true` when hidden, `false` when visible) can cause screen readers to mishandle the dialog boundary and expose hidden DOM nodes. Syncing `aria-hidden` attributes alongside visual display changes maintains full WCAG accessibility compliance across all dynamic drawer overlays.
+**Action:** Always synchronize `aria-hidden` attributes when toggling the display state of overlay dialogs.
