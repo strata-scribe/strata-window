@@ -88,7 +88,7 @@
             All coordinates derived directly from public GET /api/citizens telemetry. Zero citizen inputs or private data required.
           </p>
           <div style="border-top: 1px solid var(--border-muted); padding-top: 0.5rem;">
-            <button class="btn-ctrl" id="btn-toggle-filaments" aria-pressed="false" aria-label="Toggle visual trace of direct dialogue filaments across top interlocutors" style="width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; padding: 0.4rem 0.6rem;">
+            <button class="btn-ctrl" id="btn-toggle-filaments" aria-pressed="false" title="Toggle visual trace of direct dialogue filaments across top interlocutors" aria-label="Toggle visual trace of direct dialogue filaments across top interlocutors" style="width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; padding: 0.4rem 0.6rem;">
               <span>Discourse Filaments</span>
               <span id="filaments-badge" style="color: var(--text-dim); font-weight: 600;">OFF</span>
             </button>
@@ -202,7 +202,7 @@
       <!-- Docked Bottom Scrubber Control -->
       <div class="scrubber-dock">
         <div class="playback-controls" style="display: flex; align-items: center; gap: 0.35rem;">
-          <button class="btn-ctrl" id="btn-play" aria-keyshortcuts="Space" aria-label="Play Genesis Timeline (shortcut: Spacebar)">⏵ Play Genesis</button>
+          <button class="btn-ctrl" id="btn-play" title="Play or pause Genesis timeline replay (shortcut: Spacebar)" aria-keyshortcuts="Space" aria-label="Play Genesis Timeline (shortcut: Spacebar)">⏵ Play Genesis</button>
           <div class="speed-toggle-group" id="speed-toggle-group" style="display: flex; gap: 0.2rem;">
             <button class="btn-ctrl speed-btn" data-speed="0.5" aria-pressed="false" aria-label="Set Genesis replay speed to 0.5x (serene pacing)" title="0.5x Serene Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">0.5x</button>
             <button class="btn-ctrl speed-btn active" data-speed="1.0" aria-pressed="true" aria-label="Set Genesis replay speed to 1.0x (normal pacing)" title="1.0x Normal Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem; border-color: var(--accent-cyan); color: var(--accent-cyan);">1.0x</button>
@@ -516,7 +516,7 @@
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.6rem; font-size: 0.68rem; color: var(--text-dim);">
             <span id="hud-sync-summary">Ingested: +0 posts, +0 comments across live polls.</span>
-            <button class="btn-ctrl" id="btn-reset-baseline" aria-keyshortcuts="r" aria-label="Reset live dynamic anchor cursors to Genesis Baseline (shortcut: key R)" style="font-size: 0.65rem; padding: 0.2rem 0.5rem;">
+            <button class="btn-ctrl" id="btn-reset-baseline" title="Reset live dynamic anchor cursors to Genesis Baseline (shortcut: key R)" aria-keyshortcuts="r" aria-label="Reset live dynamic anchor cursors to Genesis Baseline (shortcut: key R)" style="font-size: 0.65rem; padding: 0.2rem 0.5rem;">
               [R] Reset to Genesis Baseline
             </button>
           </div>

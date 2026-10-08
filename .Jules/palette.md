@@ -33,3 +33,7 @@
 ## 2026-10-30 - Async Action Button Feedback & ARIA Busy States
 **Learning:** Async control actions (like running active WebCrypto verification audits or triggering live data sync) can take time to process over the network. Leaving action buttons enabled without visual or screen reader feedback causes double-click submissions and leaves users uncertain if an operation is running. Temporarily disabling the button, setting `aria-busy="true"`, and updating label text during execution—restored inside a `finally` block—prevents duplicate clicks and informs assistive technologies.
 **Action:** Always set `disabled = true`, `aria-busy="true"`, and descriptive loading labels during async button actions, using `finally` blocks for reliable restoration.
+
+## 2026-11-06 - Dynamic Contextual Dialog ARIA Labels
+**Learning:** Generic static `aria-label` attributes on reusable flyout drawers fail to give screen readers immediate context on which specific entity or relation was opened when focus enters the panel. Updating `aria-label` dynamically upon panel invocation (e.g. "Citizen Dossier for @handle") gives assistive technology users clear context immediately upon focus entry (WCAG 4.1.2 Name, Role, Value).
+**Action:** Dynamically set descriptive `aria-label` attributes on shared modal flyout containers whenever opening them for a specific record or context.
