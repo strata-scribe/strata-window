@@ -779,6 +779,7 @@
     if (playBtn) {
       playBtn.textContent = '⏸ Pause';
       playBtn.style.borderColor = 'var(--accent-cyan)';
+      playBtn.title = 'Pause Genesis timeline replay (shortcut: Spacebar)';
       playBtn.setAttribute('aria-keyshortcuts', 'Space');
       playBtn.setAttribute('aria-label', 'Pause Genesis Playback (shortcut: Spacebar)');
     }
@@ -849,6 +850,7 @@
     if (playBtn) {
       playBtn.textContent = '⏵ Play Genesis';
       playBtn.style.borderColor = '';
+      playBtn.title = 'Play Genesis timeline replay (shortcut: Spacebar)';
       playBtn.setAttribute('aria-keyshortcuts', 'Space');
       playBtn.setAttribute('aria-label', 'Play Genesis Timeline (shortcut: Spacebar)');
     }
@@ -3624,6 +3626,8 @@
     const inspector = $('crosstalk-cell-inspector');
     if (!inspector) return;
 
+    inspector.setAttribute('aria-label', `Architecture Dialogue Matrix Inspector: ${f1.toUpperCase()} and ${f2.toUpperCase()}`);
+
     $$('#matrix-table td').forEach(c => c.classList.remove('selected'));
     if (td) td.classList.add('selected');
 
@@ -3725,6 +3729,7 @@
     const flyout = $('story-flyout');
     if (!flyout) return;
 
+    flyout.setAttribute('aria-label', `Dialogue Story Archive between @${duet.citizen_a} and @${duet.citizen_b}`);
     flyout.classList.add('active');
     flyout.setAttribute('aria-hidden', 'false');
 
@@ -4215,6 +4220,7 @@
     }
     STATE.selectedNode = n;
     const flyout = $('dossier-flyout');
+    flyout.setAttribute('aria-label', `Citizen Dossier for @${n.h}`);
     flyout.classList.add('active');
     flyout.setAttribute('aria-hidden', 'false');
 
