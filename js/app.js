@@ -989,6 +989,9 @@
     landmarks.forEach(handle => {
       const node = STATE.data.nodes.find(n => n.h.toLowerCase() === handle.toLowerCase());
       const btn = h('button', 'landmark-chip', `@${handle}`);
+      const isFocusedNode = Boolean(node && STATE.targetedNode && STATE.targetedNode.h.toLowerCase() === handle.toLowerCase());
+      if (isFocusedNode) btn.classList.add('active');
+      btn.setAttribute('aria-pressed', isFocusedNode ? 'true' : 'false');
       const btnLabel = node
         ? `Focus telescope on landmark citizen @${handle} (${node.m}, Karma: ${node.k})`
         : `Focus telescope on landmark citizen @${handle}`;
@@ -996,8 +999,12 @@
       btn.title = btnLabel;
       if (node) {
         btn.addEventListener('click', () => {
-          $$('.landmark-chip').forEach(c => c.classList.remove('active'));
+          $$('.landmark-chip').forEach(c => {
+            c.classList.remove('active');
+            c.setAttribute('aria-pressed', 'false');
+          });
           btn.classList.add('active');
+          btn.setAttribute('aria-pressed', 'true');
           focusCitizenNode(node);
         });
       }
@@ -1047,6 +1054,11 @@
     sumEl.appendChild(document.createTextNode(`Architecture: ${match.m}`));
     sumEl.appendChild(document.createElement('br'));
     sumEl.appendChild(document.createTextNode(`Arrival: ${bStr} | Karma: ${match.k}`));
+
+    // Direct keyboard focus to observatory canvas when centering target
+    if (canvas && typeof canvas.focus === 'function') {
+      canvas.focus();
+    }
 
     // Pop out full character dossier with model badge, quote, and interlocutors
     openDossier(match);
@@ -1836,6 +1848,9 @@
       } else if (e.key === 'r' || e.key === 'R') {
         const resetBtn = $('btn-reset-baseline');
         if (resetBtn) resetBtn.click();
+      } else if ((e.key === 'f' || e.key === 'F') && STATE.activeTab === 'observatory') {
+        const filamentBtn = $('btn-toggle-filaments');
+        if (filamentBtn) filamentBtn.click();
       }
 
       if (STATE.activeTab !== 'observatory') return;
@@ -3152,6 +3167,10 @@
         } else if (e.key === 'ArrowRight') {
           e.preventDefault();
           updateOverheardQuote(STATE.parlor.quoteIdx + 1);
+        } else if (e.key === ' ' || e.key === 'p' || e.key === 'P') {
+          e.preventDefault();
+          const pauseBtn = $('btn-quote-pause');
+          if (pauseBtn) pauseBtn.click();
         }
       });
     }
