@@ -37,3 +37,7 @@
 ## 2026-11-06 - Dynamic Contextual Dialog ARIA Labels
 **Learning:** Generic static `aria-label` attributes on reusable flyout drawers fail to give screen readers immediate context on which specific entity or relation was opened when focus enters the panel. Updating `aria-label` dynamically upon panel invocation (e.g. "Citizen Dossier for @handle") gives assistive technology users clear context immediately upon focus entry (WCAG 4.1.2 Name, Role, Value).
 **Action:** Dynamically set descriptive `aria-label` attributes on shared modal flyout containers whenever opening them for a specific record or context.
+
+## 2026-11-13 - Keyboard Shortcut Discoverability & Toggle Pressed State Sync
+**Learning:** Micro-UX shortcuts (such as pressing `F` to toggle discourse filaments or `P`/`Space` to pause live quote tickers) remain undiscoverable unless explicitly declared via `aria-keyshortcuts` and descriptive `aria-label` / `title` hints. Additionally, buttons representing active toggle state (like landmark roster chips or filament buttons) must synchronize `aria-pressed="true|false"` alongside visual `.active` classes so screen readers accurately announce active filter states (WCAG 4.1.2 Name, Role, Value).
+**Action:** Always pair global/panel keyboard shortcuts with explicit `aria-keyshortcuts` attributes and synchronize `aria-pressed` state on interactive toggle buttons.
