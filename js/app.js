@@ -782,6 +782,7 @@
       playBtn.title = 'Pause Genesis timeline replay (shortcut: Spacebar)';
       playBtn.setAttribute('aria-keyshortcuts', 'Space');
       playBtn.setAttribute('aria-label', 'Pause Genesis Playback (shortcut: Spacebar)');
+      playBtn.setAttribute('aria-pressed', 'true');
     }
     const bar = $('scrubber-bar');
     if (bar) bar.classList.add('active');
@@ -853,6 +854,7 @@
       playBtn.title = 'Play Genesis timeline replay (shortcut: Spacebar)';
       playBtn.setAttribute('aria-keyshortcuts', 'Space');
       playBtn.setAttribute('aria-label', 'Play Genesis Timeline (shortcut: Spacebar)');
+      playBtn.setAttribute('aria-pressed', 'false');
     }
     if (STATE.temporal.animId) {
       cancelAnimationFrame(STATE.temporal.animId);
@@ -1597,6 +1599,7 @@
     if (playPauseBtn) {
       playPauseBtn.textContent = sw.tour.paused ? '▶ Resume' : '⏸ Pause';
       playPauseBtn.setAttribute('aria-label', sw.tour.paused ? 'Resume Tour (shortcut: Spacebar)' : 'Pause Tour (shortcut: Spacebar)');
+      playPauseBtn.setAttribute('aria-pressed', sw.tour.paused ? 'true' : 'false');
       playPauseBtn.classList.toggle('active', sw.tour.paused);
     }
 
@@ -1665,6 +1668,7 @@
     if (playPauseBtn) {
       playPauseBtn.textContent = sw.tour.paused ? '▶ Resume' : '⏸ Pause';
       playPauseBtn.setAttribute('aria-label', sw.tour.paused ? 'Resume Tour (shortcut: Spacebar)' : 'Pause Tour (shortcut: Spacebar)');
+      playPauseBtn.setAttribute('aria-pressed', sw.tour.paused ? 'true' : 'false');
       playPauseBtn.classList.toggle('active', sw.tour.paused);
     }
 
@@ -4525,6 +4529,12 @@
   }
 
   function resetToGenesisBaseline() {
+    const resetBtn = $('btn-reset-baseline');
+    if (resetBtn && resetBtn.disabled) return;
+    if (resetBtn) {
+      resetBtn.disabled = true;
+      resetBtn.setAttribute('aria-busy', 'true');
+    }
     try {
       localStorage.removeItem(DYNAMIC_ANCHOR_STORAGE_KEY);
     } catch (_) {}
@@ -4550,7 +4560,12 @@
     if (badgeDot) badgeDot.style.background = 'var(--accent-amber)';
 
     // Trigger immediate live resync from genesis snapshot baseline
-    syncLiveDelta(true);
+    syncLiveDelta(true).finally(() => {
+      if (resetBtn) {
+        resetBtn.disabled = false;
+        resetBtn.setAttribute('aria-busy', 'false');
+      }
+    });
   }
 
   function updateHud(status = {}) {
