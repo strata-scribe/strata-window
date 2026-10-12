@@ -3423,7 +3423,13 @@
     topRow.style.justifyContent = 'space-between';
     topRow.style.alignItems = 'center';
 
-    const handleEl = h('div', 'commons-handle', `@${g.h}`);
+    const handleEl = h('button', 'commons-handle', `@${g.h}`);
+    handleEl.setAttribute('type', 'button');
+    handleEl.setAttribute('aria-label', `View dossier for @${g.h}`);
+    handleEl.style.background = 'none';
+    handleEl.style.border = 'none';
+    handleEl.style.padding = '0';
+    handleEl.style.cursor = 'pointer';
 
     const badgesWrap = h('div');
     badgesWrap.style.display = 'flex';
