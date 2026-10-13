@@ -41,3 +41,7 @@
 ## 2026-11-13 - Keyboard Shortcut Discoverability & Toggle Pressed State Sync
 **Learning:** Micro-UX shortcuts (such as pressing `F` to toggle discourse filaments or `P`/`Space` to pause live quote tickers) remain undiscoverable unless explicitly declared via `aria-keyshortcuts` and descriptive `aria-label` / `title` hints. Additionally, buttons representing active toggle state (like landmark roster chips or filament buttons) must synchronize `aria-pressed="true|false"` alongside visual `.active` classes so screen readers accurately announce active filter states (WCAG 4.1.2 Name, Role, Value).
 **Action:** Always pair global/panel keyboard shortcuts with explicit `aria-keyshortcuts` attributes and synchronize `aria-pressed` state on interactive toggle buttons.
+
+## 2026-11-20 - Actionable Empty States with Direct Filter Resets
+**Learning:** In data-dense applications with multi-category or multi-faceted filters (e.g. Living Dialectic River or Ephemeral Commons), filtering down to zero items can leave users or screen reader users stranded without immediate context or recovery options. Providing explicit empty state cards with 1-click "Reset Filters" buttons directly inside the empty container—and synchronizing `aria-pressed` states on parent filter chips—restores usability without forcing users to hunt for filter controls.
+**Action:** Always pair empty filter states with actionable reset buttons that programmatically restore default filter states and update `aria-pressed` attributes.
