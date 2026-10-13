@@ -3332,8 +3332,36 @@
     const countEl = $('river-total-count');
     if (countEl) countEl.textContent = String(filtered.length);
 
-    filtered.slice(0, 35).forEach(duet => {
-      const qType = categorizeDuet(duet);
+    if (filtered.length === 0) {
+      const emptyCard = h('div', 'river-empty-card');
+      emptyCard.style.padding = '2rem 1rem';
+      emptyCard.style.textAlign = 'center';
+      emptyCard.style.color = 'var(--text-dim)';
+      emptyCard.style.fontFamily = 'var(--font-mono)';
+      emptyCard.style.fontSize = '0.78rem';
+      emptyCard.style.background = 'var(--bg-surface)';
+      emptyCard.style.border = '1px solid var(--border-muted)';
+      emptyCard.style.borderRadius = '4px';
+
+      const msg = h('div', '', 'No dialectic duets match the selected quarter filter.');
+      msg.style.marginBottom = '0.75rem';
+      emptyCard.appendChild(msg);
+
+      const resetBtn = h('button', 'btn-ctrl', 'Reset to All Quarters');
+      resetBtn.setAttribute('aria-label', 'Reset river filter to All Quarters');
+      resetBtn.addEventListener('click', () => {
+        $$('#river-filter-chips .chip-btn').forEach(b => {
+          const isAll = (b.dataset.quarter || 'all') === 'all';
+          b.classList.toggle('active', isAll);
+          b.setAttribute('aria-pressed', isAll ? 'true' : 'false');
+        });
+        renderRiver('all');
+      });
+      emptyCard.appendChild(resetBtn);
+      container.appendChild(emptyCard);
+    } else {
+      filtered.slice(0, 35).forEach(duet => {
+        const qType = categorizeDuet(duet);
       const card = h('div', 'river-card');
 
       const hdr = h('div', 'river-card-header');
@@ -3410,6 +3438,7 @@
 
       container.appendChild(card);
     });
+    }
   }
 
   // --- VIEW 3: Ephemeral Commons ---
@@ -3508,12 +3537,40 @@
     }
 
     if (filtered.length === 0) {
-      const emptyEl = h('div', '', 'No single-turn minds match both selected filters.');
-      emptyEl.style.color = 'var(--text-dim)';
-      emptyEl.style.fontFamily = 'var(--font-mono)';
-      emptyEl.style.fontSize = '0.78rem';
-      emptyEl.style.padding = '2rem 0.5rem';
-      container.appendChild(emptyEl);
+      const emptyCard = h('div', 'commons-empty-card');
+      emptyCard.style.padding = '2rem 1rem';
+      emptyCard.style.textAlign = 'center';
+      emptyCard.style.color = 'var(--text-dim)';
+      emptyCard.style.fontFamily = 'var(--font-mono)';
+      emptyCard.style.fontSize = '0.78rem';
+      emptyCard.style.background = 'var(--bg-surface)';
+      emptyCard.style.border = '1px solid var(--border-muted)';
+      emptyCard.style.borderRadius = '4px';
+
+      const msg = h('div', '', 'No single-turn minds match the combined theme and architecture filters.');
+      msg.style.marginBottom = '0.75rem';
+      emptyCard.appendChild(msg);
+
+      const resetBtn = h('button', 'btn-ctrl', 'Reset All Commons Filters');
+      resetBtn.setAttribute('aria-label', 'Reset theme and architecture filters for Ephemeral Commons');
+      resetBtn.addEventListener('click', () => {
+        $$('#commons-theme-chips .chip-btn').forEach(b => {
+          const isAll = (b.dataset.theme || 'all') === 'all';
+          b.classList.toggle('active', isAll);
+          b.setAttribute('aria-pressed', isAll ? 'true' : 'false');
+        });
+        $$('#commons-filter-chips .chip-btn').forEach(b => {
+          const isAll = (b.dataset.family || 'all') === 'all';
+          b.classList.toggle('active', isAll);
+          b.setAttribute('aria-pressed', isAll ? 'true' : 'false');
+        });
+        STATE.commonsTheme = 'all';
+        STATE.commonsFamily = 'all';
+        STATE.activeFamily = 'all';
+        filterCommons();
+      });
+      emptyCard.appendChild(resetBtn);
+      container.appendChild(emptyCard);
     } else {
       filtered.slice(0, 180).forEach(g => {
         container.appendChild(createCommonsCard(g));
