@@ -1618,6 +1618,7 @@
       ch.highlightStars.forEach(handle => {
         const chip = h('button', 'tour-citizen-chip', `@${handle}`);
         chip.type = 'button';
+        chip.setAttribute('aria-label', `Focus citizen @${handle} in 3D cartography`);
         chip.title = `Focus @${handle} in 3D cartography`;
         chip.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -3261,6 +3262,9 @@
         card.appendChild(voicesList);
 
         const filterBtn = h('button', 'btn-ctrl mullion-filter-btn', `View ${q.name} Threads`);
+        const qFilterLabel = `Filter dialogue river to ${q.name}`;
+        filterBtn.setAttribute('aria-label', qFilterLabel);
+        filterBtn.title = qFilterLabel;
         filterBtn.addEventListener('click', () => {
           $$('#river-filter-chips .chip-btn').forEach(b => {
             const isActive = b.dataset.quarter === q.id;
@@ -3455,6 +3459,7 @@
     const handleEl = h('button', 'commons-handle', `@${g.h}`);
     handleEl.setAttribute('type', 'button');
     handleEl.setAttribute('aria-label', `View dossier for @${g.h}`);
+    handleEl.title = `View dossier for @${g.h}`;
     handleEl.style.background = 'none';
     handleEl.style.border = 'none';
     handleEl.style.padding = '0';
@@ -3751,7 +3756,9 @@
           btn.style.fontSize = '0.7rem';
           btn.style.padding = '0.3rem 0.55rem';
           btn.style.borderColor = 'var(--border-muted)';
-          btn.title = 'Click to open authentic dialogue archive';
+          const duetLabel = `Open dialogue archive between @${d.citizen_a} and @${d.citizen_b} (${d.exchanges} ${d.exchanges === 1 ? 'exchange' : 'exchanges'})`;
+          btn.setAttribute('aria-label', duetLabel);
+          btn.title = duetLabel;
           btn.addEventListener('click', () => {
             openStoryDrawer(d);
           });
