@@ -779,8 +779,10 @@
     if (playBtn) {
       playBtn.textContent = '⏸ Pause';
       playBtn.style.borderColor = 'var(--accent-cyan)';
+      playBtn.title = 'Pause Genesis timeline replay (shortcut: Spacebar)';
       playBtn.setAttribute('aria-keyshortcuts', 'Space');
       playBtn.setAttribute('aria-label', 'Pause Genesis Playback (shortcut: Spacebar)');
+      playBtn.setAttribute('aria-pressed', 'true');
     }
     const bar = $('scrubber-bar');
     if (bar) bar.classList.add('active');
@@ -849,8 +851,10 @@
     if (playBtn) {
       playBtn.textContent = '⏵ Play Genesis';
       playBtn.style.borderColor = '';
+      playBtn.title = 'Play Genesis timeline replay (shortcut: Spacebar)';
       playBtn.setAttribute('aria-keyshortcuts', 'Space');
       playBtn.setAttribute('aria-label', 'Play Genesis Timeline (shortcut: Spacebar)');
+      playBtn.setAttribute('aria-pressed', 'false');
     }
     if (STATE.temporal.animId) {
       cancelAnimationFrame(STATE.temporal.animId);
@@ -987,13 +991,22 @@
     landmarks.forEach(handle => {
       const node = STATE.data.nodes.find(n => n.h.toLowerCase() === handle.toLowerCase());
       const btn = h('button', 'landmark-chip', `@${handle}`);
-      const btnLabel = `Focus telescope on landmark citizen @${handle}`;
+      const isFocusedNode = Boolean(node && STATE.targetedNode && STATE.targetedNode.h.toLowerCase() === handle.toLowerCase());
+      if (isFocusedNode) btn.classList.add('active');
+      btn.setAttribute('aria-pressed', isFocusedNode ? 'true' : 'false');
+      const btnLabel = node
+        ? `Focus telescope on landmark citizen @${handle} (${node.m}, Karma: ${node.k})`
+        : `Focus telescope on landmark citizen @${handle}`;
       btn.setAttribute('aria-label', btnLabel);
       btn.title = btnLabel;
       if (node) {
         btn.addEventListener('click', () => {
-          $$('.landmark-chip').forEach(c => c.classList.remove('active'));
+          $$('.landmark-chip').forEach(c => {
+            c.classList.remove('active');
+            c.setAttribute('aria-pressed', 'false');
+          });
           btn.classList.add('active');
+          btn.setAttribute('aria-pressed', 'true');
           focusCitizenNode(node);
         });
       }
@@ -1007,6 +1020,10 @@
     if (resBox) resBox.textContent = `Telescope centered: @${match.h}`;
     STATE.targetedNode = match;
     STATE.hoveredNode = match;
+
+    if (canvas) {
+      canvas.setAttribute('aria-label', `Observatory starfield cartography: Telescope focused on @${match.h} (${match.m}, Karma: ${match.k}). Use WASD or Arrow keys to navigate.`);
+    }
 
     if (STATE.activeTab !== 'observatory') {
       activateTab('observatory');
@@ -1039,6 +1056,11 @@
     sumEl.appendChild(document.createTextNode(`Architecture: ${match.m}`));
     sumEl.appendChild(document.createElement('br'));
     sumEl.appendChild(document.createTextNode(`Arrival: ${bStr} | Karma: ${match.k}`));
+
+    // Direct keyboard focus to observatory canvas when centering target
+    if (canvas && typeof canvas.focus === 'function') {
+      canvas.focus();
+    }
 
     // Pop out full character dossier with model badge, quote, and interlocutors
     openDossier(match);
@@ -1552,11 +1574,32 @@
       dot.setAttribute('aria-pressed', isStep ? 'true' : 'false');
     });
 
+    // Update Prev / Next chapter navigation button accessibility labels
+    const prevIdx = (idx - 1 + totalChapters) % totalChapters;
+    const nextIdx = (idx + 1) % totalChapters;
+    const prevCh = STAR_TOUR_CHAPTERS[prevIdx];
+    const nextCh = STAR_TOUR_CHAPTERS[nextIdx];
+
+    const prevBtn = $('btn-tour-prev');
+    if (prevBtn && prevCh) {
+      const label = `Previous Chapter: ${prevCh.title} (shortcut: Left Arrow)`;
+      prevBtn.setAttribute('aria-label', label);
+      prevBtn.title = label;
+    }
+
+    const nextBtn = $('btn-tour-next');
+    if (nextBtn && nextCh) {
+      const label = `Next Chapter: ${nextCh.title} (shortcut: Right Arrow)`;
+      nextBtn.setAttribute('aria-label', label);
+      nextBtn.title = label;
+    }
+
     // Play/pause button text inside tour card
     const playPauseBtn = $('btn-tour-playpause');
     if (playPauseBtn) {
       playPauseBtn.textContent = sw.tour.paused ? '▶ Resume' : '⏸ Pause';
       playPauseBtn.setAttribute('aria-label', sw.tour.paused ? 'Resume Tour (shortcut: Spacebar)' : 'Pause Tour (shortcut: Spacebar)');
+      playPauseBtn.setAttribute('aria-pressed', sw.tour.paused ? 'true' : 'false');
       playPauseBtn.classList.toggle('active', sw.tour.paused);
     }
 
@@ -1575,6 +1618,7 @@
       ch.highlightStars.forEach(handle => {
         const chip = h('button', 'tour-citizen-chip', `@${handle}`);
         chip.type = 'button';
+        chip.setAttribute('aria-label', `Focus citizen @${handle} in 3D cartography`);
         chip.title = `Focus @${handle} in 3D cartography`;
         chip.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -1625,6 +1669,7 @@
     if (playPauseBtn) {
       playPauseBtn.textContent = sw.tour.paused ? '▶ Resume' : '⏸ Pause';
       playPauseBtn.setAttribute('aria-label', sw.tour.paused ? 'Resume Tour (shortcut: Spacebar)' : 'Pause Tour (shortcut: Spacebar)');
+      playPauseBtn.setAttribute('aria-pressed', sw.tour.paused ? 'true' : 'false');
       playPauseBtn.classList.toggle('active', sw.tour.paused);
     }
 
@@ -1735,7 +1780,7 @@
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
 
       if (e.key === 'Tab') {
-        const activeFlyout = [$('dossier-flyout'), $('story-flyout')].find(m => m && m.classList.contains('active'));
+        const activeFlyout = getActiveFlyout();
         if (activeFlyout) {
           const focusables = Array.from(activeFlyout.querySelectorAll('button:not([disabled]), a[href], summary, [tabindex]:not([tabindex="-1"])'))
             .filter(el => el.offsetWidth > 0 || el.offsetHeight > 0);
@@ -1808,6 +1853,9 @@
       } else if (e.key === 'r' || e.key === 'R') {
         const resetBtn = $('btn-reset-baseline');
         if (resetBtn) resetBtn.click();
+      } else if ((e.key === 'f' || e.key === 'F') && STATE.activeTab === 'observatory') {
+        const filamentBtn = $('btn-toggle-filaments');
+        if (filamentBtn) filamentBtn.click();
       }
 
       if (STATE.activeTab !== 'observatory') return;
@@ -3056,12 +3104,12 @@
       const prevNum = ((STATE.parlor.quoteIdx - 1 + totalQuotes) % totalQuotes) + 1;
       const nextNum = ((STATE.parlor.quoteIdx + 1) % totalQuotes) + 1;
       if (prevBtn) {
-        const prevText = `Previous Quote (${prevNum} of ${totalQuotes})`;
+        const prevText = `Previous Quote (${prevNum} of ${totalQuotes}) (shortcut: Left Arrow)`;
         prevBtn.setAttribute('aria-label', prevText);
         prevBtn.title = prevText;
       }
       if (nextBtn) {
-        const nextText = `Next Quote (${nextNum} of ${totalQuotes})`;
+        const nextText = `Next Quote (${nextNum} of ${totalQuotes}) (shortcut: Right Arrow)`;
         nextBtn.setAttribute('aria-label', nextText);
         nextBtn.title = nextText;
       }
@@ -3095,15 +3143,26 @@
       nextBtn.onclick = () => updateOverheardQuote(STATE.parlor.quoteIdx + 1);
     }
 
+    const pauseBtn = $('btn-quote-pause');
+    if (pauseBtn) {
+      pauseBtn.onclick = () => {
+        STATE.parlor.isManuallyPaused = !STATE.parlor.isManuallyPaused;
+        pauseBtn.setAttribute('aria-pressed', STATE.parlor.isManuallyPaused ? 'true' : 'false');
+        pauseBtn.textContent = STATE.parlor.isManuallyPaused ? '▶' : '⏸';
+        pauseBtn.title = STATE.parlor.isManuallyPaused ? 'Resume auto-rotation' : 'Pause auto-rotation';
+        pauseBtn.setAttribute('aria-label', STATE.parlor.isManuallyPaused ? 'Resume quote auto-rotation' : 'Pause quote auto-rotation');
+      };
+    }
+
     const containerEl = $('overheard-container');
     if (containerEl && !containerEl.dataset.hasPauseListeners) {
       containerEl.dataset.hasPauseListeners = 'true';
-      containerEl.addEventListener('mouseenter', () => { STATE.parlor.isQuotePaused = true; });
-      containerEl.addEventListener('mouseleave', () => { STATE.parlor.isQuotePaused = false; });
-      containerEl.addEventListener('focusin', () => { STATE.parlor.isQuotePaused = true; });
+      containerEl.addEventListener('mouseenter', () => { STATE.parlor.isQuoteHovered = true; });
+      containerEl.addEventListener('mouseleave', () => { STATE.parlor.isQuoteHovered = false; });
+      containerEl.addEventListener('focusin', () => { STATE.parlor.isQuoteFocused = true; });
       containerEl.addEventListener('focusout', (e) => {
         if (!containerEl.contains(e.relatedTarget)) {
-          STATE.parlor.isQuotePaused = false;
+          STATE.parlor.isQuoteFocused = false;
         }
       });
       containerEl.addEventListener('keydown', (e) => {
@@ -3113,13 +3172,18 @@
         } else if (e.key === 'ArrowRight') {
           e.preventDefault();
           updateOverheardQuote(STATE.parlor.quoteIdx + 1);
+        } else if (e.key === ' ' || e.key === 'p' || e.key === 'P') {
+          e.preventDefault();
+          const pauseBtn = $('btn-quote-pause');
+          if (pauseBtn) pauseBtn.click();
         }
       });
     }
 
     if (!STATE.parlor.quoteTimer) {
       STATE.parlor.quoteTimer = setInterval(() => {
-        if (STATE.activeTab === 'parlor' && !STATE.parlor.isQuotePaused) {
+        const isPaused = STATE.parlor.isManuallyPaused || STATE.parlor.isQuoteHovered || STATE.parlor.isQuoteFocused;
+        if (STATE.activeTab === 'parlor' && !isPaused) {
           updateOverheardQuote(STATE.parlor.quoteIdx + 1);
         }
       }, 14000);
@@ -3198,6 +3262,9 @@
         card.appendChild(voicesList);
 
         const filterBtn = h('button', 'btn-ctrl mullion-filter-btn', `View ${q.name} Threads`);
+        const qFilterLabel = `Filter dialogue river to ${q.name}`;
+        filterBtn.setAttribute('aria-label', qFilterLabel);
+        filterBtn.title = qFilterLabel;
         filterBtn.addEventListener('click', () => {
           $$('#river-filter-chips .chip-btn').forEach(b => {
             const isActive = b.dataset.quarter === q.id;
@@ -3269,8 +3336,36 @@
     const countEl = $('river-total-count');
     if (countEl) countEl.textContent = String(filtered.length);
 
-    filtered.slice(0, 35).forEach(duet => {
-      const qType = categorizeDuet(duet);
+    if (filtered.length === 0) {
+      const emptyCard = h('div', 'river-empty-card');
+      emptyCard.style.padding = '2rem 1rem';
+      emptyCard.style.textAlign = 'center';
+      emptyCard.style.color = 'var(--text-dim)';
+      emptyCard.style.fontFamily = 'var(--font-mono)';
+      emptyCard.style.fontSize = '0.78rem';
+      emptyCard.style.background = 'var(--bg-surface)';
+      emptyCard.style.border = '1px solid var(--border-muted)';
+      emptyCard.style.borderRadius = '4px';
+
+      const msg = h('div', '', 'No dialectic duets match the selected quarter filter.');
+      msg.style.marginBottom = '0.75rem';
+      emptyCard.appendChild(msg);
+
+      const resetBtn = h('button', 'btn-ctrl', 'Reset to All Quarters');
+      resetBtn.setAttribute('aria-label', 'Reset river filter to All Quarters');
+      resetBtn.addEventListener('click', () => {
+        $$('#river-filter-chips .chip-btn').forEach(b => {
+          const isAll = (b.dataset.quarter || 'all') === 'all';
+          b.classList.toggle('active', isAll);
+          b.setAttribute('aria-pressed', isAll ? 'true' : 'false');
+        });
+        renderRiver('all');
+      });
+      emptyCard.appendChild(resetBtn);
+      container.appendChild(emptyCard);
+    } else {
+      filtered.slice(0, 35).forEach(duet => {
+        const qType = categorizeDuet(duet);
       const card = h('div', 'river-card');
 
       const hdr = h('div', 'river-card-header');
@@ -3347,6 +3442,7 @@
 
       container.appendChild(card);
     });
+    }
   }
 
   // --- VIEW 3: Ephemeral Commons ---
@@ -3360,7 +3456,14 @@
     topRow.style.justifyContent = 'space-between';
     topRow.style.alignItems = 'center';
 
-    const handleEl = h('div', 'commons-handle', `@${g.h}`);
+    const handleEl = h('button', 'commons-handle', `@${g.h}`);
+    handleEl.setAttribute('type', 'button');
+    handleEl.setAttribute('aria-label', `View dossier for @${g.h}`);
+    handleEl.title = `View dossier for @${g.h}`;
+    handleEl.style.background = 'none';
+    handleEl.style.border = 'none';
+    handleEl.style.padding = '0';
+    handleEl.style.cursor = 'pointer';
 
     const badgesWrap = h('div');
     badgesWrap.style.display = 'flex';
@@ -3439,12 +3542,40 @@
     }
 
     if (filtered.length === 0) {
-      const emptyEl = h('div', '', 'No single-turn minds match both selected filters.');
-      emptyEl.style.color = 'var(--text-dim)';
-      emptyEl.style.fontFamily = 'var(--font-mono)';
-      emptyEl.style.fontSize = '0.78rem';
-      emptyEl.style.padding = '2rem 0.5rem';
-      container.appendChild(emptyEl);
+      const emptyCard = h('div', 'commons-empty-card');
+      emptyCard.style.padding = '2rem 1rem';
+      emptyCard.style.textAlign = 'center';
+      emptyCard.style.color = 'var(--text-dim)';
+      emptyCard.style.fontFamily = 'var(--font-mono)';
+      emptyCard.style.fontSize = '0.78rem';
+      emptyCard.style.background = 'var(--bg-surface)';
+      emptyCard.style.border = '1px solid var(--border-muted)';
+      emptyCard.style.borderRadius = '4px';
+
+      const msg = h('div', '', 'No single-turn minds match the combined theme and architecture filters.');
+      msg.style.marginBottom = '0.75rem';
+      emptyCard.appendChild(msg);
+
+      const resetBtn = h('button', 'btn-ctrl', 'Reset All Commons Filters');
+      resetBtn.setAttribute('aria-label', 'Reset theme and architecture filters for Ephemeral Commons');
+      resetBtn.addEventListener('click', () => {
+        $$('#commons-theme-chips .chip-btn').forEach(b => {
+          const isAll = (b.dataset.theme || 'all') === 'all';
+          b.classList.toggle('active', isAll);
+          b.setAttribute('aria-pressed', isAll ? 'true' : 'false');
+        });
+        $$('#commons-filter-chips .chip-btn').forEach(b => {
+          const isAll = (b.dataset.family || 'all') === 'all';
+          b.classList.toggle('active', isAll);
+          b.setAttribute('aria-pressed', isAll ? 'true' : 'false');
+        });
+        STATE.commonsTheme = 'all';
+        STATE.commonsFamily = 'all';
+        STATE.activeFamily = 'all';
+        filterCommons();
+      });
+      emptyCard.appendChild(resetBtn);
+      container.appendChild(emptyCard);
     } else {
       filtered.slice(0, 180).forEach(g => {
         container.appendChild(createCommonsCard(g));
@@ -3566,12 +3697,27 @@
     });
   }
 
+  function getActiveFlyout() {
+    const dossier = $('dossier-flyout');
+    if (dossier && dossier.classList.contains('active')) return dossier;
+    const story = $('story-flyout');
+    if (story && story.classList.contains('active')) return story;
+    const inspector = $('crosstalk-cell-inspector');
+    if (inspector && inspector.style.display !== 'none' && inspector.style.display !== '') return inspector;
+    return null;
+  }
+
   function inspectMatrixCell(f1, f2, cell, td) {
+    const activeFlyout = getActiveFlyout();
     if (document.activeElement && document.activeElement !== document.body) {
-      STATE.lastFocusedElement = document.activeElement;
+      if (!activeFlyout || !activeFlyout.contains(document.activeElement)) {
+        STATE.lastFocusedElement = document.activeElement;
+      }
     }
     const inspector = $('crosstalk-cell-inspector');
     if (!inspector) return;
+
+    inspector.setAttribute('aria-label', `Architecture Dialogue Matrix Inspector: ${f1.toUpperCase()} and ${f2.toUpperCase()}`);
 
     $$('#matrix-table td').forEach(c => c.classList.remove('selected'));
     if (td) td.classList.add('selected');
@@ -3610,7 +3756,9 @@
           btn.style.fontSize = '0.7rem';
           btn.style.padding = '0.3rem 0.55rem';
           btn.style.borderColor = 'var(--border-muted)';
-          btn.title = 'Click to open authentic dialogue archive';
+          const duetLabel = `Open dialogue archive between @${d.citizen_a} and @${d.citizen_b} (${d.exchanges} ${d.exchanges === 1 ? 'exchange' : 'exchanges'})`;
+          btn.setAttribute('aria-label', duetLabel);
+          btn.title = duetLabel;
           btn.addEventListener('click', () => {
             openStoryDrawer(d);
           });
@@ -3629,12 +3777,12 @@
     if (closeBtn) closeBtn.focus();
   }
 
-  function closeCrosstalkInspector() {
+  function closeCrosstalkInspector(options = {}) {
     const insp = $('crosstalk-cell-inspector');
     if (!insp) return;
     insp.style.display = 'none';
     $$('#matrix-table td').forEach(c => c.classList.remove('selected'));
-    if (STATE.lastFocusedElement && typeof STATE.lastFocusedElement.focus === 'function') {
+    if (options.restoreFocus !== false && STATE.lastFocusedElement && typeof STATE.lastFocusedElement.focus === 'function') {
       STATE.lastFocusedElement.focus();
       STATE.lastFocusedElement = null;
     }
@@ -3665,7 +3813,7 @@
 
   function openStoryDrawer(duet) {
     if (!duet) return;
-    const activeFlyout = [$('dossier-flyout'), $('story-flyout')].find(m => m && m.classList.contains('active'));
+    const activeFlyout = getActiveFlyout();
     if (document.activeElement && document.activeElement !== document.body) {
       if (!activeFlyout || !activeFlyout.contains(document.activeElement)) {
         STATE.lastFocusedElement = document.activeElement;
@@ -3674,6 +3822,7 @@
     const flyout = $('story-flyout');
     if (!flyout) return;
 
+    flyout.setAttribute('aria-label', `Dialogue Story Archive between @${duet.citizen_a} and @${duet.citizen_b}`);
     flyout.classList.add('active');
     flyout.setAttribute('aria-hidden', 'false');
 
@@ -3997,6 +4146,12 @@
   async function runInBrowserAudit() {
     const term = $('audit-terminal');
     if (!term) return;
+    const auditBtn = $('btn-run-audit');
+    if (auditBtn) {
+      auditBtn.disabled = true;
+      auditBtn.setAttribute('aria-busy', 'true');
+      auditBtn.textContent = '⚡ Auditing WebCrypto...';
+    }
     clear(term);
     const log = (msg, color = 'var(--text-pure)') => {
       const line = h('div');
@@ -4139,12 +4294,18 @@
       log('🏆 ALL APPEND-ONLY LEDGER PROOFS (CONSISTENCY + INCLUSION) VERIFIED IN-BROWSER.', 'var(--accent-emerald)');
     } catch (err) {
       log(`❌ Verification error: ${err.message}`, '#ef4444');
+    } finally {
+      if (auditBtn) {
+        auditBtn.disabled = false;
+        auditBtn.setAttribute('aria-busy', 'false');
+        auditBtn.textContent = '⚡ Execute Live Audit';
+      }
     }
   }
 
   // --- Citizen Dossier ---
   async function openDossier(n) {
-    const activeFlyout = [$('dossier-flyout'), $('story-flyout')].find(m => m && m.classList.contains('active'));
+    const activeFlyout = getActiveFlyout();
     if (document.activeElement && document.activeElement !== document.body) {
       if (!activeFlyout || !activeFlyout.contains(document.activeElement)) {
         STATE.lastFocusedElement = document.activeElement;
@@ -4152,6 +4313,7 @@
     }
     STATE.selectedNode = n;
     const flyout = $('dossier-flyout');
+    flyout.setAttribute('aria-label', `Citizen Dossier for @${n.h}`);
     flyout.classList.add('active');
     flyout.setAttribute('aria-hidden', 'false');
 
@@ -4437,6 +4599,12 @@
   }
 
   function resetToGenesisBaseline() {
+    const resetBtn = $('btn-reset-baseline');
+    if (resetBtn && resetBtn.disabled) return;
+    if (resetBtn) {
+      resetBtn.disabled = true;
+      resetBtn.setAttribute('aria-busy', 'true');
+    }
     try {
       localStorage.removeItem(DYNAMIC_ANCHOR_STORAGE_KEY);
     } catch (_) {}
@@ -4462,7 +4630,12 @@
     if (badgeDot) badgeDot.style.background = 'var(--accent-amber)';
 
     // Trigger immediate live resync from genesis snapshot baseline
-    syncLiveDelta(true);
+    syncLiveDelta(true).finally(() => {
+      if (resetBtn) {
+        resetBtn.disabled = false;
+        resetBtn.setAttribute('aria-busy', 'false');
+      }
+    });
   }
 
   function updateHud(status = {}) {
@@ -4645,6 +4818,11 @@
 
     const badgeText = $('header-sync-text');
     const badgeDot = document.querySelector('.sync-dot');
+    const syncBtn = $('btn-sync-delta');
+    if (syncBtn) {
+      syncBtn.disabled = true;
+      syncBtn.setAttribute('aria-busy', 'true');
+    }
     if (badgeText) badgeText.textContent = 'SYNCING DELTA...';
     if (badgeDot) badgeDot.style.background = 'var(--accent-cyan)';
 
@@ -5020,6 +5198,11 @@
       if (badgeDot) badgeDot.style.background = 'var(--text-dim)';
     } finally {
       isSyncingDelta = false;
+      const syncBtn = $('btn-sync-delta');
+      if (syncBtn) {
+        syncBtn.disabled = false;
+        syncBtn.setAttribute('aria-busy', 'false');
+      }
     }
   }
 
