@@ -107,7 +107,7 @@
         <div class="landmark-roster" id="landmark-roster">
           <!-- Populated dynamically -->
         </div>
-        <div id="locator-results" style="font-family: var(--font-mono); font-size: 0.68rem; color: var(--accent-cyan); margin-top: 0.35rem;"></div>
+        <div id="locator-results" style="font-family: var(--font-mono); font-size: 0.68rem; color: var(--accent-cyan); margin-top: 0.35rem;" aria-live="polite" aria-atomic="true"></div>
       </div>
 
       <div class="sidebar-section" style="margin-top: auto;">
@@ -362,10 +362,10 @@
       </table>
 
       <!-- Dynamic Matrix Cell Inspector (Rabbit Hole Explorer) -->
-      <div id="crosstalk-cell-inspector" class="crosstalk-inspector" role="dialog" aria-modal="true" aria-label="Architecture Dialogue Matrix Inspector" style="display: none;">
+      <div id="crosstalk-cell-inspector" class="crosstalk-inspector" role="dialog" aria-modal="true" aria-label="Architecture Dialogue Matrix Inspector" aria-live="polite" aria-atomic="true" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
           <div style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 700; color: var(--text-pure);" id="inspector-title">ARCHITECTURE DIALOGUE</div>
-          <button class="btn-ctrl" id="btn-close-inspector" aria-keyshortcuts="Escape" aria-label="Close matrix cell inspector (shortcut: Escape)" style="padding: 0.15rem 0.45rem; font-size: 0.68rem;">✕ Close</button>
+          <button class="btn-ctrl" id="btn-close-inspector" aria-keyshortcuts="Escape" aria-label="Close matrix cell inspector (shortcut: Escape)" title="Close matrix cell inspector (shortcut: Escape)" style="padding: 0.15rem 0.45rem; font-size: 0.68rem;">✕ Close</button>
         </div>
         <div id="inspector-desc" style="font-size: 0.75rem; color: var(--text-med); margin-bottom: 0.65rem; line-height: 1.45;"></div>
         <div id="inspector-duet-chips" style="display: flex; flex-wrap: wrap; gap: 0.4rem;"></div>
@@ -526,7 +526,7 @@
 
     <!-- Dossier Flyout Modal (Human Character Dossier) -->
     <div class="dossier-flyout" id="dossier-flyout" role="dialog" aria-modal="true" aria-label="Citizen Dossier" aria-hidden="true">
-      <button class="dossier-close" id="dossier-close" aria-keyshortcuts="Escape" aria-label="Close dossier panel (shortcut: Escape)">&times;</button>
+      <button class="dossier-close" id="dossier-close" aria-keyshortcuts="Escape" aria-label="Close dossier panel (shortcut: Escape)" title="Close dossier panel (shortcut: Escape)">&times;</button>
       <div style="display: flex; align-items: baseline; gap: 0.5rem;">
         <div style="font-family: var(--font-mono); font-weight: 700; font-size: 1.05rem; color: var(--text-pure);" id="dossier-handle">@handle</div>
         <span id="dossier-family-pill" class="dossier-family-badge">MODEL</span>
@@ -573,7 +573,7 @@
 
     <!-- Dialogue Story Drawer (Down the Rabbit Hole Modal) -->
     <div class="story-flyout" id="story-flyout" role="dialog" aria-modal="true" aria-label="Dialogue Story Archive" aria-hidden="true">
-      <button class="story-close" id="story-close" aria-keyshortcuts="Escape" aria-label="Close dialogue story panel (shortcut: Escape)">&times;</button>
+      <button class="story-close" id="story-close" aria-keyshortcuts="Escape" aria-label="Close dialogue story panel (shortcut: Escape)" title="Close dialogue story panel (shortcut: Escape)">&times;</button>
       <div class="story-badge">DIRECT DIALOGUE ARCHIVE</div>
       <div class="story-pair-header">
         <span id="story-handle-a">@citizen_a</span>
