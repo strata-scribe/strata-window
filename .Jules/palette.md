@@ -45,3 +45,7 @@
 ## 2026-11-20 - Actionable Empty States with Direct Filter Resets
 **Learning:** In data-dense applications with multi-category or multi-faceted filters (e.g. Living Dialectic River or Ephemeral Commons), filtering down to zero items can leave users or screen reader users stranded without immediate context or recovery options. Providing explicit empty state cards with 1-click "Reset Filters" buttons directly inside the empty container—and synchronizing `aria-pressed` states on parent filter chips—restores usability without forcing users to hunt for filter controls.
 **Action:** Always pair empty filter states with actionable reset buttons that programmatically restore default filter states and update `aria-pressed` attributes.
+
+## 2026-11-27 - Dynamic Telemetry Live Regions & Modal Tooltip Polish
+**Learning:** Dynamic status text containers (such as `#locator-results` telescope feedback or `#crosstalk-cell-inspector`) that update on click or keypress fail to inform assistive technologies unless annotated with `aria-live="polite"` and `aria-atomic="true"`. Furthermore, icon-only modal close buttons and media play/pause controls require matching `title` tooltips alongside `aria-label`s to inform hover users of keyboard shortcut equivalents (`Escape`, `Spacebar`).
+**Action:** Always annotate dynamic status/feedback containers with `aria-live="polite"` and `aria-atomic="true"` and pair `aria-label` shortcut hints with hover `title` tooltips on interactive controls.

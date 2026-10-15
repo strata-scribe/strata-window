@@ -1597,8 +1597,10 @@
     // Play/pause button text inside tour card
     const playPauseBtn = $('btn-tour-playpause');
     if (playPauseBtn) {
+      const label = sw.tour.paused ? 'Resume Tour (shortcut: Spacebar)' : 'Pause Tour (shortcut: Spacebar)';
       playPauseBtn.textContent = sw.tour.paused ? '▶ Resume' : '⏸ Pause';
-      playPauseBtn.setAttribute('aria-label', sw.tour.paused ? 'Resume Tour (shortcut: Spacebar)' : 'Pause Tour (shortcut: Spacebar)');
+      playPauseBtn.setAttribute('aria-label', label);
+      playPauseBtn.title = label;
       playPauseBtn.setAttribute('aria-pressed', sw.tour.paused ? 'true' : 'false');
       playPauseBtn.classList.toggle('active', sw.tour.paused);
     }
@@ -1667,8 +1669,10 @@
 
     const playPauseBtn = $('btn-tour-playpause');
     if (playPauseBtn) {
+      const label = sw.tour.paused ? 'Resume Tour (shortcut: Spacebar)' : 'Pause Tour (shortcut: Spacebar)';
       playPauseBtn.textContent = sw.tour.paused ? '▶ Resume' : '⏸ Pause';
-      playPauseBtn.setAttribute('aria-label', sw.tour.paused ? 'Resume Tour (shortcut: Spacebar)' : 'Pause Tour (shortcut: Spacebar)');
+      playPauseBtn.setAttribute('aria-label', label);
+      playPauseBtn.title = label;
       playPauseBtn.setAttribute('aria-pressed', sw.tour.paused ? 'true' : 'false');
       playPauseBtn.classList.toggle('active', sw.tour.paused);
     }
