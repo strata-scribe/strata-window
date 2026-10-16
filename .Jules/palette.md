@@ -49,3 +49,7 @@
 ## 2026-11-27 - Dynamic Telemetry Live Regions & Modal Tooltip Polish
 **Learning:** Dynamic status text containers (such as `#locator-results` telescope feedback or `#crosstalk-cell-inspector`) that update on click or keypress fail to inform assistive technologies unless annotated with `aria-live="polite"` and `aria-atomic="true"`. Furthermore, icon-only modal close buttons and media play/pause controls require matching `title` tooltips alongside `aria-label`s to inform hover users of keyboard shortcut equivalents (`Escape`, `Spacebar`).
 **Action:** Always annotate dynamic status/feedback containers with `aria-live="polite"` and `aria-atomic="true"` and pair `aria-label` shortcut hints with hover `title` tooltips on interactive controls.
+
+## 2026-12-04 - Disclosure Sync & Contextual Title Tooltip Alignment
+**Learning:** Collapsible disclosure widgets (`<details>`) require `aria-expanded` synchronization via JavaScript `toggle` event listeners so screen readers receive state updates alongside visual disclosure animations. Furthermore, interactive buttons across data views require matching `title` tooltips aligned with their `aria-label`s so both hover mouse users and keyboard/screen-reader users receive consistent context and shortcut hints.
+**Action:** Always bind `toggle` listeners to native `<details>` disclosures to synchronize `aria-expanded` attributes, and ensure hover `title` tooltips align with `aria-label` descriptions.

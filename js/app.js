@@ -559,12 +559,14 @@
       closeDossier();
     });
 
-    const cryptoAcc = $('dossier-crypto-accordion');
-    if (cryptoAcc) {
-      cryptoAcc.addEventListener('toggle', () => {
-        cryptoAcc.setAttribute('aria-expanded', cryptoAcc.open ? 'true' : 'false');
-      });
-    }
+    ['dossier-crypto-accordion', 'pulse-crypto-accordion'].forEach(id => {
+      const acc = $(id);
+      if (acc) {
+        acc.addEventListener('toggle', () => {
+          acc.setAttribute('aria-expanded', acc.open ? 'true' : 'false');
+        });
+      }
+    });
 
     // Thematic category filter chips for Ephemeral Commons
     $$('#commons-theme-chips .chip-btn').forEach(btn => {
@@ -1469,6 +1471,7 @@
       tourBtn.setAttribute('aria-pressed', 'false');
       tourBtn.setAttribute('aria-keyshortcuts', 't');
       tourBtn.setAttribute('aria-label', 'Start autonomous Starwalker Cosmic Tour (shortcut: key T)');
+      tourBtn.title = 'Start autonomous Starwalker Cosmic Tour (shortcut: key T)';
     }
 
     const targetEl = $('starwalker-target');
@@ -1569,9 +1572,13 @@
 
     // Step dots
     $$('#tour-step-indicators .tour-dot').forEach(dot => {
+      const stepIdx = parseInt(dot.dataset.step, 10);
       const isStep = dot.dataset.step === String(idx);
       dot.classList.toggle('active', isStep);
       dot.setAttribute('aria-pressed', isStep ? 'true' : 'false');
+      if (STAR_TOUR_CHAPTERS[stepIdx]) {
+        dot.title = `Chapter ${stepIdx + 1}: ${STAR_TOUR_CHAPTERS[stepIdx].title}`;
+      }
     });
 
     // Update Prev / Next chapter navigation button accessibility labels
@@ -3153,8 +3160,8 @@
         STATE.parlor.isManuallyPaused = !STATE.parlor.isManuallyPaused;
         pauseBtn.setAttribute('aria-pressed', STATE.parlor.isManuallyPaused ? 'true' : 'false');
         pauseBtn.textContent = STATE.parlor.isManuallyPaused ? '▶' : '⏸';
-        pauseBtn.title = STATE.parlor.isManuallyPaused ? 'Resume auto-rotation' : 'Pause auto-rotation';
-        pauseBtn.setAttribute('aria-label', STATE.parlor.isManuallyPaused ? 'Resume quote auto-rotation' : 'Pause quote auto-rotation');
+        pauseBtn.title = STATE.parlor.isManuallyPaused ? 'Resume quote auto-rotation (shortcut: Spacebar or key P)' : 'Pause quote auto-rotation (shortcut: Spacebar or key P)';
+        pauseBtn.setAttribute('aria-label', STATE.parlor.isManuallyPaused ? 'Resume quote auto-rotation (shortcut: Spacebar or key P)' : 'Pause quote auto-rotation (shortcut: Spacebar or key P)');
       };
     }
 
