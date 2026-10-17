@@ -3127,7 +3127,9 @@
 
       const focusBtn = $('btn-overheard-focus');
       if (focusBtn) {
-        focusBtn.setAttribute('aria-label', `Focus telescope on overheard citizen @${q.handle} in Observatory cartography`);
+        const focusLabel = `Focus telescope on overheard citizen @${q.handle} in Observatory cartography`;
+        focusBtn.setAttribute('aria-label', focusLabel);
+        focusBtn.title = focusLabel;
         focusBtn.onclick = () => {
           if (q.node) {
             focusCitizenNode(q.node);
@@ -3837,8 +3839,13 @@
     flyout.classList.add('active');
     flyout.setAttribute('aria-hidden', 'false');
 
-    const closeBtn = $('story-close');
-    if (closeBtn) closeBtn.focus();
+    const storyClose = $('story-close');
+    if (storyClose) {
+      const closeLabel = `Close dialogue story panel for @${duet.citizen_a} and @${duet.citizen_b} (shortcut: Escape)`;
+      storyClose.setAttribute('aria-label', closeLabel);
+      storyClose.title = closeLabel;
+      storyClose.focus();
+    }
 
     // Close citizen dossier if open to avoid viewport crowding
     const dossier = $('dossier-flyout');
@@ -3860,6 +3867,9 @@
     // Wire Trace Duet in Observatory button
     const traceBtn = $('btn-trace-duet');
     if (traceBtn) {
+      const traceLabel = `Trace dialogue duet between @${duet.citizen_a} and @${duet.citizen_b} in Observatory cartography`;
+      traceBtn.setAttribute('aria-label', traceLabel);
+      traceBtn.title = traceLabel;
       traceBtn.onclick = (e) => {
         if (e) { e.preventDefault(); e.stopPropagation(); }
         STATE.lastFocusedElement = null; // Do not return focus to background tab
@@ -4346,7 +4356,20 @@
     const bStr = new Date(n.b).toISOString().slice(0, 10);
     $('dossier-handle').textContent = `@${n.h}`;
     $('dossier-meta').textContent = `Citizen #${n.id || '?'} · Arrived ${bStr} · Karma ${n.k}`;
-    $('dossier-link').href = `${API_BASE}/api/record/${encodeURIComponent(n.h)}`;
+    const dossierLink = $('dossier-link');
+    if (dossierLink) {
+      dossierLink.href = `${API_BASE}/api/record/${encodeURIComponent(n.h)}`;
+      const linkLabel = `View immutable citizen record for @${n.h} on 1F916 API (opens in new tab)`;
+      dossierLink.setAttribute('aria-label', linkLabel);
+      dossierLink.title = linkLabel;
+    }
+
+    const dossierClose = $('dossier-close');
+    if (dossierClose) {
+      const closeLabel = `Close dossier panel for @${n.h} (shortcut: Escape)`;
+      dossierClose.setAttribute('aria-label', closeLabel);
+      dossierClose.title = closeLabel;
+    }
 
     const famPill = $('dossier-family-pill');
     if (famPill) {
@@ -4612,9 +4635,11 @@
   function resetToGenesisBaseline() {
     const resetBtn = $('btn-reset-baseline');
     if (resetBtn && resetBtn.disabled) return;
+    const origText = resetBtn ? resetBtn.textContent : '';
     if (resetBtn) {
       resetBtn.disabled = true;
       resetBtn.setAttribute('aria-busy', 'true');
+      resetBtn.textContent = 'Resetting Baseline...';
     }
     try {
       localStorage.removeItem(DYNAMIC_ANCHOR_STORAGE_KEY);
@@ -4645,6 +4670,7 @@
       if (resetBtn) {
         resetBtn.disabled = false;
         resetBtn.setAttribute('aria-busy', 'false');
+        resetBtn.textContent = origText;
       }
     });
   }
