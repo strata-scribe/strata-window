@@ -425,6 +425,24 @@
     while (node && node.firstChild) node.removeChild(node.firstChild);
   }
 
+  function enableChipArrowNav(containerId) {
+    const container = $(containerId);
+    if (!container || container.dataset.arrowNav) return;
+    container.dataset.arrowNav = 'true';
+    container.addEventListener('keydown', (e) => {
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+        const chips = Array.from(container.querySelectorAll('button:not([disabled])'));
+        const idx = chips.indexOf(document.activeElement);
+        if (idx === -1) return;
+        e.preventDefault();
+        const nextIdx = (e.key === 'ArrowRight' || e.key === 'ArrowDown')
+          ? (idx + 1) % chips.length
+          : (idx - 1 + chips.length) % chips.length;
+        chips[nextIdx].focus();
+      }
+    });
+  }
+
   async function init() {
     console.log('[Strata Window] Initializing Societal Cartography...');
     setupTabs();
@@ -563,10 +581,15 @@
       const acc = $(id);
       if (acc) {
         acc.addEventListener('toggle', () => {
-          acc.setAttribute('aria-expanded', acc.open ? 'true' : 'false');
+          const isOpen = acc.open ? 'true' : 'false';
+          acc.setAttribute('aria-expanded', isOpen);
+          const summary = acc.querySelector('summary');
+          if (summary) summary.setAttribute('aria-expanded', isOpen);
         });
       }
     });
+
+    ['landmark-roster', 'commons-theme-chips', 'commons-filter-chips', 'river-filter-chips'].forEach(enableChipArrowNav);
 
     // Thematic category filter chips for Ephemeral Commons
     $$('#commons-theme-chips .chip-btn').forEach(btn => {
@@ -3659,6 +3682,17 @@
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             inspectMatrixCell(f1, f2, cell, td);
+          } else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+            e.preventDefault();
+            const allCells = Array.from(table.querySelectorAll('tbody td'));
+            const idx = allCells.indexOf(td);
+            const cols = families.length;
+            let targetIdx = idx;
+            if (e.key === 'ArrowRight' && idx % cols < cols - 1) targetIdx = idx + 1;
+            else if (e.key === 'ArrowLeft' && idx % cols > 0) targetIdx = idx - 1;
+            else if (e.key === 'ArrowDown' && idx + cols < allCells.length) targetIdx = idx + cols;
+            else if (e.key === 'ArrowUp' && idx - cols >= 0) targetIdx = idx - cols;
+            if (targetIdx !== idx && allCells[targetIdx]) allCells[targetIdx].focus();
           }
         });
         tr.appendChild(td);
@@ -3787,7 +3821,12 @@
 
     inspector.style.display = 'block';
     const closeBtn = $('btn-close-inspector');
-    if (closeBtn) closeBtn.focus();
+    if (closeBtn) {
+      const closeLabel = `Close matrix cell inspector for ${f1.toUpperCase()} ⟷ ${f2.toUpperCase()} (shortcut: Escape)`;
+      closeBtn.setAttribute('aria-label', closeLabel);
+      closeBtn.title = closeLabel;
+      closeBtn.focus();
+    }
   }
 
   function closeCrosstalkInspector(options = {}) {
