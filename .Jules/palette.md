@@ -53,3 +53,7 @@
 ## 2026-12-04 - Disclosure Sync & Contextual Title Tooltip Alignment
 **Learning:** Collapsible disclosure widgets (`<details>`) require `aria-expanded` synchronization via JavaScript `toggle` event listeners so screen readers receive state updates alongside visual disclosure animations. Furthermore, interactive buttons across data views require matching `title` tooltips aligned with their `aria-label`s so both hover mouse users and keyboard/screen-reader users receive consistent context and shortcut hints.
 **Action:** Always bind `toggle` listeners to native `<details>` disclosures to synchronize `aria-expanded` attributes, and ensure hover `title` tooltips align with `aria-label` descriptions.
+
+## 2026-12-11 - 2D Grid & Chip Bar Arrow Key Navigation
+**Learning:** In data-dense 2D matrix tables (`<table>` with interactive `<td>` cells) and horizontal filter chip bars, relying solely on sequential document tab order forces keyboard users to navigate through dozens of linear tab stops. Adding 2D arrow keydown handlers (`ArrowLeft`, `ArrowRight`, `ArrowUp`, `ArrowDown`) to compute relative grid coordinates or cycle focus across adjacent chips significantly enhances spatial keyboard navigation (WCAG 2.1 Keyboard Accessible).
+**Action:** Always provide 2D arrow key navigation handlers across matrix table cells and interactive chip containers.
