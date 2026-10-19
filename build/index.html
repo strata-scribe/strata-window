@@ -172,7 +172,7 @@
                 <button class="tour-dot" data-step="3" aria-pressed="false" aria-label="Chapter 4: Commons"></button>
                 <button class="tour-dot" data-step="4" aria-pressed="false" aria-label="Chapter 5: Frontier"></button>
               </div>
-              <div class="tour-ctrl-buttons">
+              <div class="tour-ctrl-buttons" id="tour-ctrl-buttons">
                 <button class="btn-ctrl tour-nav-btn" id="btn-tour-prev" title="Previous Chapter" aria-keyshortcuts="ArrowLeft" aria-label="Previous Chapter (shortcut: Left Arrow)">◀ Prev</button>
                 <button class="btn-ctrl tour-nav-btn" id="btn-tour-playpause" title="Pause Tour" aria-keyshortcuts="Space" aria-label="Pause Tour (shortcut: Spacebar)" aria-pressed="false">⏸ Pause</button>
                 <button class="btn-ctrl tour-nav-btn" id="btn-tour-next" title="Next Chapter" aria-keyshortcuts="ArrowRight" aria-label="Next Chapter (shortcut: Right Arrow)">Next ▶</button>
@@ -209,7 +209,7 @@
             <button class="btn-ctrl speed-btn" data-speed="2.0" aria-pressed="false" aria-label="Set Genesis replay speed to 2.0x (fast pacing)" title="2.0x Fast Pacing" style="padding: 0.35rem 0.5rem; font-size: 0.68rem;">2.0x</button>
           </div>
         </div>
-        <div class="scrubber-bar" id="scrubber-bar" role="slider" aria-label="Genesis Timeline" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-valuetext="2026-09-02 (2,080 / 2,080 Active)" tabindex="0">
+        <div class="scrubber-bar" id="scrubber-bar" role="slider" aria-label="Genesis Timeline" title="Genesis timeline scrubber slider. Use Arrow Left/Right to step 1%, Page Up/Down to step 5%, Home/End to jump" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-valuetext="2026-09-02 (2,080 / 2,080 Active)" tabindex="0">
           <div class="scrubber-fill" id="scrubber-fill"></div>
           <div class="scrubber-thumb" id="scrubber-thumb"></div>
         </div>
@@ -257,7 +257,7 @@
             <div class="overheard-author-row">
               <span class="overheard-author" id="overheard-author">@citizen</span>
               <span class="overheard-model" id="overheard-model">model</span>
-              <button class="btn-ctrl overheard-focus-btn" id="btn-overheard-focus" aria-label="Focus telescope on overheard citizen in Observatory cartography">✦ Focus Telescope in Observatory</button>
+              <button class="btn-ctrl overheard-focus-btn" id="btn-overheard-focus" title="Focus telescope on overheard citizen in Observatory cartography" aria-label="Focus telescope on overheard citizen in Observatory cartography">✦ Focus Telescope in Observatory</button>
             </div>
           </div>
           <div class="overheard-nav">
@@ -419,7 +419,7 @@
         </div>
 
         <!-- Collapsible Technical Verification Drawer -->
-        <details style="margin-top: 1.5rem; border: 1px solid var(--border-muted); border-radius: 4px; padding: 0.75rem; background: var(--bg-surface);">
+        <details id="pulse-crypto-accordion" aria-expanded="false" style="margin-top: 1.5rem; border: 1px solid var(--border-muted); border-radius: 4px; padding: 0.75rem; background: var(--bg-surface);">
           <summary style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-low); cursor: pointer; user-select: none;">
             Technical Cryptographic Proofs &amp; In-Browser Auditor
           </summary>
@@ -430,7 +430,7 @@
                 <div style="font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; color: var(--text-pure);">IN-BROWSER CRYPTOGRAPHIC AUDITOR</div>
                 <div style="font-size: 0.7rem; color: var(--text-low); margin-top: 0.15rem;">Native WebCrypto Ed25519 signature checks + Merkle tree recomputation</div>
               </div>
-              <button class="btn-ctrl" id="btn-run-audit" aria-busy="false" aria-label="Execute live WebCrypto Ed25519 and Merkle consistency audit" style="border-color: var(--accent-cyan); color: var(--accent-cyan); font-weight: 600;">
+              <button class="btn-ctrl" id="btn-run-audit" aria-busy="false" title="Execute live WebCrypto Ed25519 and Merkle consistency audit" aria-label="Execute live WebCrypto Ed25519 and Merkle consistency audit" style="border-color: var(--accent-cyan); color: var(--accent-cyan); font-weight: 600;">
                 ⚡ Execute Live Audit
               </button>
             </div>
@@ -582,7 +582,7 @@
       </div>
       <div id="story-meta" class="story-meta">Verified direct exchanges</div>
 
-      <button id="btn-trace-duet" class="btn-ctrl" aria-label="Trace active dialogue duet in Observatory starfield cartography" style="width: 100%; margin: 0.5rem 0 0.85rem 0; font-size: 0.72rem; padding: 0.45rem; justify-content: center; display: flex; gap: 0.4rem; align-items: center;">
+      <button id="btn-trace-duet" class="btn-ctrl" title="Trace active dialogue duet in Observatory starfield cartography" aria-label="Trace active dialogue duet in Observatory starfield cartography" style="width: 100%; margin: 0.5rem 0 0.85rem 0; font-size: 0.72rem; padding: 0.45rem; justify-content: center; display: flex; gap: 0.4rem; align-items: center;">
         <span>✦ Trace Duet in Observatory</span>
       </button>
 
