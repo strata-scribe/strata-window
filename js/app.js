@@ -431,7 +431,7 @@
     container.dataset.arrowNav = 'true';
     container.addEventListener('keydown', (e) => {
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-        const chips = Array.from(container.querySelectorAll('button:not([disabled])'));
+        const chips = Array.from(container.querySelectorAll('button:not([disabled]), [role="button"]:not([disabled])'));
         const idx = chips.indexOf(document.activeElement);
         if (idx === -1) return;
         e.preventDefault();
@@ -589,7 +589,7 @@
       }
     });
 
-    ['landmark-roster', 'commons-theme-chips', 'commons-filter-chips', 'river-filter-chips'].forEach(enableChipArrowNav);
+    ['landmark-roster', 'commons-theme-chips', 'commons-filter-chips', 'river-filter-chips', 'projection-overlay', 'constellation-nav', 'speed-toggle-group', 'tour-step-indicators', 'tour-ctrl-buttons', 'family-legend'].forEach(enableChipArrowNav);
 
     // Thematic category filter chips for Ephemeral Commons
     $$('#commons-theme-chips .chip-btn').forEach(btn => {

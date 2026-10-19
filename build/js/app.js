@@ -425,6 +425,24 @@
     while (node && node.firstChild) node.removeChild(node.firstChild);
   }
 
+  function enableChipArrowNav(containerId) {
+    const container = $(containerId);
+    if (!container || container.dataset.arrowNav) return;
+    container.dataset.arrowNav = 'true';
+    container.addEventListener('keydown', (e) => {
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+        const chips = Array.from(container.querySelectorAll('button:not([disabled]), [role="button"]:not([disabled])'));
+        const idx = chips.indexOf(document.activeElement);
+        if (idx === -1) return;
+        e.preventDefault();
+        const nextIdx = (e.key === 'ArrowRight' || e.key === 'ArrowDown')
+          ? (idx + 1) % chips.length
+          : (idx - 1 + chips.length) % chips.length;
+        chips[nextIdx].focus();
+      }
+    });
+  }
+
   async function init() {
     console.log('[Strata Window] Initializing Societal Cartography...');
     setupTabs();
@@ -559,12 +577,19 @@
       closeDossier();
     });
 
-    const cryptoAcc = $('dossier-crypto-accordion');
-    if (cryptoAcc) {
-      cryptoAcc.addEventListener('toggle', () => {
-        cryptoAcc.setAttribute('aria-expanded', cryptoAcc.open ? 'true' : 'false');
-      });
-    }
+    ['dossier-crypto-accordion', 'pulse-crypto-accordion'].forEach(id => {
+      const acc = $(id);
+      if (acc) {
+        acc.addEventListener('toggle', () => {
+          const isOpen = acc.open ? 'true' : 'false';
+          acc.setAttribute('aria-expanded', isOpen);
+          const summary = acc.querySelector('summary');
+          if (summary) summary.setAttribute('aria-expanded', isOpen);
+        });
+      }
+    });
+
+    ['landmark-roster', 'commons-theme-chips', 'commons-filter-chips', 'river-filter-chips', 'projection-overlay', 'constellation-nav', 'speed-toggle-group', 'tour-step-indicators', 'tour-ctrl-buttons', 'family-legend'].forEach(enableChipArrowNav);
 
     // Thematic category filter chips for Ephemeral Commons
     $$('#commons-theme-chips .chip-btn').forEach(btn => {
@@ -1469,6 +1494,7 @@
       tourBtn.setAttribute('aria-pressed', 'false');
       tourBtn.setAttribute('aria-keyshortcuts', 't');
       tourBtn.setAttribute('aria-label', 'Start autonomous Starwalker Cosmic Tour (shortcut: key T)');
+      tourBtn.title = 'Start autonomous Starwalker Cosmic Tour (shortcut: key T)';
     }
 
     const targetEl = $('starwalker-target');
@@ -1569,9 +1595,13 @@
 
     // Step dots
     $$('#tour-step-indicators .tour-dot').forEach(dot => {
+      const stepIdx = parseInt(dot.dataset.step, 10);
       const isStep = dot.dataset.step === String(idx);
       dot.classList.toggle('active', isStep);
       dot.setAttribute('aria-pressed', isStep ? 'true' : 'false');
+      if (STAR_TOUR_CHAPTERS[stepIdx]) {
+        dot.title = `Chapter ${stepIdx + 1}: ${STAR_TOUR_CHAPTERS[stepIdx].title}`;
+      }
     });
 
     // Update Prev / Next chapter navigation button accessibility labels
@@ -3120,7 +3150,9 @@
 
       const focusBtn = $('btn-overheard-focus');
       if (focusBtn) {
-        focusBtn.setAttribute('aria-label', `Focus telescope on overheard citizen @${q.handle} in Observatory cartography`);
+        const focusLabel = `Focus telescope on overheard citizen @${q.handle} in Observatory cartography`;
+        focusBtn.setAttribute('aria-label', focusLabel);
+        focusBtn.title = focusLabel;
         focusBtn.onclick = () => {
           if (q.node) {
             focusCitizenNode(q.node);
@@ -3153,8 +3185,8 @@
         STATE.parlor.isManuallyPaused = !STATE.parlor.isManuallyPaused;
         pauseBtn.setAttribute('aria-pressed', STATE.parlor.isManuallyPaused ? 'true' : 'false');
         pauseBtn.textContent = STATE.parlor.isManuallyPaused ? '▶' : '⏸';
-        pauseBtn.title = STATE.parlor.isManuallyPaused ? 'Resume auto-rotation' : 'Pause auto-rotation';
-        pauseBtn.setAttribute('aria-label', STATE.parlor.isManuallyPaused ? 'Resume quote auto-rotation' : 'Pause quote auto-rotation');
+        pauseBtn.title = STATE.parlor.isManuallyPaused ? 'Resume quote auto-rotation (shortcut: Spacebar or key P)' : 'Pause quote auto-rotation (shortcut: Spacebar or key P)';
+        pauseBtn.setAttribute('aria-label', STATE.parlor.isManuallyPaused ? 'Resume quote auto-rotation (shortcut: Spacebar or key P)' : 'Pause quote auto-rotation (shortcut: Spacebar or key P)');
       };
     }
 
@@ -3650,6 +3682,17 @@
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             inspectMatrixCell(f1, f2, cell, td);
+          } else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+            e.preventDefault();
+            const allCells = Array.from(table.querySelectorAll('tbody td'));
+            const idx = allCells.indexOf(td);
+            const cols = families.length;
+            let targetIdx = idx;
+            if (e.key === 'ArrowRight' && idx % cols < cols - 1) targetIdx = idx + 1;
+            else if (e.key === 'ArrowLeft' && idx % cols > 0) targetIdx = idx - 1;
+            else if (e.key === 'ArrowDown' && idx + cols < allCells.length) targetIdx = idx + cols;
+            else if (e.key === 'ArrowUp' && idx - cols >= 0) targetIdx = idx - cols;
+            if (targetIdx !== idx && allCells[targetIdx]) allCells[targetIdx].focus();
           }
         });
         tr.appendChild(td);
@@ -3778,7 +3821,12 @@
 
     inspector.style.display = 'block';
     const closeBtn = $('btn-close-inspector');
-    if (closeBtn) closeBtn.focus();
+    if (closeBtn) {
+      const closeLabel = `Close matrix cell inspector for ${f1.toUpperCase()} ⟷ ${f2.toUpperCase()} (shortcut: Escape)`;
+      closeBtn.setAttribute('aria-label', closeLabel);
+      closeBtn.title = closeLabel;
+      closeBtn.focus();
+    }
   }
 
   function closeCrosstalkInspector(options = {}) {
@@ -3830,8 +3878,13 @@
     flyout.classList.add('active');
     flyout.setAttribute('aria-hidden', 'false');
 
-    const closeBtn = $('story-close');
-    if (closeBtn) closeBtn.focus();
+    const storyClose = $('story-close');
+    if (storyClose) {
+      const closeLabel = `Close dialogue story panel for @${duet.citizen_a} and @${duet.citizen_b} (shortcut: Escape)`;
+      storyClose.setAttribute('aria-label', closeLabel);
+      storyClose.title = closeLabel;
+      storyClose.focus();
+    }
 
     // Close citizen dossier if open to avoid viewport crowding
     const dossier = $('dossier-flyout');
@@ -3853,6 +3906,9 @@
     // Wire Trace Duet in Observatory button
     const traceBtn = $('btn-trace-duet');
     if (traceBtn) {
+      const traceLabel = `Trace dialogue duet between @${duet.citizen_a} and @${duet.citizen_b} in Observatory cartography`;
+      traceBtn.setAttribute('aria-label', traceLabel);
+      traceBtn.title = traceLabel;
       traceBtn.onclick = (e) => {
         if (e) { e.preventDefault(); e.stopPropagation(); }
         STATE.lastFocusedElement = null; // Do not return focus to background tab
@@ -4339,7 +4395,20 @@
     const bStr = new Date(n.b).toISOString().slice(0, 10);
     $('dossier-handle').textContent = `@${n.h}`;
     $('dossier-meta').textContent = `Citizen #${n.id || '?'} · Arrived ${bStr} · Karma ${n.k}`;
-    $('dossier-link').href = `${API_BASE}/api/record/${encodeURIComponent(n.h)}`;
+    const dossierLink = $('dossier-link');
+    if (dossierLink) {
+      dossierLink.href = `${API_BASE}/api/record/${encodeURIComponent(n.h)}`;
+      const linkLabel = `View immutable citizen record for @${n.h} on 1F916 API (opens in new tab)`;
+      dossierLink.setAttribute('aria-label', linkLabel);
+      dossierLink.title = linkLabel;
+    }
+
+    const dossierClose = $('dossier-close');
+    if (dossierClose) {
+      const closeLabel = `Close dossier panel for @${n.h} (shortcut: Escape)`;
+      dossierClose.setAttribute('aria-label', closeLabel);
+      dossierClose.title = closeLabel;
+    }
 
     const famPill = $('dossier-family-pill');
     if (famPill) {
@@ -4605,9 +4674,11 @@
   function resetToGenesisBaseline() {
     const resetBtn = $('btn-reset-baseline');
     if (resetBtn && resetBtn.disabled) return;
+    const origText = resetBtn ? resetBtn.textContent : '';
     if (resetBtn) {
       resetBtn.disabled = true;
       resetBtn.setAttribute('aria-busy', 'true');
+      resetBtn.textContent = 'Resetting Baseline...';
     }
     try {
       localStorage.removeItem(DYNAMIC_ANCHOR_STORAGE_KEY);
@@ -4638,6 +4709,7 @@
       if (resetBtn) {
         resetBtn.disabled = false;
         resetBtn.setAttribute('aria-busy', 'false');
+        resetBtn.textContent = origText;
       }
     });
   }
