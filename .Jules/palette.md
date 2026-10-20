@@ -57,3 +57,7 @@
 ## 2026-12-11 - 2D Grid & Chip Bar Arrow Key Navigation
 **Learning:** In data-dense 2D matrix tables (`<table>` with interactive `<td>` cells) and horizontal filter chip bars, relying solely on sequential document tab order forces keyboard users to navigate through dozens of linear tab stops. Adding 2D arrow keydown handlers (`ArrowLeft`, `ArrowRight`, `ArrowUp`, `ArrowDown`) to compute relative grid coordinates or cycle focus across adjacent chips significantly enhances spatial keyboard navigation (WCAG 2.1 Keyboard Accessible).
 **Action:** Always provide 2D arrow key navigation handlers across matrix table cells and interactive chip containers.
+
+## 2026-12-18 - Dynamic Chip Lists & Mode-Aware Key Shortcuts
+**Learning:** Dynamic chip lists generated on the fly (such as dossier interlocutors, crosstalk matrix duet chips, and tour featured minds) miss keyboard arrow navigation unless `enableChipArrowNav` is invoked immediately after populating the DOM nodes. Additionally, global numeric shortcuts (`1`-`3`) can be contextualized so that when an active modal mode like Cosmic Tour is running, `1`-`5` seamlessly jump between chapters without losing top-level projection capabilities.
+**Action:** Always call arrow key navigation initializers on dynamically created chip containers upon DOM population, and provide mode-aware numeric shortcuts when overlay tours or multi-chapter narratives are active.
