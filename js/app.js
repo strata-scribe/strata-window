@@ -425,8 +425,8 @@
     while (node && node.firstChild) node.removeChild(node.firstChild);
   }
 
-  function enableChipArrowNav(containerId) {
-    const container = $(containerId);
+  function enableChipArrowNav(containerOrId) {
+    const container = typeof containerOrId === 'string' ? $(containerOrId) : containerOrId;
     if (!container || container.dataset.arrowNav) return;
     container.dataset.arrowNav = 'true';
     container.addEventListener('keydown', (e) => {
@@ -3301,6 +3301,7 @@
           });
           voicesList.appendChild(vChip);
         });
+        enableChipArrowNav(voicesList);
         card.appendChild(voicesList);
 
         const filterBtn = h('button', 'btn-ctrl mullion-filter-btn', `View ${q.name} Threads`);
