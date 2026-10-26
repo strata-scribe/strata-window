@@ -1600,7 +1600,9 @@
       dot.classList.toggle('active', isStep);
       dot.setAttribute('aria-pressed', isStep ? 'true' : 'false');
       if (STAR_TOUR_CHAPTERS[stepIdx]) {
-        dot.title = `Chapter ${stepIdx + 1}: ${STAR_TOUR_CHAPTERS[stepIdx].title}`;
+        const chapterLabel = `Chapter ${stepIdx + 1}: ${STAR_TOUR_CHAPTERS[stepIdx].title}`;
+        dot.title = chapterLabel;
+        dot.setAttribute('aria-label', chapterLabel);
       }
     });
 
@@ -1674,6 +1676,7 @@
         });
         listEl.appendChild(chip);
       });
+      enableChipArrowNav('tour-citizens-list');
     }
 
     // Update target text in bottom bar
@@ -1858,7 +1861,10 @@
         }
       }
 
-      if (e.key === '1') {
+      const isTourActive = STATE.view.projection === 'starwalker' && STATE.starwalker.tour && STATE.starwalker.tour.active;
+      if (isTourActive && ['1', '2', '3', '4', '5'].includes(e.key)) {
+        goToTourChapter(parseInt(e.key, 10) - 1);
+      } else if (e.key === '1') {
         setProjection('flow');
       } else if (e.key === '2') {
         setProjection('calendar');
@@ -1890,6 +1896,9 @@
       } else if ((e.key === 'f' || e.key === 'F') && STATE.activeTab === 'observatory') {
         const filamentBtn = $('btn-toggle-filaments');
         if (filamentBtn) filamentBtn.click();
+      } else if ((e.key === 'l' || e.key === 'L') && STATE.activeTab === 'observatory' && STATE.view.projection === 'starwalker') {
+        const perfBtn = $('btn-starwalker-perf');
+        if (perfBtn) perfBtn.click();
       }
 
       if (STATE.activeTab !== 'observatory') return;
@@ -3811,6 +3820,7 @@
           });
           chipsEl.appendChild(btn);
         });
+        enableChipArrowNav('inspector-duet-chips');
       } else {
         const noChip = h('div', '', 'Exchanges distributed across broad aggregate threads. No individual high-volume duet indexed for this cell.');
         noChip.style.fontSize = '0.72rem';
@@ -4063,8 +4073,32 @@
 
       row.appendChild(left);
       row.appendChild(right);
+
+      const citNode = (ev.cid && STATE.data.nodes) ? STATE.data.nodes.find(n => n.id === ev.cid) : null;
+      if (citNode) {
+        row.tabIndex = 0;
+        row.setAttribute('role', 'button');
+        row.style.cursor = 'pointer';
+        const label = `View dossier and focus telescope on @${citNode.h} (Citizen #${citNode.id}) in Observatory`;
+        row.setAttribute('aria-label', label);
+        row.title = label;
+        const triggerAction = () => {
+          openDossier(citNode);
+          focusCitizenNode(citNode);
+        };
+        row.addEventListener('click', triggerAction);
+        row.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            triggerAction();
+          }
+        });
+      }
+
       feed.appendChild(row);
     });
+
+    enableChipArrowNav('pulse-feed');
 
     const auditBtn = $('btn-run-audit');
     if (auditBtn) {
@@ -4453,6 +4487,7 @@
           });
           interlocutorsList.appendChild(pill);
         });
+        enableChipArrowNav('dossier-interlocutors-list');
       } else {
         interlocutorsSection.style.display = 'none';
       }
