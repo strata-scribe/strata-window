@@ -1048,6 +1048,7 @@
 
     if (canvas) {
       canvas.setAttribute('aria-label', `Observatory starfield cartography: Telescope focused on @${match.h} (${match.m}, Karma: ${match.k}). Use WASD or Arrow keys to navigate.`);
+      canvas.focus();
     }
 
     if (STATE.activeTab !== 'observatory') {
@@ -1600,7 +1601,9 @@
       dot.classList.toggle('active', isStep);
       dot.setAttribute('aria-pressed', isStep ? 'true' : 'false');
       if (STAR_TOUR_CHAPTERS[stepIdx]) {
-        dot.title = `Chapter ${stepIdx + 1}: ${STAR_TOUR_CHAPTERS[stepIdx].title}`;
+        const chapterLabel = `Chapter ${stepIdx + 1}: ${STAR_TOUR_CHAPTERS[stepIdx].title}`;
+        dot.title = chapterLabel;
+        dot.setAttribute('aria-label', chapterLabel);
       }
     });
 
@@ -1641,6 +1644,7 @@
       tourBtn.textContent = '✕ Exit Tour';
       tourBtn.setAttribute('aria-keyshortcuts', 't');
       tourBtn.setAttribute('aria-label', 'Exit Starwalker Cosmic Tour (shortcut: key T)');
+      tourBtn.title = 'Exit Starwalker Cosmic Tour (shortcut: key T)';
     }
 
     // Featured key citizens chips
@@ -1674,6 +1678,7 @@
         });
         listEl.appendChild(chip);
       });
+      enableChipArrowNav('tour-citizens-list');
     }
 
     // Update target text in bottom bar
@@ -1780,6 +1785,7 @@
           btn.classList.toggle('active', STATE.starwalker.lowPower);
           btn.setAttribute('aria-pressed', STATE.starwalker.lowPower ? 'true' : 'false');
           btn.textContent = STATE.starwalker.lowPower ? '⚡ Low Power (Active)' : '⚡ Low Power';
+          btn.title = STATE.starwalker.lowPower ? 'Disable Low-Power rendering mode' : 'Toggle Low-Power crisp rendering mode for lightweight browsers';
           resizeCanvas();
           renderCanvas();
           return;
@@ -1794,15 +1800,24 @@
             if (b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', 'false');
           }
         });
-        btn.classList.add('active');
-        if (btn.hasAttribute('aria-pressed')) btn.setAttribute('aria-pressed', 'true');
 
-        if (cId === 'origin' || cId === 'all') {
+        if (cId === 'origin') {
+          const allBtn = document.querySelector('#constellation-nav .const-btn[data-const="all"]');
+          if (allBtn) {
+            allBtn.classList.add('active');
+            allBtn.setAttribute('aria-pressed', 'true');
+          }
           warpStarwalkerTo(0, 0, -900, 0, 0, 'all');
-        } else if (CONSTELLATIONS[cId]) {
-          const target = getConstellationTarget(cId);
-          if (target) {
-            warpStarwalkerTo(target.camX, target.camY, target.camZ, target.yaw, target.pitch, cId);
+        } else {
+          btn.classList.add('active');
+          if (btn.hasAttribute('aria-pressed')) btn.setAttribute('aria-pressed', 'true');
+          if (cId === 'all') {
+            warpStarwalkerTo(0, 0, -900, 0, 0, 'all');
+          } else if (CONSTELLATIONS[cId]) {
+            const target = getConstellationTarget(cId);
+            if (target) {
+              warpStarwalkerTo(target.camX, target.camY, target.camZ, target.yaw, target.pitch, cId);
+            }
           }
         }
       });
@@ -1858,7 +1873,10 @@
         }
       }
 
-      if (e.key === '1') {
+      const isTourActive = STATE.view.projection === 'starwalker' && STATE.starwalker.tour && STATE.starwalker.tour.active;
+      if (isTourActive && ['1', '2', '3', '4', '5'].includes(e.key)) {
+        goToTourChapter(parseInt(e.key, 10) - 1);
+      } else if (e.key === '1') {
         setProjection('flow');
       } else if (e.key === '2') {
         setProjection('calendar');
@@ -3742,6 +3760,7 @@
       });
       duetBox.appendChild(card);
     });
+    enableChipArrowNav('duet-container');
   }
 
   function getActiveFlyout() {
@@ -3811,6 +3830,7 @@
           });
           chipsEl.appendChild(btn);
         });
+        enableChipArrowNav('inspector-duet-chips');
       } else {
         const noChip = h('div', '', 'Exchanges distributed across broad aggregate threads. No individual high-volume duet indexed for this cell.');
         noChip.style.fontSize = '0.72rem';
@@ -4453,6 +4473,7 @@
           });
           interlocutorsList.appendChild(pill);
         });
+        enableChipArrowNav('dossier-interlocutors-list');
       } else {
         interlocutorsSection.style.display = 'none';
       }

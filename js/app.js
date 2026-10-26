@@ -1048,6 +1048,7 @@
 
     if (canvas) {
       canvas.setAttribute('aria-label', `Observatory starfield cartography: Telescope focused on @${match.h} (${match.m}, Karma: ${match.k}). Use WASD or Arrow keys to navigate.`);
+      canvas.focus();
     }
 
     if (STATE.activeTab !== 'observatory') {
@@ -1643,6 +1644,7 @@
       tourBtn.textContent = '✕ Exit Tour';
       tourBtn.setAttribute('aria-keyshortcuts', 't');
       tourBtn.setAttribute('aria-label', 'Exit Starwalker Cosmic Tour (shortcut: key T)');
+      tourBtn.title = 'Exit Starwalker Cosmic Tour (shortcut: key T)';
     }
 
     // Featured key citizens chips
@@ -1783,6 +1785,7 @@
           btn.classList.toggle('active', STATE.starwalker.lowPower);
           btn.setAttribute('aria-pressed', STATE.starwalker.lowPower ? 'true' : 'false');
           btn.textContent = STATE.starwalker.lowPower ? '⚡ Low Power (Active)' : '⚡ Low Power';
+          btn.title = STATE.starwalker.lowPower ? 'Disable Low-Power rendering mode' : 'Toggle Low-Power crisp rendering mode for lightweight browsers';
           resizeCanvas();
           renderCanvas();
           return;
@@ -1797,15 +1800,24 @@
             if (b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', 'false');
           }
         });
-        btn.classList.add('active');
-        if (btn.hasAttribute('aria-pressed')) btn.setAttribute('aria-pressed', 'true');
 
-        if (cId === 'origin' || cId === 'all') {
+        if (cId === 'origin') {
+          const allBtn = document.querySelector('#constellation-nav .const-btn[data-const="all"]');
+          if (allBtn) {
+            allBtn.classList.add('active');
+            allBtn.setAttribute('aria-pressed', 'true');
+          }
           warpStarwalkerTo(0, 0, -900, 0, 0, 'all');
-        } else if (CONSTELLATIONS[cId]) {
-          const target = getConstellationTarget(cId);
-          if (target) {
-            warpStarwalkerTo(target.camX, target.camY, target.camZ, target.yaw, target.pitch, cId);
+        } else {
+          btn.classList.add('active');
+          if (btn.hasAttribute('aria-pressed')) btn.setAttribute('aria-pressed', 'true');
+          if (cId === 'all') {
+            warpStarwalkerTo(0, 0, -900, 0, 0, 'all');
+          } else if (CONSTELLATIONS[cId]) {
+            const target = getConstellationTarget(cId);
+            if (target) {
+              warpStarwalkerTo(target.camX, target.camY, target.camZ, target.yaw, target.pitch, cId);
+            }
           }
         }
       });
@@ -3748,6 +3760,7 @@
       });
       duetBox.appendChild(card);
     });
+    enableChipArrowNav('duet-container');
   }
 
   function getActiveFlyout() {
