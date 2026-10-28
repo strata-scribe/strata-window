@@ -632,6 +632,8 @@
           badge.style.color = STATE.showFilaments ? 'var(--accent-cyan)' : 'var(--text-dim)';
         }
         filamentBtn.style.borderColor = STATE.showFilaments ? 'var(--accent-cyan)' : 'var(--border-muted)';
+        const resBox = $('locator-results');
+        if (resBox) resBox.textContent = `Discourse filaments: ${STATE.showFilaments ? 'ON' : 'OFF'}`;
         renderCanvas();
       });
     }
@@ -1445,6 +1447,16 @@
     const hud = $('starwalker-hud');
     const scrubberDock = document.querySelector('.scrubber-dock');
 
+    const resBox = $('locator-results');
+    const projNames = {
+      flow: 'Celestial River',
+      calendar: 'Calendar Days',
+      starwalker: 'Starwalker 3D'
+    };
+    if (resBox && projNames[proj]) {
+      resBox.textContent = `Projection mode switched to ${projNames[proj]}`;
+    }
+
     if (proj === 'starwalker') {
       if (hud) hud.style.display = 'flex';
       if (scrubberDock) scrubberDock.style.opacity = '0.35';
@@ -1600,7 +1612,9 @@
       dot.classList.toggle('active', isStep);
       dot.setAttribute('aria-pressed', isStep ? 'true' : 'false');
       if (STAR_TOUR_CHAPTERS[stepIdx]) {
-        dot.title = `Chapter ${stepIdx + 1}: ${STAR_TOUR_CHAPTERS[stepIdx].title}`;
+        const chapterLabel = `Chapter ${stepIdx + 1}: ${STAR_TOUR_CHAPTERS[stepIdx].title}`;
+        dot.title = chapterLabel;
+        dot.setAttribute('aria-label', chapterLabel);
       }
     });
 
@@ -1674,6 +1688,7 @@
         });
         listEl.appendChild(chip);
       });
+      enableChipArrowNav('tour-citizens-list');
     }
 
     // Update target text in bottom bar
@@ -1858,7 +1873,10 @@
         }
       }
 
-      if (e.key === '1') {
+      const isTourActive = STATE.view.projection === 'starwalker' && STATE.starwalker.tour && STATE.starwalker.tour.active;
+      if (isTourActive && ['1', '2', '3', '4', '5'].includes(e.key)) {
+        goToTourChapter(parseInt(e.key, 10) - 1);
+      } else if (e.key === '1') {
         setProjection('flow');
       } else if (e.key === '2') {
         setProjection('calendar');
@@ -3308,6 +3326,10 @@
             b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
           });
           filterRiver(q.id);
+          const riverHeader = document.querySelector('.river-header');
+          if (riverHeader) {
+            riverHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
         });
         card.appendChild(filterBtn);
 
@@ -3492,10 +3514,7 @@
     topRow.style.justifyContent = 'space-between';
     topRow.style.alignItems = 'center';
 
-    const handleEl = h('button', 'commons-handle', `@${g.h}`);
-    handleEl.setAttribute('type', 'button');
-    handleEl.setAttribute('aria-label', `View dossier for @${g.h}`);
-    handleEl.title = `View dossier for @${g.h}`;
+    const handleEl = h('span', 'commons-handle', `@${g.h}`);
     handleEl.style.background = 'none';
     handleEl.style.border = 'none';
     handleEl.style.padding = '0';
@@ -3811,6 +3830,7 @@
           });
           chipsEl.appendChild(btn);
         });
+        enableChipArrowNav('inspector-duet-chips');
       } else {
         const noChip = h('div', '', 'Exchanges distributed across broad aggregate threads. No individual high-volume duet indexed for this cell.');
         noChip.style.fontSize = '0.72rem';
@@ -4453,6 +4473,7 @@
           });
           interlocutorsList.appendChild(pill);
         });
+        enableChipArrowNav('dossier-interlocutors-list');
       } else {
         interlocutorsSection.style.display = 'none';
       }
@@ -4703,6 +4724,8 @@
     const badgeDot = document.querySelector('.sync-dot');
     if (badgeText) badgeText.textContent = 'RESET TO GENESIS BASELINE';
     if (badgeDot) badgeDot.style.background = 'var(--accent-amber)';
+    const resBox = $('locator-results');
+    if (resBox) resBox.textContent = 'Reset to Genesis Baseline complete.';
 
     // Trigger immediate live resync from genesis snapshot baseline
     syncLiveDelta(true).finally(() => {
