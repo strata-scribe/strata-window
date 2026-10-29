@@ -425,8 +425,8 @@
     while (node && node.firstChild) node.removeChild(node.firstChild);
   }
 
-  function enableChipArrowNav(containerId) {
-    const container = $(containerId);
+  function enableChipArrowNav(containerTarget) {
+    const container = typeof containerTarget === 'string' ? $(containerTarget) : containerTarget;
     if (!container || container.dataset.arrowNav) return;
     container.dataset.arrowNav = 'true';
     container.addEventListener('keydown', (e) => {
@@ -1600,7 +1600,9 @@
       dot.classList.toggle('active', isStep);
       dot.setAttribute('aria-pressed', isStep ? 'true' : 'false');
       if (STAR_TOUR_CHAPTERS[stepIdx]) {
-        dot.title = `Chapter ${stepIdx + 1}: ${STAR_TOUR_CHAPTERS[stepIdx].title}`;
+        const chapterLabel = `Chapter ${stepIdx + 1}: ${STAR_TOUR_CHAPTERS[stepIdx].title}`;
+        dot.title = chapterLabel;
+        dot.setAttribute('aria-label', chapterLabel);
       }
     });
 
@@ -1674,6 +1676,7 @@
         });
         listEl.appendChild(chip);
       });
+      enableChipArrowNav('tour-citizens-list');
     }
 
     // Update target text in bottom bar
@@ -1858,7 +1861,10 @@
         }
       }
 
-      if (e.key === '1') {
+      const isTourActive = STATE.view.projection === 'starwalker' && STATE.starwalker.tour && STATE.starwalker.tour.active;
+      if (isTourActive && ['1', '2', '3', '4', '5'].includes(e.key)) {
+        goToTourChapter(parseInt(e.key, 10) - 1);
+      } else if (e.key === '1') {
         setProjection('flow');
       } else if (e.key === '2') {
         setProjection('calendar');
@@ -3295,6 +3301,7 @@
           });
           voicesList.appendChild(vChip);
         });
+        enableChipArrowNav(voicesList);
         card.appendChild(voicesList);
 
         const filterBtn = h('button', 'btn-ctrl mullion-filter-btn', `View ${q.name} Threads`);
@@ -3765,6 +3772,7 @@
     if (!inspector) return;
 
     inspector.setAttribute('aria-label', `Architecture Dialogue Matrix Inspector: ${f1.toUpperCase()} and ${f2.toUpperCase()}`);
+    inspector.setAttribute('aria-hidden', 'false');
 
     $$('#matrix-table td').forEach(c => c.classList.remove('selected'));
     if (td) td.classList.add('selected');
@@ -3811,6 +3819,7 @@
           });
           chipsEl.appendChild(btn);
         });
+        enableChipArrowNav('inspector-duet-chips');
       } else {
         const noChip = h('div', '', 'Exchanges distributed across broad aggregate threads. No individual high-volume duet indexed for this cell.');
         noChip.style.fontSize = '0.72rem';
@@ -3833,6 +3842,7 @@
     const insp = $('crosstalk-cell-inspector');
     if (!insp) return;
     insp.style.display = 'none';
+    insp.setAttribute('aria-hidden', 'true');
     $$('#matrix-table td').forEach(c => c.classList.remove('selected'));
     if (options.restoreFocus !== false && STATE.lastFocusedElement && typeof STATE.lastFocusedElement.focus === 'function') {
       STATE.lastFocusedElement.focus();
@@ -3886,10 +3896,14 @@
       storyClose.focus();
     }
 
-    // Close citizen dossier if open to avoid viewport crowding
+    // Close citizen dossier and crosstalk inspector if open to avoid viewport crowding
     const dossier = $('dossier-flyout');
     if (dossier && dossier.classList.contains('active')) {
       closeDossier({ restoreFocus: false });
+    }
+    const inspector = $('crosstalk-cell-inspector');
+    if (inspector && inspector.style.display !== 'none') {
+      closeCrosstalkInspector({ restoreFocus: false });
     }
 
     $('story-handle-a').textContent = `@${duet.citizen_a}`;
@@ -4380,10 +4394,14 @@
     const closeBtn = $('dossier-close');
     if (closeBtn) closeBtn.focus();
 
-    // Close dialogue story drawer if open to avoid viewport crowding
+    // Close dialogue story drawer and crosstalk inspector if open to avoid viewport crowding
     const story = $('story-flyout');
     if (story && story.classList.contains('active')) {
       closeStoryDrawer({ restoreFocus: false });
+    }
+    const inspector = $('crosstalk-cell-inspector');
+    if (inspector && inspector.style.display !== 'none') {
+      closeCrosstalkInspector({ restoreFocus: false });
     }
 
     const cryptoAcc = $('dossier-crypto-accordion');
@@ -4453,6 +4471,7 @@
           });
           interlocutorsList.appendChild(pill);
         });
+        enableChipArrowNav('dossier-interlocutors-list');
       } else {
         interlocutorsSection.style.display = 'none';
       }
