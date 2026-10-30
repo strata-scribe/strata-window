@@ -632,6 +632,11 @@
           badge.style.color = STATE.showFilaments ? 'var(--accent-cyan)' : 'var(--text-dim)';
         }
         filamentBtn.style.borderColor = STATE.showFilaments ? 'var(--accent-cyan)' : 'var(--border-muted)';
+        const labelText = STATE.showFilaments
+          ? 'Toggle visual trace of direct dialogue filaments across top interlocutors (currently ON, shortcut: key F)'
+          : 'Toggle visual trace of direct dialogue filaments across top interlocutors (currently OFF, shortcut: key F)';
+        filamentBtn.setAttribute('aria-label', labelText);
+        filamentBtn.title = labelText;
         renderCanvas();
       });
     }
@@ -1600,7 +1605,9 @@
       dot.classList.toggle('active', isStep);
       dot.setAttribute('aria-pressed', isStep ? 'true' : 'false');
       if (STAR_TOUR_CHAPTERS[stepIdx]) {
-        dot.title = `Chapter ${stepIdx + 1}: ${STAR_TOUR_CHAPTERS[stepIdx].title}`;
+        const chapterLabel = `Chapter ${stepIdx + 1}: ${STAR_TOUR_CHAPTERS[stepIdx].title}`;
+        dot.title = chapterLabel;
+        dot.setAttribute('aria-label', chapterLabel);
       }
     });
 
@@ -1641,6 +1648,7 @@
       tourBtn.textContent = '✕ Exit Tour';
       tourBtn.setAttribute('aria-keyshortcuts', 't');
       tourBtn.setAttribute('aria-label', 'Exit Starwalker Cosmic Tour (shortcut: key T)');
+      tourBtn.title = 'Exit Starwalker Cosmic Tour (shortcut: key T)';
     }
 
     // Featured key citizens chips
@@ -1674,6 +1682,7 @@
         });
         listEl.appendChild(chip);
       });
+      enableChipArrowNav('tour-citizens-list');
     }
 
     // Update target text in bottom bar
@@ -1780,6 +1789,11 @@
           btn.classList.toggle('active', STATE.starwalker.lowPower);
           btn.setAttribute('aria-pressed', STATE.starwalker.lowPower ? 'true' : 'false');
           btn.textContent = STATE.starwalker.lowPower ? '⚡ Low Power (Active)' : '⚡ Low Power';
+          const perfLabel = STATE.starwalker.lowPower
+            ? 'Low-Power crisp rendering mode is currently ACTIVE for lightweight browsers. Click to disable.'
+            : 'Toggle Low-Power crisp rendering mode for lightweight browsers';
+          btn.setAttribute('aria-label', perfLabel);
+          btn.title = perfLabel;
           resizeCanvas();
           renderCanvas();
           return;
@@ -1858,7 +1872,10 @@
         }
       }
 
-      if (e.key === '1') {
+      const isTourActive = STATE.view.projection === 'starwalker' && STATE.starwalker.tour && STATE.starwalker.tour.active;
+      if (isTourActive && ['1', '2', '3', '4', '5'].includes(e.key)) {
+        goToTourChapter(parseInt(e.key, 10) - 1);
+      } else if (e.key === '1') {
         setProjection('flow');
       } else if (e.key === '2') {
         setProjection('calendar');
@@ -3811,6 +3828,7 @@
           });
           chipsEl.appendChild(btn);
         });
+        enableChipArrowNav('inspector-duet-chips');
       } else {
         const noChip = h('div', '', 'Exchanges distributed across broad aggregate threads. No individual high-volume duet indexed for this cell.');
         noChip.style.fontSize = '0.72rem';
@@ -4453,6 +4471,7 @@
           });
           interlocutorsList.appendChild(pill);
         });
+        enableChipArrowNav('dossier-interlocutors-list');
       } else {
         interlocutorsSection.style.display = 'none';
       }
@@ -4898,6 +4917,8 @@
     if (syncBtn) {
       syncBtn.disabled = true;
       syncBtn.setAttribute('aria-busy', 'true');
+      syncBtn.setAttribute('aria-label', 'Synchronizing real-time delta changes...');
+      syncBtn.title = 'Synchronizing real-time delta changes...';
     }
     if (badgeText) badgeText.textContent = 'SYNCING DELTA...';
     if (badgeDot) badgeDot.style.background = 'var(--accent-cyan)';
@@ -5060,6 +5081,11 @@
           updateHud({ isQuiet304: true });
           if (badgeText) badgeText.textContent = 'LIVE SYNCED (304 QUIET POLL)';
           if (badgeDot) badgeDot.style.background = 'var(--accent-emerald)';
+          if (syncBtn) {
+            const quietText = 'Live Delta Engine: Up to date (304 Not Modified). Click to trigger live synchronization';
+            syncBtn.setAttribute('aria-label', quietText);
+            syncBtn.title = quietText;
+          }
           return;
         }
 
@@ -5267,6 +5293,13 @@
       }
       if (badgeDot) {
         badgeDot.style.background = 'var(--accent-emerald)';
+      }
+      if (syncBtn) {
+        const syncedText = deltaEventsCount > 0
+          ? `Live Delta Engine: Synced +${deltaEventsCount.toLocaleString()} real-time events. Click to re-sync`
+          : 'Live Delta Engine: Up to date. Click to trigger live delta synchronization';
+        syncBtn.setAttribute('aria-label', syncedText);
+        syncBtn.title = syncedText;
       }
     } catch (err) {
       console.warn('[Strata Window] Live delta sync fallback:', err.message);
