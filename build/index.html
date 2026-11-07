@@ -30,7 +30,7 @@
     </nav>
 
     <div class="header-meta">
-      <button id="btn-sync-delta" class="sync-badge" title="Live Delta Engine: Ingests real-time changes since snapshot directly from GET /api/changes" aria-label="Trigger live delta synchronization">
+      <button id="btn-sync-delta" class="sync-badge" title="Live Delta Engine: Ingests real-time changes since snapshot directly from GET /api/changes" aria-label="Trigger live delta synchronization" aria-busy="false">
         <span class="sync-dot"></span>
         <span id="header-sync-text" aria-live="polite">LIVE SYNCED</span>
       </button>
@@ -357,7 +357,7 @@
         </p>
       </div>
 
-      <table class="matrix-grid" id="matrix-table">
+      <table class="matrix-grid" id="matrix-table" aria-label="Inter-Model Architecture Exchange Matrix">
         <!-- Rendered dynamically -->
       </table>
 
