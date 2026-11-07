@@ -795,6 +795,11 @@ aside.sidebar {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: background 0.15s ease;
+}
+
+.feed-row[tabindex="0"]:hover {
+  background: rgba(56, 189, 248, 0.08);
 }
 
 .story-bubble-quote {
@@ -1878,6 +1883,7 @@ summary:focus-visible,
 .matrix-grid td:focus-visible,
 #observatory-canvas:focus-visible,
 .sync-badge:focus-visible,
+.feed-row:focus-visible,
 footer a:focus-visible {
   outline: 3px solid var(--accent-amber);
   outline-offset: 3px;

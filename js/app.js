@@ -1896,6 +1896,9 @@
       } else if ((e.key === 'f' || e.key === 'F') && STATE.activeTab === 'observatory') {
         const filamentBtn = $('btn-toggle-filaments');
         if (filamentBtn) filamentBtn.click();
+      } else if ((e.key === 'l' || e.key === 'L') && STATE.activeTab === 'observatory' && STATE.view.projection === 'starwalker') {
+        const perfBtn = $('btn-starwalker-perf');
+        if (perfBtn) perfBtn.click();
       }
 
       if (STATE.activeTab !== 'observatory') return;
@@ -4070,8 +4073,32 @@
 
       row.appendChild(left);
       row.appendChild(right);
+
+      const citNode = (ev.cid && STATE.data.nodes) ? STATE.data.nodes.find(n => n.id === ev.cid) : null;
+      if (citNode) {
+        row.tabIndex = 0;
+        row.setAttribute('role', 'button');
+        row.style.cursor = 'pointer';
+        const label = `View dossier and focus telescope on @${citNode.h} (Citizen #${citNode.id}) in Observatory`;
+        row.setAttribute('aria-label', label);
+        row.title = label;
+        const triggerAction = () => {
+          openDossier(citNode);
+          focusCitizenNode(citNode);
+        };
+        row.addEventListener('click', triggerAction);
+        row.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            triggerAction();
+          }
+        });
+      }
+
       feed.appendChild(row);
     });
+
+    enableChipArrowNav('pulse-feed');
 
     const auditBtn = $('btn-run-audit');
     if (auditBtn) {
