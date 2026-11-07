@@ -692,17 +692,7 @@
 
     $$('.speed-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        $$('.speed-btn').forEach(b => {
-          b.classList.remove('active');
-          b.setAttribute('aria-pressed', 'false');
-          b.style.borderColor = '';
-          b.style.color = '';
-        });
-        btn.classList.add('active');
-        btn.setAttribute('aria-pressed', 'true');
-        btn.style.borderColor = 'var(--accent-cyan)';
-        btn.style.color = 'var(--accent-cyan)';
-        STATE.temporal.speedMultiplier = parseFloat(btn.dataset.speed) || 1.0;
+        setSpeedMultiplier(parseFloat(btn.dataset.speed) || 1.0);
       });
     });
 
@@ -888,6 +878,18 @@
     renderCanvas();
   }
 
+  function setSpeedMultiplier(spd) {
+    STATE.temporal.speedMultiplier = spd;
+    $$('.speed-btn').forEach(b => {
+      const isMatch = Math.abs(parseFloat(b.dataset.speed) - spd) < 0.01;
+      b.classList.toggle('active', isMatch);
+      b.setAttribute('aria-pressed', isMatch ? 'true' : 'false');
+      b.style.borderColor = isMatch ? 'var(--accent-cyan)' : '';
+      b.style.color = isMatch ? 'var(--accent-cyan)' : '';
+    });
+    updateScrubberDisplay();
+  }
+
   function updateScrubberDisplay() {
     const isFlow = STATE.view.projection === 'flow';
     const totalNodes = (STATE.data && STATE.data.nodes ? STATE.data.nodes.length : 2565);
@@ -932,7 +934,7 @@
     if (thumb) thumb.style.left = `${pct}%`;
     if (bar) {
       bar.setAttribute('aria-valuenow', Math.round(curProg * 100));
-      bar.setAttribute('aria-valuetext', textVal);
+      bar.setAttribute('aria-valuetext', `${textVal} [${STATE.temporal.speedMultiplier || 1.0}x speed]`);
     }
   }
 
@@ -1893,6 +1895,13 @@
       } else if (e.key === 'r' || e.key === 'R') {
         const resetBtn = $('btn-reset-baseline');
         if (resetBtn) resetBtn.click();
+      } else if (e.key === '[' || e.key === ']') {
+        const speeds = [0.5, 1.0, 2.0];
+        const curSpd = STATE.temporal.speedMultiplier || 1.0;
+        let idx = speeds.findIndex(s => Math.abs(s - curSpd) < 0.01);
+        if (idx === -1) idx = 1;
+        if (e.key === '[' && idx > 0) setSpeedMultiplier(speeds[idx - 1]);
+        if (e.key === ']' && idx < speeds.length - 1) setSpeedMultiplier(speeds[idx + 1]);
       } else if ((e.key === 'f' || e.key === 'F') && STATE.activeTab === 'observatory') {
         const filamentBtn = $('btn-toggle-filaments');
         if (filamentBtn) filamentBtn.click();
@@ -3694,10 +3703,10 @@
             const idx = allCells.indexOf(td);
             const cols = families.length;
             let targetIdx = idx;
-            if (e.key === 'ArrowRight' && idx % cols < cols - 1) targetIdx = idx + 1;
-            else if (e.key === 'ArrowLeft' && idx % cols > 0) targetIdx = idx - 1;
-            else if (e.key === 'ArrowDown' && idx + cols < allCells.length) targetIdx = idx + cols;
-            else if (e.key === 'ArrowUp' && idx - cols >= 0) targetIdx = idx - cols;
+            if (e.key === 'ArrowRight') targetIdx = (idx % cols < cols - 1) ? idx + 1 : idx - (cols - 1);
+            else if (e.key === 'ArrowLeft') targetIdx = (idx % cols > 0) ? idx - 1 : idx + (cols - 1);
+            else if (e.key === 'ArrowDown') targetIdx = (idx + cols < allCells.length) ? idx + cols : idx % cols;
+            else if (e.key === 'ArrowUp') targetIdx = (idx - cols >= 0) ? idx - cols : allCells.length - cols + (idx % cols);
             if (targetIdx !== idx && allCells[targetIdx]) allCells[targetIdx].focus();
           }
         });
