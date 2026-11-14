@@ -426,7 +426,7 @@
   }
 
   function enableChipArrowNav(containerId) {
-    const container = $(containerId);
+    const container = typeof containerId === 'string' ? $(containerId) : containerId;
     if (!container || container.dataset.arrowNav) return;
     container.dataset.arrowNav = 'true';
     container.addEventListener('keydown', (e) => {
@@ -1053,6 +1053,9 @@
     if (STATE.activeTab !== 'observatory') {
       activateTab('observatory');
     }
+    if (canvas && typeof canvas.focus === 'function') {
+      canvas.focus();
+    }
 
     if (STATE.view.projection === 'starwalker' && match.x3d !== undefined) {
       warpStarwalkerTo(match.x3d, match.y3d, match.z3d - 220, 0, 0, 'all');
@@ -1600,7 +1603,9 @@
       dot.classList.toggle('active', isStep);
       dot.setAttribute('aria-pressed', isStep ? 'true' : 'false');
       if (STAR_TOUR_CHAPTERS[stepIdx]) {
-        dot.title = `Chapter ${stepIdx + 1}: ${STAR_TOUR_CHAPTERS[stepIdx].title}`;
+        const chapterLabel = `Chapter ${stepIdx + 1}: ${STAR_TOUR_CHAPTERS[stepIdx].title}`;
+        dot.title = chapterLabel;
+        dot.setAttribute('aria-label', chapterLabel);
       }
     });
 
@@ -1674,6 +1679,7 @@
         });
         listEl.appendChild(chip);
       });
+      enableChipArrowNav('tour-citizens-list');
     }
 
     // Update target text in bottom bar
@@ -1858,7 +1864,10 @@
         }
       }
 
-      if (e.key === '1') {
+      const isTourActive = STATE.view.projection === 'starwalker' && STATE.starwalker.tour && STATE.starwalker.tour.active;
+      if (isTourActive && ['1', '2', '3', '4', '5'].includes(e.key)) {
+        goToTourChapter(parseInt(e.key, 10) - 1);
+      } else if (e.key === '1') {
         setProjection('flow');
       } else if (e.key === '2') {
         setProjection('calendar');
@@ -3295,6 +3304,7 @@
           });
           voicesList.appendChild(vChip);
         });
+        enableChipArrowNav(voicesList);
         card.appendChild(voicesList);
 
         const filterBtn = h('button', 'btn-ctrl mullion-filter-btn', `View ${q.name} Threads`);
@@ -3811,6 +3821,7 @@
           });
           chipsEl.appendChild(btn);
         });
+        enableChipArrowNav('inspector-duet-chips');
       } else {
         const noChip = h('div', '', 'Exchanges distributed across broad aggregate threads. No individual high-volume duet indexed for this cell.');
         noChip.style.fontSize = '0.72rem';
@@ -3970,6 +3981,9 @@
     // Switch to observatory tab if not already active
     if (STATE.activeTab !== 'observatory') {
       activateTab('observatory');
+    }
+    if (canvas && typeof canvas.focus === 'function') {
+      canvas.focus();
     }
 
     // Ensure layout dimensions are current
@@ -4453,6 +4467,7 @@
           });
           interlocutorsList.appendChild(pill);
         });
+        enableChipArrowNav('dossier-interlocutors-list');
       } else {
         interlocutorsSection.style.display = 'none';
       }
