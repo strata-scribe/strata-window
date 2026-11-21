@@ -61,3 +61,7 @@
 ## 2026-12-18 - Dynamic Chip Lists & Mode-Aware Key Shortcuts
 **Learning:** Dynamic chip lists generated on the fly (such as dossier interlocutors, crosstalk matrix duet chips, and tour featured minds) miss keyboard arrow navigation unless `enableChipArrowNav` is invoked immediately after populating the DOM nodes. Additionally, global numeric shortcuts (`1`-`3`) can be contextualized so that when an active modal mode like Cosmic Tour is running, `1`-`5` seamlessly jump between chapters without losing top-level projection capabilities.
 **Action:** Always call arrow key navigation initializers on dynamically created chip containers upon DOM population, and provide mode-aware numeric shortcuts when overlay tours or multi-chapter narratives are active.
+
+## 2026-12-25 - Reset Action Button State Decoupling & Canvas Focus Smoothness
+**Learning:** Temporary action buttons (such as "Reset Origin" in viewport controls) should not permanently capture `active` or `aria-pressed="true"` states if their function is to restore default states. Decoupling reset actions so they re-activate the default state button ("All Stars") prevents state ambiguity. Additionally, calling `.focus()` on canvas elements upon programmatic focus targeting ensures keyboard navigation immediately engages canvas controls.
+**Action:** Always re-activate default option states when reset buttons are invoked, and explicitly set element focus on target canvases during programmatic camera centering.
