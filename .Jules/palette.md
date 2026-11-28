@@ -61,3 +61,7 @@
 ## 2026-12-18 - Dynamic Chip Lists & Mode-Aware Key Shortcuts
 **Learning:** Dynamic chip lists generated on the fly (such as dossier interlocutors, crosstalk matrix duet chips, and tour featured minds) miss keyboard arrow navigation unless `enableChipArrowNav` is invoked immediately after populating the DOM nodes. Additionally, global numeric shortcuts (`1`-`3`) can be contextualized so that when an active modal mode like Cosmic Tour is running, `1`-`5` seamlessly jump between chapters without losing top-level projection capabilities.
 **Action:** Always call arrow key navigation initializers on dynamically created chip containers upon DOM population, and provide mode-aware numeric shortcuts when overlay tours or multi-chapter narratives are active.
+
+## 2026-12-25 - Bypass Blocks Skip Link & Main Target Focusability
+**Learning:** For single-page applications with fixed top headers and dense navigation bars, keyboard users face repetitive tab presses to reach main content across view switches. Adding a top-level skip link (`<a href="#main-content" class="skip-link">`) combined with `id="main-content"` and `tabindex="-1"` on the `<main>` element allows screen reader and keyboard users to bypass header blocks cleanly (WCAG 2.4.1 Bypass Blocks). Styling the skip link to reveal on `:focus` with high contrast and smooth position transition ensures immediate visual discoverability without cluttering default presentation.
+**Action:** Always provide an off-screen, focus-revealed skip link target targeting `<main id="main-content" tabindex="-1">`.
