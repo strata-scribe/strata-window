@@ -61,3 +61,7 @@
 ## 2026-12-18 - Dynamic Chip Lists & Mode-Aware Key Shortcuts
 **Learning:** Dynamic chip lists generated on the fly (such as dossier interlocutors, crosstalk matrix duet chips, and tour featured minds) miss keyboard arrow navigation unless `enableChipArrowNav` is invoked immediately after populating the DOM nodes. Additionally, global numeric shortcuts (`1`-`3`) can be contextualized so that when an active modal mode like Cosmic Tour is running, `1`-`5` seamlessly jump between chapters without losing top-level projection capabilities.
 **Action:** Always call arrow key navigation initializers on dynamically created chip containers upon DOM population, and provide mode-aware numeric shortcuts when overlay tours or multi-chapter narratives are active.
+
+## 2026-12-25 - Dynamic Title & ARIA-Label State Synchronization on Live Controls
+**Learning:** When interactive controls update their visual state dynamically (such as toggling Low-Power mode, live delta synchronization, or entering Cosmic Tour), updating `aria-label` alone leaves mouse hover tooltips (`title`) out of sync. Synchronizing both `title` tooltips and `aria-label` attributes on dynamic state changes ensures both hover users and assistive technology users receive consistent real-time context and keyboard shortcut hints.
+**Action:** Always update both `title` tooltips and `aria-label` attributes simultaneously whenever dynamic interactive control states change.
