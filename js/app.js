@@ -426,7 +426,7 @@
   }
 
   function enableChipArrowNav(containerId) {
-    const container = $(containerId);
+    const container = typeof containerId === 'string' ? $(containerId) : containerId;
     if (!container || container.dataset.arrowNav) return;
     container.dataset.arrowNav = 'true';
     container.addEventListener('keydown', (e) => {
@@ -1052,6 +1052,9 @@
 
     if (STATE.activeTab !== 'observatory') {
       activateTab('observatory');
+    }
+    if (canvas && typeof canvas.focus === 'function') {
+      canvas.focus();
     }
 
     if (STATE.view.projection === 'starwalker' && match.x3d !== undefined) {
@@ -3301,6 +3304,7 @@
           });
           voicesList.appendChild(vChip);
         });
+        enableChipArrowNav(voicesList);
         card.appendChild(voicesList);
 
         const filterBtn = h('button', 'btn-ctrl mullion-filter-btn', `View ${q.name} Threads`);
@@ -3977,6 +3981,9 @@
     // Switch to observatory tab if not already active
     if (STATE.activeTab !== 'observatory') {
       activateTab('observatory');
+    }
+    if (canvas && typeof canvas.focus === 'function') {
+      canvas.focus();
     }
 
     // Ensure layout dimensions are current
